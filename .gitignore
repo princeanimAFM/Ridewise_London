@@ -1,0 +1,15 @@
+# Ignore all CSV data files
+*.csv
+
+# Ignore processed data
+data/processed/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+
+# Models
+models/
