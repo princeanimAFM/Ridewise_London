@@ -92,6 +92,14 @@ Run `migrations/0003_app_content.sql` and `migrations/0004_admins.sql` (SQL Edit
 
 Each area uses the content built into the app until it's first edited. Newsletters pick up the edited theme, giving details and links automatically. Redeploy `send-announcement` and `draft-announcement` once after running 0003.
 
+## 6c. Library, profile photos and subscribers
+Run `migrations/0005_library_avatars.sql`. It adds:
+- **Library**: Owner dashboard → Edit app content → **Library: free e-books & files**. Upload a PDF, title and optional cover, and it appears for everyone under More → Library.
+- **Profile photos**: members can add an optional photo in My Account. Photos are stored in `avatars/<member id>/`. Only the member can change or remove theirs, and removing it deletes the file.
+- **Subscribers**: Owner dashboard → **Subscribers** lists everyone on the newsletter, with search, remove and export.
+
+When you handle an account deletion request, also delete the member's folder in **Storage → avatars**.
+
 ## 7. Push notifications in store builds
 - **Android**: create a Firebase project (https://console.firebase.google.com) and add an Android app with package `com.afm.hub`. Then go to **Project settings → Service accounts → Generate new private key**, and upload that JSON to Expo with `npx eas-cli credentials` (Android → Google Service Account → FCM V1).
 - **iPhone**: handled automatically by EAS when you build with your Apple Developer account.

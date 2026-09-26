@@ -178,7 +178,10 @@ export default function Admin() {
 
       <Button label="Edit app content" icon="create-outline" onPress={() => router.push('/manage')} style={{ marginTop: space.md }} />
       <Body muted style={{ marginTop: space.xs }}>Books, perfumes, quotes, giving details, links, service times and the theme.</Body>
-      <Button label="Admins" icon="people-outline" variant="outline" onPress={() => router.push('/admins')} style={{ marginTop: space.sm }} />
+      <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.sm }}>
+        <Button label="Subscribers" icon="people-circle-outline" variant="outline" onPress={() => router.push('/subscribers')} style={{ flex: 1 }} />
+        <Button label="Admins" icon="people-outline" variant="outline" onPress={() => router.push('/admins')} style={{ flex: 1 }} />
+      </View>
 
       <SectionHeader title="New announcement" />
       {!!error && <Notice kind="error">{error}</Notice>}

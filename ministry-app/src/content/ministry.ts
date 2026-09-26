@@ -46,6 +46,15 @@ export type Book = {
   price?: string;
 };
 
+/** A free e-book or file people can read in the app (Library). */
+export type LibraryItem = {
+  id: string;
+  title: string;
+  description?: string;
+  file: string;
+  cover?: ImageSource;
+};
+
 export type Fragrance = {
   id: string;
   name: string;
@@ -278,6 +287,9 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
       amazonUrl: 'https://www.amazon.com/dp/B09K5G1SGW',
     },
   ] as Book[],
+
+  /** Free e-books and files. Usually added in the Owner dashboard → Edit app content → Library. */
+  library: [] as LibraryItem[],
 
   fragrances: {
     brandName: 'House of Azanduna',

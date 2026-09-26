@@ -5,7 +5,7 @@ import * as WebBrowser from 'expo-web-browser';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './supabase';
 
-export type Profile = { first_name: string | null; last_name: string | null; phone: string | null; is_admin: boolean };
+export type Profile = { first_name: string | null; last_name: string | null; phone: string | null; is_admin: boolean; avatar_url?: string | null };
 
 type AuthContext = {
   session: Session | null;
@@ -42,8 +42,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadProfile = useCallback(async (s: Session | null) => {
     if (!supabase || !s) return setProfile(null);
-    const { data } = await supabase.from('profiles').select('first_name, last_name, phone, is_admin').eq('id', s.user.id).maybeSingle();
-    setProfile((data as Profile) ?? { first_name: null, last_name: null, phone: null, is_admin: false });
+    const { data } = await supabase.from('profiles').select('first_name, last_name, phone, is_admin, avatar_url').eq('id', s.user.id).maybeSingle();
+    setProfile((data as Profile) ?? { first_name: null, last_name: null, phone: null, is_admin: false, avatar_url: null });
   }, []);
 
   useEffect(() => {

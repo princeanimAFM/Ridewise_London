@@ -21,6 +21,7 @@ export default function More() {
         onPress={() => router.push('/account')}
       />
       {profile?.is_admin && <ListRow icon="megaphone-outline" title="Owner dashboard" subtitle="Upload flyers & send announcements" onPress={() => router.push('/admin')} />}
+      {profile?.is_admin && <ListRow icon="people-circle-outline" title="Subscribers" subtitle="See who has signed up for the newsletter" onPress={() => router.push('/subscribers')} />}
       {profile?.is_admin && <ListRow icon="create-outline" title="Edit app content" subtitle="Books, perfumes, quotes, giving, links" onPress={() => router.push('/manage')} />}
       <ListRow icon="chatbubble-ellipses-outline" title={ministry.assistant.name} subtitle="Ask a question or find your way around" onPress={() => router.push('/assistant')} />
 
@@ -28,6 +29,7 @@ export default function More() {
       <ListRow icon="people-outline" title="About Ministry" subtitle="The AFM Mission Statement" onPress={() => router.push('/about')} />
       <ListRow icon="person-outline" title="Biography" subtitle={ministry.minister} onPress={() => router.push('/biography')} />
       <ListRow icon="library-outline" title="The AFM Handbook" subtitle="FAQs, anchor scripture, slogans & code of conduct" onPress={() => router.push('/handbook')} />
+      <ListRow icon="document-text-outline" title="Library" subtitle="Free e-books & files" onPress={() => router.push('/library')} />
       <ListRow icon="archive-outline" title="Archive" subtitle="Podcast, YouTube & Telegram" onPress={() => router.push('/archive')} />
 
       <SectionHeader title="Get Involved" />

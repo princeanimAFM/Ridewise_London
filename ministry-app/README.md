@@ -91,3 +91,13 @@ The site's address is shown after deploying (for example `https://afm-hub.expo.a
 `public/index.html` is the website's page shell, generated from the app's content by `node scripts/build-web-home.js`. It holds the search-engine and link-preview details, and a readable welcome page (name, theme, biography, links) that search engines index and visitors see while the app loads. Run it again after changing ministry details, and set `playStoreUrl` in `src/content/ministry.ts` once the app is live to add "Get it on Google Play" buttons. After deploying, add the site to Google Search Console (search.google.com/search-console) and submit `<address>/sitemap.xml` so Google finds it sooner.
 
 Phone-only on the website: push notifications and daily quote reminders, lock-screen audio controls, and in-page live video (the website shows a "Watch on YouTube" button instead).
+
+## Updating everyone's app without a store review
+
+The app includes EAS Update (`expo-updates`), so changes to screens and features reach every installed copy the next time it opens:
+
+```bash
+npx eas-cli@latest update --channel production --message "What changed"
+```
+
+Use `--channel preview` for test APKs. Changes that add native code (a new Expo module with native parts, new permissions, app icon or name changes) still need a new build and store upload. Content such as books, quotes, giving details and Library files is edited in the Owner dashboard and needs neither.

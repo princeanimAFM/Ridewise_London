@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useContent } from '@/lib/liveContent';
 import { displayName, useAuth } from '@/lib/auth';
-import { friendlyError, supabase } from '@/lib/supabase';
+import { friendlyError, storageUrl, supabase, uploadPickedImage } from '@/lib/supabase';
 import { openLink } from '@/lib/links';
 import { BackendComingSoon } from '@/components/ComingSoon';
 import { Divider, Field, Notice } from '@/components/form';
-import { Button, Chip, ListRow, Screen, SectionHeader, Title, Body } from '@/components/ui';
+import { Artwork, Button, Chip, ListRow, Screen, SectionHeader, Title, Body } from '@/components/ui';
 import { fonts, space, useTheme } from '@/theme';
 
 export default function Account() {
@@ -123,6 +125,45 @@ function MyAccount() {
   const [last, setLast] = useState(profile?.last_name ?? '');
   const [saved, setSaved] = useState('');
   const [error, setError] = useState('');
+  const [photoBusy, setPhotoBusy] = useState(false);
+
+  const setPhoto = async (url: string | null, keepPath?: string) => {
+    const uid = session!.user.id;
+    const { error } = await supabase!.from('profiles').update({ avatar_url: url }).eq('id', uid);
+    if (error) throw error;
+    // Delete old photos so nothing is kept after it's replaced or removed.
+    const { data: files } = await supabase!.storage.from('avatars').list(uid);
+    const old = (files ?? []).map((f) => `${uid}/${f.name}`).filter((p) => p !== keepPath);
+    if (old.length) await supabase!.storage.from('avatars').remove(old);
+    await refreshProfile();
+  };
+
+  const choosePhoto = async () => {
+    setError('');
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], allowsEditing: true, aspect: [1, 1], quality: 0.7 });
+    if (res.canceled || !res.assets?.[0]) return;
+    setPhotoBusy(true);
+    try {
+      const path = await uploadPickedImage('avatars', session!.user.id, res.assets[0]);
+      await setPhoto(storageUrl('avatars', path), path);
+    } catch (e) {
+      setError(`Your photo did not upload: ${friendlyError(e)}`);
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
+
+  const removePhoto = async () => {
+    setError('');
+    setPhotoBusy(true);
+    try {
+      await setPhoto(null);
+    } catch (e) {
+      setError(friendlyError(e));
+    } finally {
+      setPhotoBusy(false);
+    }
+  };
 
   useEffect(() => {
     setFirst(profile?.first_name ?? '');
@@ -142,8 +183,26 @@ function MyAccount() {
 
   return (
     <Screen>
-      <Text style={[styles.hello, { color: t.text }]}>Hello, {displayName(profile, session)}</Text>
-      <Text style={{ color: t.textMuted, marginBottom: space.lg }}>{session?.user.email ?? session?.user.phone}</Text>
+      <View style={styles.header}>
+        <Pressable onPress={choosePhoto} accessibilityRole="button" accessibilityLabel={profile?.avatar_url ? 'Change your photo' : 'Add a photo'}>
+          {profile?.avatar_url ? (
+            <Artwork uri={profile.avatar_url} icon="person" style={styles.avatar} />
+          ) : (
+            <View style={[styles.avatar, styles.avatarEmpty, { backgroundColor: t.surfaceAlt, borderColor: t.border }]}>
+              <Ionicons name="camera-outline" size={26} color={t.accent} />
+            </View>
+          )}
+          {photoBusy && <ActivityIndicator color={t.accent} style={StyleSheet.absoluteFill} />}
+        </Pressable>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.hello, { color: t.text }]}>Hello, {displayName(profile, session)}</Text>
+          <Text style={{ color: t.textMuted }}>{session?.user.email ?? session?.user.phone}</Text>
+          <View style={{ flexDirection: 'row', gap: space.md, marginTop: 4 }}>
+            <Text onPress={choosePhoto} style={{ color: t.accent, fontWeight: '600' }}>{profile?.avatar_url ? 'Change photo' : 'Add a photo (optional)'}</Text>
+            {!!profile?.avatar_url && <Text onPress={removePhoto} style={{ color: t.textMuted, fontWeight: '600' }}>Remove</Text>}
+          </View>
+        </View>
+      </View>
 
       {profile?.is_admin && (
         <ListRow icon="megaphone-outline" title="Owner dashboard" subtitle="Upload flyers and send announcements" onPress={() => router.push('/admin')} />
@@ -179,4 +238,7 @@ const styles = StyleSheet.create({
   links: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
   flex: { flex: 1 },
   hello: { fontFamily: fonts.serif, fontSize: 26, fontWeight: '700' },
+  header: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginBottom: space.lg },
+  avatar: { width: 72, height: 72, borderRadius: 36 },
+  avatarEmpty: { alignItems: 'center', justifyContent: 'center', borderWidth: 1 },
 });

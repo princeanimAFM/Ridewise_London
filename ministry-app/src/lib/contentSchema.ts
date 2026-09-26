@@ -6,7 +6,7 @@ import type { ContentKey } from './liveContent';
 export type FieldDef = {
   key: string;
   label: string;
-  kind?: 'text' | 'multiline' | 'url' | 'email' | 'phone' | 'image' | 'switch' | 'choice';
+  kind?: 'text' | 'multiline' | 'url' | 'email' | 'phone' | 'image' | 'file' | 'switch' | 'choice';
   required?: boolean;
   placeholder?: string;
   hint?: string;
@@ -73,6 +73,25 @@ export const sections: Section[] = [
       { key: 'description', label: 'Description', kind: 'multiline' },
       { key: 'amazonUrl', label: 'Amazon link', kind: 'url', required: true, placeholder: 'https://www.amazon.com/dp/…' },
       { key: 'price', label: 'Price (optional)', placeholder: 'e.g. $14.99' },
+    ],
+  },
+  {
+    key: 'library',
+    type: 'list',
+    title: 'Library: free e-books & files',
+    subtitle: 'Upload PDFs everyone can read in the app',
+    icon: 'document-text-outline',
+    intro: 'Free e-books, sermon notes, programmes and other files. Everyone can open them in the app from More → Library, and on the website.',
+    itemName: 'file',
+    titleField: 'title',
+    subtitleField: 'description',
+    imageField: 'cover',
+    addToTop: true,
+    fields: [
+      { key: 'file', label: 'File (PDF)', kind: 'file', required: true, hint: 'PDF works best. Word documents also open.' },
+      { key: 'title', label: 'Title', required: true, placeholder: 'e.g. The Year of the Blessing: Study Guide' },
+      { key: 'description', label: 'Short description', kind: 'multiline' },
+      { key: 'cover', label: 'Cover picture (optional)', kind: 'image' },
     ],
   },
   {

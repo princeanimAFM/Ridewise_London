@@ -54,7 +54,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The AFM HUB uses your photos only when you choose a flyer to upload in the Owner Dashboard.",
+          "photosPermission": "The AFM HUB uses your photos only when you choose one: a profile picture, or a flyer or cover in the Owner Dashboard.",
           "cameraPermission": false,
           "microphonePermission": false
         }
@@ -74,6 +74,14 @@
         "projectId": "0be3642e-6909-40ab-88e5-0ff659857c49"
       }
     },
-    "owner": "princeanim88s-team"
+    "owner": "princeanim88s-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/0be3642e-6909-40ab-88e5-0ff659857c49",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    }
   }
 }

@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { ministry, type Book, type Fragrance, type LinkItem, type Quote } from '@/content/ministry';
+import { ministry, type Book, type Fragrance, type LibraryItem, type LinkItem, type Quote } from '@/content/ministry';
 
 /**
  * The app's content with the owner's edits applied. Areas the owner has edited
@@ -11,7 +11,7 @@ import { ministry, type Book, type Fragrance, type LinkItem, type Quote } from '
  */
 export type Content = typeof ministry;
 
-export type ContentKey = 'details' | 'books' | 'perfumes' | 'quotes' | 'giving' | 'services' | 'socials' | 'archive';
+export type ContentKey = 'details' | 'books' | 'perfumes' | 'quotes' | 'giving' | 'services' | 'socials' | 'archive' | 'library';
 export type Overrides = Partial<Record<ContentKey, unknown>>;
 
 /** Editable shapes, stored as JSON. Images are web links or "asset:<name>" for photos built into the app. */
@@ -35,6 +35,7 @@ export type PerfumeRow = { id: string; name: string; image?: string; tagline?: s
 export type QuoteRow = { id: string; text: string };
 export type GivingRow = { id: string; label: string; value: string; url?: string; note?: string };
 export type ServiceRow = { id: string; day: string; detail: string };
+export type LibraryRow = { id: string; title: string; description?: string; file: string; cover?: string };
 export type LinkRow = { id: string; label: string; url: string; icon: LinkItem['icon']; description?: string };
 
 type ImageSource = string | ImageSourcePropType;
@@ -97,6 +98,8 @@ export function builtinValue(key: ContentKey): unknown {
       return m.socials.map((s): LinkRow => ({ ...s }));
     case 'archive':
       return m.archive.map((s): LinkRow => ({ ...s }));
+    case 'library':
+      return m.library.map((l): LibraryRow => ({ id: l.id, title: l.title, description: l.description ?? '', file: l.file, cover: imageRef(l.cover) }));
   }
 }
 
@@ -126,6 +129,7 @@ function build(o: Overrides): Content {
   const services = rows<ServiceRow>(o.services, ['day']);
   const socials = rows<LinkRow>(o.socials, ['label', 'url']);
   const archive = rows<LinkRow>(o.archive, ['label', 'url']);
+  const library = rows<LibraryRow>(o.library, ['title', 'file']);
   const opt = (v?: string) => str(v) || undefined;
   const link = (r: LinkRow): LinkItem => ({ id: r.id, label: r.label, url: r.url, icon: r.icon || 'globe', description: opt(r.description) });
 
@@ -168,6 +172,9 @@ function build(o: Overrides): Content {
     },
     socials: socials ? socials.map(link) : m.socials,
     archive: archive ? archive.map(link) : m.archive,
+    library: library
+      ? library.map((l): LibraryItem => ({ id: l.id, title: l.title, description: opt(l.description), file: l.file, cover: imageFrom(l.cover) }))
+      : m.library,
   };
 }
 

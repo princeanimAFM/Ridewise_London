@@ -16,6 +16,7 @@ import { backendReady } from '@/lib/supabase';
 import { openLink } from '@/lib/links';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { NotificationInvite } from '@/components/NotificationInvite';
+import { useAuth } from '@/lib/auth';
 import { Artwork, IconName, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -25,6 +26,7 @@ export default function Home() {
   const ministry = useContent();
   const t = useTheme();
   const insets = useSafeAreaInsets();
+  const { session, profile } = useAuth();
   const latest = sermonsByDate[0];
   const { episodes } = useEpisodes();
   const { items: announcements } = useAnnouncements(2);
@@ -41,6 +43,17 @@ export default function Home() {
   return (
     <Screen padded={false}>
       <PhotoHero source={ministry.photos.home} height={430 + insets.top} position="top">
+        {session && (
+          <Pressable onPress={() => router.push('/account')} style={[styles.avatarButton, { top: insets.top + 12 }]} accessibilityRole="button" accessibilityLabel="My account">
+            {profile?.avatar_url ? (
+              <Artwork uri={profile.avatar_url} icon="person" style={styles.avatar} />
+            ) : (
+              <View style={[styles.avatar, styles.avatarEmpty]}>
+                <Ionicons name="person" size={20} color="#FFFFFF" />
+              </View>
+            )}
+          </Pressable>
+        )}
         <View style={styles.heroText}>
           <View style={styles.logoWrap}>
             <Artwork uri={ministry.logo} icon="leaf" style={styles.logo} />
@@ -180,6 +193,26 @@ export default function Home() {
         <SectionHeader title="Watch, Listen & Follow" />
         <PlatformGrid />
 
+        {ministry.library.length > 0 && (
+          <>
+            <SectionHeader title="Free E-books & Files" action="See all" onAction={() => router.push('/library')} />
+            {ministry.library.slice(0, 3).map((item) => (
+              <Pressable
+                key={item.id}
+                onPress={() => router.push({ pathname: '/library/[id]', params: { id: item.id } })}
+                style={({ pressed }) => [styles.libraryRow, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.85 }]}
+              >
+                <Artwork uri={item.cover} icon="document-text" style={styles.libraryCover} />
+                <View style={{ flex: 1 }}>
+                  <Text numberOfLines={2} style={{ color: t.text, fontWeight: '700' }}>{item.title}</Text>
+                  <Text style={{ color: t.accent, fontWeight: '600', marginTop: 2 }}>Read free</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
+              </Pressable>
+            ))}
+          </>
+        )}
+
         <SectionHeader title="AFM Books" action="See all" onAction={() => router.push({ pathname: '/store', params: { tab: 'books' } })} />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: space.md }}>
           {ministry.books.map((b) => (
@@ -197,6 +230,11 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  avatarButton: { position: 'absolute', right: 16, zIndex: 2 },
+  avatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: '#FFFFFF' },
+  avatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' },
+  libraryRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, marginBottom: space.sm },
+  libraryCover: { width: 44, height: 58, borderRadius: radius.sm },
   heroText: { paddingBottom: space.lg },
   welcome: { fontSize: 12, fontWeight: '700', letterSpacing: 2 },
   theme: { alignSelf: 'flex-start', borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4, marginBottom: space.sm, backgroundColor: 'rgba(0,0,0,0.25)' },

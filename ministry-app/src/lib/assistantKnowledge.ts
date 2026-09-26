@@ -25,7 +25,8 @@ export function buildKnowledge(): string {
     '- Sermons tab: The AFM Podcast episodes (search and play inside the app), plus YouTube, Spotify, Telegram, Apple Podcasts, Facebook and Instagram links.',
     '- Quotes tab: a new Quote of the Day every day and all quotes, each with a Share button.',
     '- Store tab: "AFM Books" (with Buy on Amazon buttons) and "House of Azanduna" fragrances.',
-    '- More tab: About Ministry, Biography, The AFM Handbook, Archive, Contact Us, Prayer Request, Share App, Privacy Policy.',
+    '- More tab: About Ministry, Biography, The AFM Handbook, Library, Archive, Contact Us, Prayer Request, Share App, Privacy Policy.',
+    '- Library (More → Library): free e-books, study guides and files from the ministry, which open inside the app.',
     '- About Ministry: the AFM Mission Statement (vision, mission, process, invitation).',
     `- Biography: the life and ministry of ${m.minister}.`,
     '- The AFM Handbook: FAQs, anchor scripture (Isaiah 60), slogans, and the 53-point Code of Conduct.',
@@ -81,6 +82,11 @@ export function buildKnowledge(): string {
     m.fragrances.launched ? '' : `Sneak peek of the upcoming ${m.fragrances.collectionName} collection by ${m.fragrances.brandName} (the bottles are labelled "${m.fragrances.collectionName}"): ${[...new Set(m.fragrances.previewPhotos.map((p) => p.name))].join(', ')}. No prices or release date yet.`,
   );
 
+  add(
+    '## Library (free e-books and files)',
+    ...(m.library.length ? m.library.map((l) => `- ${l.title}${l.description ? `: ${l.description}` : ''}`) : ['No files have been added yet.']),
+  );
+
   add('## Quotes by AFM', ...m.quotes.map((q) => `- "${q.text}"`));
 
   add(
@@ -100,7 +106,7 @@ export function buildKnowledge(): string {
     '- Announcements: More → Announcements shows upcoming programmes and flyers.',
     '- Live services: the Live screen (Home → Watch Live Services, or More → Live Services) streams services from YouTube @thebrandmicah inside the app.',
     '- Notifications: More → Notifications turns on a daily AFM quote and announcement alerts.',
-    '- Accounts (optional): More → Sign in. Sign in with email and password, Google, or a text-message code. "Forgot password?" emails a code. To delete an account: More → My Account → Request account deletion.',
+    '- Accounts (optional): More → Sign in. Sign in with email and password, Google, or a text-message code. "Forgot password?" emails a code. Signed-in members can add an optional profile photo in My Account. To delete an account: More → My Account → Request account deletion.',
   );
 
   add(

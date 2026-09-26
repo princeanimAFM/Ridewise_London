@@ -37,12 +37,14 @@ KNOW THE MINISTRY
 • Biography: the life and ministry of Prophet Micah Azanduna
 • The AFM Handbook: frequently asked questions, our anchor scripture, slogans and the Code of Conduct
 
-BOOKS
+BOOKS AND FREE E-BOOKS
 • Books by Prophet Micah Azanduna, with direct links to buy on Amazon
+• A free Library of e-books, study guides and files to read in the app
 
 STAY CONNECTED
 • Announcements and flyers for upcoming programmes
 • Subscribe to the newsletter by email or text message
+• Create an optional account, with your own profile photo if you like
 • Optional notifications for announcements and daily quotes
 • Every AFM channel in one place: YouTube, Telegram, Spotify, Apple Podcasts, Facebook, Instagram and TikTok
 
@@ -106,8 +108,11 @@ Arise and shine. Welcome to the AFM Family.
 | Personal info → Email address | Yes | No | Optional | Account management, Developer communications (newsletter) |
 | Personal info → Phone number | Yes | No | Optional | Account management, Developer communications (SMS) |
 | Device or other IDs | Yes (push notification token) | No | Optional | App functionality (announcement notifications) |
+| Photos and videos → Photos | Yes (optional profile photo) | No | Optional | App functionality (personalising your account) |
 
-Answer **not collected** for: location, financial info, health, messages, photos and videos, audio, files, calendar, contacts, app activity, web browsing, and diagnostics.
+Answer **not collected** for: location, financial info, health, messages, videos, audio, files and docs, calendar, contacts, app activity, web browsing, and diagnostics.
+
+(Library files are uploaded by the ministry and only downloaded by users, so they don't count as data collected from users.)
 
 Notes behind these answers:
 - Prayer requests and contact messages open the person's own email app. The app doesn't store them.

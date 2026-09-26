@@ -55,6 +55,9 @@ export default function RootLayout() {
         <Stack.Screen name="announcements" options={{ title: 'Announcements' }} />
         <Stack.Screen name="admin" options={{ title: 'Owner Dashboard' }} />
         <Stack.Screen name="admins" options={{ title: 'Admins' }} />
+        <Stack.Screen name="subscribers" options={{ title: 'Subscribers' }} />
+        <Stack.Screen name="library/index" options={{ title: 'Library' }} />
+        <Stack.Screen name="library/[id]" options={{ title: 'Library' }} />
         <Stack.Screen name="manage/index" options={{ title: 'Edit App Content' }} />
         <Stack.Screen name="manage/[section]" options={{ title: 'Edit' }} />
         <Stack.Screen name="give" options={{ title: 'Give' }} />

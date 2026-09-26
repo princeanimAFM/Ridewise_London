@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { RequireOwner } from '@/components/RequireOwner';
 import { Field, Notice, Toggle } from '@/components/form';
@@ -279,6 +280,7 @@ function FieldInput({ field: f, value, onChange }: { field: FieldDef; value: unk
 
   if (f.kind === 'switch') return <Toggle label={f.label} hint={f.hint} value={!!value} onValueChange={onChange} />;
   if (f.kind === 'image') return <ImageInput label={label} value={text(value)} onChange={onChange} />;
+  if (f.kind === 'file') return <FileInput label={label} hint={f.hint} value={text(value)} onChange={onChange} />;
   if (f.kind === 'choice') {
     return (
       <View style={{ marginBottom: space.md }}>
@@ -301,6 +303,51 @@ function FieldInput({ field: f, value, onChange }: { field: FieldDef; value: unk
       autoCorrect={f.kind !== 'url' && f.kind !== 'email'}
       keyboardType={f.kind === 'url' ? 'url' : f.kind === 'email' ? 'email-address' : f.kind === 'phone' ? 'phone-pad' : 'default'}
     />
+  );
+}
+
+function FileInput({ label, hint, value, onChange }: { label: string; hint?: string; value: string; onChange: (v: string) => void }) {
+  const t = useTheme();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const name = value ? decodeURIComponent(value.split('/').pop() ?? '') : '';
+
+  const pick = async () => {
+    setError('');
+    const res = await DocumentPicker.getDocumentAsync({
+      type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
+      copyToCacheDirectory: true,
+    });
+    if (res.canceled || !res.assets?.[0]) return;
+    const asset = res.assets[0];
+    if (asset.size && asset.size > 45 * 1024 * 1024) {
+      setError('That file is over 45 MB. Please choose a smaller file.');
+      return;
+    }
+    setBusy(true);
+    try {
+      const path = await uploadPickedImage('library', 'files', asset);
+      onChange(storageUrl('library', path));
+    } catch (e) {
+      setError(`The file did not upload: ${friendlyError(e)}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <View style={{ marginBottom: space.md }}>
+      <Text style={{ color: t.text, fontWeight: '600', marginBottom: space.xs }}>{label}</Text>
+      <Pressable onPress={pick} style={[styles.fileBox, { borderColor: t.border, backgroundColor: t.surface }]} accessibilityRole="button" accessibilityLabel="Choose a file">
+        <Ionicons name={value ? 'document-attach' : 'cloud-upload-outline'} size={26} color={t.accent} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.text, fontWeight: '700' }} numberOfLines={2}>{value ? name : 'Choose a file from your phone'}</Text>
+          <Text style={{ color: t.textMuted, fontSize: 13 }}>{value ? 'Uploaded. Tap to replace.' : hint}</Text>
+        </View>
+        {busy && <ActivityIndicator color={t.accent} />}
+      </Pressable>
+      {!!error && <Text style={{ color: '#B3261E', marginTop: space.xs }}>{error}</Text>}
+    </View>
   );
 }
 
@@ -360,5 +407,6 @@ const styles = StyleSheet.create({
   choices: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   imageBox: { borderWidth: 1, borderStyle: 'dashed', borderRadius: radius.md, overflow: 'hidden', minHeight: 120, justifyContent: 'center', alignSelf: 'flex-start', minWidth: 160 },
   imageEmpty: { alignItems: 'center', padding: space.lg },
+  fileBox: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: 1, borderStyle: 'dashed', borderRadius: radius.md, padding: space.md },
   image: { width: 160, height: 200 },
 });

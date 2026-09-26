@@ -46,13 +46,17 @@ export function friendlyError(e: unknown): string {
   return msg;
 }
 
-/** Uploads a photo chosen with expo-image-picker. Returns its storage path. */
-export async function uploadPickedImage(bucket: string, folder: string, asset: { uri: string; mimeType?: string | null; fileName?: string | null }) {
+type PickedFile = { uri: string; mimeType?: string | null; fileName?: string | null; name?: string | null };
+
+/** Uploads a photo (expo-image-picker) or file (expo-document-picker). Returns its storage path. */
+export async function uploadPickedImage(bucket: string, folder: string, asset: PickedFile) {
   if (!supabase) throw new Error('The backend is not connected.');
-  const ext = (asset.fileName?.split('.').pop() || asset.mimeType?.split('/').pop() || 'jpg').toLowerCase().replace('jpeg', 'jpg');
+  const original = asset.fileName || asset.name || '';
+  const ext = ((original.includes('.') ? original.split('.').pop() : '') || asset.mimeType?.split('/').pop() || 'jpg').toLowerCase().replace('jpeg', 'jpg');
   const path = `${folder}/${Date.now()}.${ext}`;
   const bytes = await (await fetch(asset.uri)).arrayBuffer();
-  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { contentType: asset.mimeType || `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+  const contentType = asset.mimeType || (ext === 'pdf' ? 'application/pdf' : `image/${ext === 'jpg' ? 'jpeg' : ext}`);
+  const { error } = await supabase.storage.from(bucket).upload(path, bytes, { contentType, upsert: true });
   if (error) throw error;
   return path;
 }
