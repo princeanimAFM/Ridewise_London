@@ -76,3 +76,16 @@ npx eas-cli@latest submit --platform all
 You need an Apple Developer account ($99/year) and a Google Play Console account ($25 one-off).
 Both stores require a **Privacy Policy URL**. Host `docs/privacy.html` (for example on GitHub Pages or Netlify, or share the published page publicly) and put its address in the store listings and in `privacyPolicyUrl`.
 Update the bundle identifier (`com.afm.hub`) in `app.json` if you prefer a different one.
+
+## Website (laptops and computers)
+
+The same app runs in a web browser. It's hosted free on Expo's EAS Hosting, using the Expo account the builds already use:
+
+```bash
+npx expo export -p web
+npx eas-cli@latest deploy --prod --non-interactive
+```
+
+The site's address is shown after deploying (for example `https://afm-hub.expo.app`). The privacy policy is at `<address>/privacy.html`, and that's the link Google Play asks for. After the first deploy, put the address in `appShareUrl` and `<address>/privacy.html` in `privacyPolicyUrl` in `src/content/ministry.ts`. Redeploy whenever the app's code changes. Content edited in the Owner dashboard appears on the website automatically.
+
+Phone-only on the website: push notifications and daily quote reminders, lock-screen audio controls, and in-page live video (the website shows a "Watch on YouTube" button instead).

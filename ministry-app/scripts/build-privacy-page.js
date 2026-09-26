@@ -73,4 +73,7 @@ ${p.sections.map(section).join('\n')}
 </main>
 `;
 fs.writeFileSync(path.join(root, 'docs/privacy.html'), html);
-console.log('Wrote docs/privacy.html');
+// public/ is copied into the website, so the policy is also at <website>/privacy.html
+fs.mkdirSync(path.join(root, 'public'), { recursive: true });
+fs.writeFileSync(path.join(root, 'public/privacy.html'), html);
+console.log('Wrote docs/privacy.html and public/privacy.html');
