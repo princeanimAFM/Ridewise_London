@@ -38,7 +38,7 @@ export default function About() {
       <Text style={[styles.signed, { color: t.textMuted }]}>Signed: {ms.signed}</Text>
 
       <SectionHeader title="Learn More" />
-      <ListRow icon="person-outline" title="Our Founder" subtitle={ministry.minister} onPress={() => router.push('/founder')} />
+      <ListRow icon="person-outline" title="Biography" subtitle={ministry.minister} onPress={() => router.push('/biography')} />
       <ListRow icon="library-outline" title="The AFM Handbook" subtitle="FAQs, anchor scripture, slogans & code of conduct" onPress={() => router.push('/handbook')} />
 
       {about.serviceTimes.length > 0 && (

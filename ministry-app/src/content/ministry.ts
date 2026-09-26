@@ -80,9 +80,6 @@ export type LinkItem = {
   description?: string;
 };
 
-const author = 'Micah Felix Azanduna';
-const amazonSearch = (title: string) =>
-  `https://www.amazon.co.uk/s?k=${encodeURIComponent(`${title} ${author}`)}`;
 
 export const ministry = {
   name: 'The AFM HUB',
@@ -198,7 +195,7 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
       title: 'The Maker of Men',
       description: 'A call to raise and become men of substance, shaped by God for purpose, leadership and lasting impact.', // TODO: official blurb
       cover: require('../../assets/images/book-maker-of-men.jpg'),
-      amazonUrl: amazonSearch('The Maker of Men'), // TODO: exact Amazon product link
+      amazonUrl: 'https://www.amazon.com/dp/B091BJ8FLN',
     },
     {
       id: '1001-scriptures',
@@ -206,7 +203,7 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
       subtitle: 'Genesis – Revelation',
       description: 'A carefully curated journey through 1001 scriptures from Genesis to Revelation, to strengthen your faith and doctrinal foundation.', // TODO: official blurb
       cover: require('../../assets/images/book-1001-scriptures.jpg'),
-      amazonUrl: amazonSearch('1001 Scriptures Genesis Revelation'), // TODO: exact Amazon product link
+      amazonUrl: 'https://www.amazon.com/dp/B094YKVRPN',
     },
     {
       id: 'voice-of-honor',
@@ -214,7 +211,7 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
       subtitle: 'Honour and Dishonour',
       description: 'An exploration of honour and dishonour — how honour opens doors, and how dishonour closes them.', // TODO: official blurb
       cover: require('../../assets/images/book-voice-of-honor.jpg'),
-      amazonUrl: amazonSearch('The Voice of Honor Honour and Dishonour'), // TODO: exact Amazon product link
+      amazonUrl: 'https://www.amazon.com/dp/B09K5G1SGW',
     },
   ] as Book[],
 

@@ -79,7 +79,7 @@ export default function Home() {
 
         <SectionHeader title="Meet the Prophet" />
         <Pressable
-          onPress={() => router.push('/founder')}
+          onPress={() => router.push('/biography')}
           style={({ pressed }) => [styles.feature, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.85 }]}
         >
           <Artwork uri={ministry.portrait} icon="person" style={styles.portrait} />
@@ -88,7 +88,7 @@ export default function Home() {
             <Text numberOfLines={3} style={{ color: t.textMuted, marginTop: 4 }}>
               Prophet, theologian, apologist, author and founder of the AFM Family Network.
             </Text>
-            <Text style={{ color: t.accent, fontWeight: '700', marginTop: space.sm }}>Read his story →</Text>
+            <Text style={{ color: t.accent, fontWeight: '700', marginTop: space.sm }}>Read his biography →</Text>
           </View>
         </Pressable>
 

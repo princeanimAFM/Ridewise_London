@@ -20,7 +20,7 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="sermon/[id]" options={{ title: 'Sermon' }} />
         <Stack.Screen name="episode/[id]" options={{ title: 'Sermon' }} />
-        <Stack.Screen name="founder" options={{ title: 'Our Founder' }} />
+        <Stack.Screen name="biography" options={{ title: 'Biography' }} />
         <Stack.Screen name="handbook" options={{ title: 'The AFM Handbook' }} />
         <Stack.Screen name="book/[id]" options={{ title: 'Book' }} />
         <Stack.Screen name="fragrance/[id]" options={{ title: 'Fragrance' }} />
