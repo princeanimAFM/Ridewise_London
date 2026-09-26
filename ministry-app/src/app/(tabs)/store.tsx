@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { ministry } from '@/content/ministry';
 import { openLink } from '@/lib/links';
 import { Artwork, Body, Button, Card, Chip, Screen, Title } from '@/components/ui';
-import { radius, space, useTheme } from '@/theme';
+import { fonts, radius, space, useTheme } from '@/theme';
 
 type Tab = 'books' | 'fragrance';
 
@@ -49,20 +50,38 @@ export default function Store() {
           <Body muted style={{ marginBottom: space.md }}>
             {ministry.fragrances.brandStory}
           </Body>
-          <View style={styles.grid}>
-            {ministry.fragrances.items.map((f) => (
-              <Card key={f.id} style={styles.tile} onPress={() => router.push({ pathname: '/fragrance/[id]', params: { id: f.id } })}>
-                <Artwork uri={f.image} icon="sparkles" label={f.name} style={styles.fragranceImage} />
-                <View style={styles.tileText}>
-                  <Text style={[styles.tileTitle, { color: t.text }]}>{f.name}</Text>
-                  <Text numberOfLines={1} style={{ color: t.textMuted, fontSize: 13 }}>
-                    {f.tagline}
-                  </Text>
-                  {f.price && <Text style={{ color: t.accent, fontWeight: '700', marginTop: 2 }}>{f.price}</Text>}
-                </View>
-              </Card>
-            ))}
-          </View>
+          {ministry.fragrances.launched && ministry.fragrances.items.length > 0 ? (
+            <View style={styles.grid}>
+              {ministry.fragrances.items.map((f) => (
+                <Card key={f.id} style={styles.tile} onPress={() => router.push({ pathname: '/fragrance/[id]', params: { id: f.id } })}>
+                  <Artwork uri={f.image} icon="sparkles" label={f.name} style={styles.fragranceImage} />
+                  <View style={styles.tileText}>
+                    <Text style={[styles.tileTitle, { color: t.text }]}>{f.name}</Text>
+                    <Text numberOfLines={1} style={{ color: t.textMuted, fontSize: 13 }}>
+                      {f.tagline}
+                    </Text>
+                    {f.price && <Text style={{ color: t.accent, fontWeight: '700', marginTop: 2 }}>{f.price}</Text>}
+                  </View>
+                </Card>
+              ))}
+            </View>
+          ) : (
+            <View style={[styles.soon, { backgroundColor: t.primary }]}>
+              <Ionicons name="sparkles" size={34} color={t.gold} />
+              <Text style={[styles.soonKicker, { color: t.gold }]}>COMING SOON</Text>
+              <Text style={styles.soonTitle}>{ministry.fragrances.brandName}</Text>
+              <Text style={styles.soonText}>The collection is being prepared. Check back here for the launch.</Text>
+              <Button
+                label="Ask to be told at launch"
+                icon="mail-outline"
+                variant="gold"
+                onPress={() =>
+                  openLink(`mailto:${ministry.contact.email}?subject=${encodeURIComponent(`${ministry.fragrances.brandName} launch`)}&body=${encodeURIComponent('Please let me know when the collection launches.')}`)
+                }
+                style={{ marginTop: space.md, alignSelf: 'stretch' }}
+              />
+            </View>
+          )}
           {!!ministry.fragrances.shopUrl && (
             <Button label="Visit the Shop" icon="bag-handle-outline" variant="gold" onPress={() => openLink(ministry.fragrances.shopUrl)} style={{ marginTop: space.lg }} />
           )}
@@ -73,6 +92,10 @@ export default function Store() {
 }
 
 const styles = StyleSheet.create({
+  soon: { borderRadius: 20, padding: space.lg, alignItems: 'center', gap: space.xs },
+  soonKicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2, marginTop: space.sm },
+  soonTitle: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', textAlign: 'center' },
+  soonText: { color: '#DCE8DC', textAlign: 'center', marginTop: space.xs },
   tabs: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   tile: { flexBasis: '46%', flexGrow: 1, maxWidth: '48.5%' },

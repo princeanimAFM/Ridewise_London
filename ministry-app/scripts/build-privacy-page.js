@@ -17,6 +17,17 @@ const p = mod.exports.privacy;
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const link = (s) => esc(s).replace(/([\w.+-]+@[\w-]+\.[\w.]+)/g, '<a href="mailto:$1">$1</a>');
 
+const para = (b) => `  <p>${link(b)}</p>`;
+const section = (s) =>
+  [
+    `  <h2>${esc(s.heading)}</h2>`,
+    ...(s.body || []).map(para),
+    s.bullets ? `  <ul>\n${s.bullets.map((b) => `    <li>${link(b)}</li>`).join('\n')}\n  </ul>` : '',
+    ...(s.after || []).map(para),
+  ]
+    .filter(Boolean)
+    .join('\n');
+
 const html = `<title>${esc(p.appName)} Privacy Policy</title>
 <meta name="description" content="How ${esc(p.appName)} handles your information.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -45,6 +56,9 @@ const html = `<title>${esc(p.appName)} Privacy Policy</title>
   .summary strong { display: block; color: var(--green); font-size: 13px; letter-spacing: .12em; text-transform: uppercase; margin-bottom: 4px; }
   h2 { font-family: Lora, Georgia, serif; font-size: 22px; margin: 36px 0 8px; padding-top: 20px; border-top: 1px solid var(--rule); text-wrap: balance; }
   p { margin: 0 0 12px; }
+  ul { margin: 0 0 12px; padding-left: 1.25em; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--gold); }
   a { color: var(--green); font-weight: 600; }
   a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
   footer { margin-top: 40px; color: var(--muted); font-size: 15px; }
@@ -54,7 +68,7 @@ const html = `<title>${esc(p.appName)} Privacy Policy</title>
   <h1>${esc(p.title)}</h1>
   <p class="meta">Effective ${esc(p.effectiveDate)} · ${esc(p.publisher)}</p>
   <div class="summary"><strong>In short</strong>${esc(p.summary)}</div>
-${p.sections.map((s) => `  <h2>${esc(s.heading)}</h2>\n${s.body.map((b) => `  <p>${link(b)}</p>`).join('\n')}`).join('\n')}
+${p.sections.map(section).join('\n')}
   <footer>Questions about this policy: <a href="mailto:${esc(p.contactEmail)}">${esc(p.contactEmail)}</a></footer>
 </main>
 `;

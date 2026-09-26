@@ -233,24 +233,16 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
 
   fragrances: {
     brandName: 'House of Azanduna',
-    brandStory: 'A luxury fragrance brand founded by Prophet Micah Felix Azanduna — crafted as a symbol of excellence.',
-    shopUrl: '', // TODO: online shop link for the whole collection
-    // TODO: replace these placeholder products with the real fragrances, photos, prices and links
-    items: [
-      {
-        id: 'f1',
-        name: 'Signature Scent',
-        tagline: 'Product details coming soon',
-        description: 'Add the fragrance description, notes, size, price and a photo in src/content/ministry.ts.',
-        buyUrl: '',
-      },
-      {
-        id: 'f2',
-        name: 'Signature Scent II',
-        tagline: 'Product details coming soon',
-        description: 'Add the fragrance description, notes, size, price and a photo in src/content/ministry.ts.',
-        buyUrl: '',
-      },
-    ] as Fragrance[],
+    brandStory: 'A luxury perfume brand founded by Prophet Micah Felix Azanduna, CEO and founder — crafted as a symbol of excellence.',
+    shopUrl: '', // online shop link, once the brand launches
+    /**
+     * Not launched yet: while `launched` is false the Store shows a
+     * "Coming soon" page. When ready, set it to true and add the products, e.g.
+     * { id: 'f1', name: 'Name', tagline: 'Warm · Woody', description: '…',
+     *   notes: ['Oud', 'Amber'], size: '100ml Eau de Parfum', price: '£45',
+     *   image: require('../../assets/images/<photo>.jpg'), buyUrl: 'https://…' },
+     */
+    launched: false,
+    items: [] as Fragrance[],
   },
 };
