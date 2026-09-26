@@ -21,7 +21,13 @@
         "monochromeImage": "./assets/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.afm.hub"
+      "package": "com.afm.hub",
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -45,6 +51,13 @@
         }
       ]
     ],
-    "description": "The official app of Prophet Micah Felix Azanduna (D.D) and the AFM Family Network."
+    "description": "The official app of Prophet Micah Felix Azanduna (D.D) and the AFM Family Network.",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0be3642e-6909-40ab-88e5-0ff659857c49"
+      }
+    },
+    "owner": "princeanim88s-team"
   }
 }
