@@ -1,10 +1,14 @@
+import { useEffect, useRef } from 'react';
 import Tabs from 'expo-router/js-tabs';
-import { Pressable } from 'react-native';
+import { Platform, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ColorValue } from 'react-native';
 import type { IconName } from '@/components/ui';
 import { useTheme } from '@/theme';
+import { useAuth } from '@/lib/auth';
+import { backendReady } from '@/lib/supabase';
+import { welcomeDone } from '@/lib/welcome';
 
 const tab = (icon: IconName) => ({ color, size }: { color: ColorValue; size: number }) => (
   <Ionicons name={icon} color={color} size={size} />
@@ -12,6 +16,19 @@ const tab = (icon: IconName) => ({ color, size }: { color: ColorValue; size: num
 
 export default function TabsLayout() {
   const t = useTheme();
+  const { session, loading } = useAuth();
+  const checked = useRef(false);
+
+  // First time the phone app opens (and nobody is signed in): show the welcome / sign-in screen.
+  useEffect(() => {
+    if (checked.current || loading || Platform.OS === 'web' || !backendReady) return;
+    checked.current = true;
+    if (session) return;
+    welcomeDone().then((done) => {
+      if (!done) router.push('/welcome');
+    });
+  }, [loading, session]);
+
   return (
     <Tabs
       screenOptions={{

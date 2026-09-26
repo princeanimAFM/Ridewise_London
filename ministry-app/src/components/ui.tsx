@@ -66,16 +66,19 @@ export function Button({
   onPress,
   variant = 'primary',
   style,
+  color,
 }: {
   label: string;
   icon?: IconName;
   onPress: () => void;
   variant?: 'primary' | 'gold' | 'outline';
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  /** Text and icon colour, e.g. white on a photo. */
+  color?: string;
 }) {
   const t = useTheme();
   const bg = variant === 'primary' ? t.primary : variant === 'gold' ? t.gold : 'transparent';
-  const fg = variant === 'outline' ? t.text : variant === 'gold' ? '#1A1A1A' : t.onPrimary;
+  const fg = color ?? (variant === 'outline' ? t.text : variant === 'gold' ? '#1A1A1A' : t.onPrimary);
   return (
     <Pressable
       onPress={onPress}
