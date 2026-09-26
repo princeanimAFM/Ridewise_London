@@ -289,6 +289,8 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
      *   image: require('../../assets/images/<photo>.jpg'), buyUrl: 'https://…' },
      */
     launched: false,
+    /** The name printed on the bottles (the brand itself is `brandName`). */
+    collectionName: 'Rabbi Azanduna',
     /** Photos shown as a "Sneak peek" on the Coming soon page before launch (files in assets/perfumes/). */
     previewPhotos: [
       { name: 'Excellent Spirit', image: require('../../assets/perfumes/excellent-spirit.jpg') },
