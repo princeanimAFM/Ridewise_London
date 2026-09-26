@@ -1,4 +1,6 @@
 import Tabs from 'expo-router/js-tabs';
+import { Pressable } from 'react-native';
+import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ColorValue } from 'react-native';
 import type { IconName } from '@/components/ui';
@@ -20,6 +22,11 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: t.textMuted,
         tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.border },
         sceneStyle: { backgroundColor: t.background },
+        headerRight: () => (
+          <Pressable onPress={() => router.push('/assistant')} hitSlop={10} style={{ marginRight: 16 }} accessibilityLabel="Ask the AFM Assistant">
+            <Ionicons name="chatbubble-ellipses" size={24} color={t.gold} />
+          </Pressable>
+        ),
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'Home', headerShown: false, tabBarIcon: tab('home-outline') }} />

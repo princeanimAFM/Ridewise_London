@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { biography } from '@/content/biography';
 import { ministry } from '@/content/ministry';
 import { PlatformGrid } from '@/components/PlatformGrid';
+import { PhotoHero } from '@/components/PhotoHero';
 import { Artwork, Body, Button, IconName, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -11,8 +12,7 @@ export default function Biography() {
   const t = useTheme();
   return (
     <Screen padded={false}>
-      <View style={[styles.hero, { backgroundColor: t.primary }]}>
-        <Artwork uri={ministry.heroImage ?? ministry.portrait} icon="person" style={styles.photo} />
+      <PhotoHero source={ministry.photos.biography} height={520} position="top">
         <Text style={[styles.kicker, { color: t.gold }]}>BIOGRAPHY</Text>
         <Text style={styles.name}>{biography.name}</Text>
         <View style={styles.roles}>
@@ -23,7 +23,7 @@ export default function Biography() {
           ))}
         </View>
         <Text style={styles.knownAs}>Known as {biography.knownAs.join(' · ')}</Text>
-      </View>
+      </PhotoHero>
 
       <View style={styles.body}>
         <Text style={[styles.intro, { color: t.text }]}>{biography.intro}</Text>
@@ -82,8 +82,8 @@ const styles = StyleSheet.create({
   hero: { alignItems: 'center', paddingHorizontal: space.lg, paddingTop: space.lg, paddingBottom: space.xl },
   photo: { width: 180, height: 180, borderRadius: 90, borderWidth: 4, borderColor: '#FFFFFF', marginBottom: space.md },
   kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2 },
-  name: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', textAlign: 'center', marginTop: space.xs },
-  roles: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: space.xs, marginTop: space.md },
+  name: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 28, fontWeight: '700', marginTop: space.xs },
+  roles: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.md },
   role: { borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', paddingHorizontal: 10, paddingVertical: 4 },
   roleText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
   knownAs: { color: '#DCE8DC', fontStyle: 'italic', marginTop: space.md },

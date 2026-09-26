@@ -1,4 +1,5 @@
 import type { ImageSourcePropType } from 'react-native';
+import { quoteAuthor, quoteTexts } from './quotes';
 
 /**
  * ALL APP CONTENT LIVES IN THIS FILE.
@@ -89,6 +90,17 @@ export const ministry = {
   logo: require('../../assets/images/logo.png') as ImageSource,
   heroImage: require('../../assets/images/prophet-micah.jpg') as ImageSource | undefined,
   portrait: require('../../assets/images/prophet-micah-portrait.jpg') as ImageSource,
+  /**
+   * Photos used as backgrounds across the app. To change one, put the new
+   * photo in assets/photos/ and point the line below at it.
+   */
+  photos: {
+    home: require('../../assets/photos/micah-red-suit-smile.jpg') as ImageSource,
+    biography: require('../../assets/photos/micah-red-suit-stool.jpg') as ImageSource,
+    about: require('../../assets/photos/micah-blue-suit.jpg') as ImageSource,
+    quotes: require('../../assets/photos/micah-white-shirt.jpg') as ImageSource,
+    sermons: require('../../assets/photos/micah-red-suit-full.jpg') as ImageSource,
+  },
   appShareUrl: '', // TODO: App Store / Play Store / website link used by "Share App"
   privacyPolicyUrl: '', // TODO: required by the App Store and Google Play
 
@@ -128,7 +140,7 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
   },
 
   contact: {
-    email: '', // TODO: receives Contact Us messages and prayer requests
+    email: 'princeanim88@gmail.com', // receives Contact Us messages and prayer requests
     whatsapp: '', // TODO: international format without "+", e.g. "233201234567"
     givingUrl: '', // TODO: online giving link, or '' to hide the Give button
   },
@@ -142,6 +154,16 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
     feedUrl: 'https://feed.podbean.com/theafmpodcast/feed.xml',
     pageUrl: 'https://theafmpodcast.podbean.com/',
     shareUrl: 'https://www.podbean.com/pa/pbblog-hshtw-14f15f9',
+  },
+
+  /**
+   * The AFM Assistant (chat helper). It always answers common questions from
+   * the app's own content. Set `apiUrl` to your deployed assistant server
+   * (see server/README.md) to let it answer anything using AI.
+   */
+  assistant: {
+    name: 'AFM Assistant',
+    apiUrl: '', // e.g. 'https://afm-assistant.<your-account>.workers.dev'
   },
 
   /** The "Stream All 500+ Audio Sermons" archive directory. */
@@ -179,15 +201,8 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
    */
   sermons: [] as Sermon[],
 
-  quotes: [
-    { id: 'q1', text: 'Behind every successful man, there is an influence.' },
-    { id: 'q2', text: 'Packaging will take you to the market, but quality is what will keep you there.' },
-    { id: 'q3', text: "A hospital without doctors and nurses is not even a hospital, it's a pending mortuary; a church without spiritual leaders is a club." },
-    { id: 'q4', text: 'After many years, you will look like your decisions.' },
-    { id: 'q5', text: 'After we’re gone, we’ll be remembered for two things: the problems we solve and the ones we create. I want to be remembered for both!' },
-    { id: 'q6', text: 'Age is not just a number! It is an indication of the experience of wasted years or used years... Value the aged, they have lessons you can learn from.' },
-  ] as Quote[],
-  quoteSource: 'AFM',
+  quotes: quoteTexts.map((text, i): Quote => ({ id: `q${i + 1}`, text })),
+  quoteSource: quoteAuthor,
 
   books: [
     {

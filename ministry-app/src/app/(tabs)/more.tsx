@@ -10,6 +10,8 @@ export default function More() {
   const t = useTheme();
   return (
     <Screen>
+      <ListRow icon="chatbubble-ellipses-outline" title={ministry.assistant.name} subtitle="Ask a question or find your way around" onPress={() => router.push('/assistant')} />
+
       <SectionHeader title="Ministry" />
       <ListRow icon="people-outline" title="About Ministry" subtitle="The AFM Mission Statement" onPress={() => router.push('/about')} />
       <ListRow icon="person-outline" title="Biography" subtitle={ministry.minister} onPress={() => router.push('/biography')} />

@@ -5,11 +5,12 @@ import { ministry } from '@/content/ministry';
 import { useEpisodes } from '@/lib/podcast';
 import { sermonsByDate } from '@/lib/content';
 import { ArchiveCard } from '@/components/ArchiveCard';
+import { PhotoHero } from '@/components/PhotoHero';
 import { EpisodeRow } from '@/components/EpisodeRow';
 import { PlatformGrid } from '@/components/PlatformGrid';
 import { SermonCard } from '@/components/SermonCard';
 import { Body, Button, Screen, SectionHeader } from '@/components/ui';
-import { radius, space, useTheme } from '@/theme';
+import { fonts, radius, space, useTheme } from '@/theme';
 
 const PAGE = 30;
 
@@ -26,6 +27,11 @@ export default function Sermons() {
 
   return (
     <Screen>
+      <PhotoHero source={ministry.photos.sermons} height={250} position="top" style={styles.hero}>
+        <Text style={[styles.kicker, { color: t.gold }]}>{ministry.podcast.title.toUpperCase()}</Text>
+        <Text style={styles.heroTitle}>Sermons & Teachings</Text>
+        <Text style={styles.heroSub}>{episodes.length ? `${episodes.length} messages to play in the app` : '500+ audio messages'}</Text>
+      </PhotoHero>
       {episodes.length > 0 && (
         <View style={[styles.search, { backgroundColor: t.surface, borderColor: t.border }]}>
           <Ionicons name="search-outline" size={20} color={t.textMuted} />
@@ -93,6 +99,10 @@ export default function Sermons() {
 }
 
 const styles = StyleSheet.create({
+  hero: { borderRadius: radius.lg, marginBottom: space.md },
+  kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2 },
+  heroTitle: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', marginTop: 2 },
+  heroSub: { color: '#DCE8DC', marginTop: 4 },
   search: {
     flexDirection: 'row',
     alignItems: 'center',
