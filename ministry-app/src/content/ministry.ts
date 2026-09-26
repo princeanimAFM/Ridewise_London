@@ -1,0 +1,226 @@
+import type { ImageSourcePropType } from 'react-native';
+
+/**
+ * ALL APP CONTENT LIVES IN THIS FILE.
+ *
+ * To update the app, edit the values below — no other code needs to change.
+ * Anything marked "TODO" still needs the real link or detail filled in.
+ * Links left as '' show a friendly "Coming soon" message when tapped.
+ *
+ * Tips:
+ *  - For a YouTube sermon, paste only the video ID (the part after "v=" in the
+ *    link). The thumbnail is fetched automatically.
+ *  - Images can be a web link ("https://...") or a file in assets/images
+ *    loaded with require('../../assets/images/<file>').
+ *  - Dates use the format "YYYY-MM-DD".
+ */
+
+type ImageSource = string | ImageSourcePropType;
+
+export type Sermon = {
+  id: string;
+  title: string;
+  date: string;
+  series?: string;
+  scripture?: string;
+  summary: string;
+  youtubeId?: string;
+  audioUrl?: string;
+  image?: ImageSource;
+};
+
+export type Quote = {
+  id: string;
+  text: string;
+  source?: string;
+};
+
+export type Book = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  description: string;
+  cover?: ImageSource;
+  amazonUrl: string;
+  price?: string;
+};
+
+export type Fragrance = {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  notes?: string[];
+  size?: string;
+  price?: string;
+  image?: ImageSource;
+  buyUrl?: string;
+};
+
+export type LinkItem = {
+  id: string;
+  label: string;
+  url: string;
+  icon:
+    | 'youtube'
+    | 'facebook'
+    | 'instagram'
+    | 'tiktok'
+    | 'x'
+    | 'telegram'
+    | 'spotify'
+    | 'podcast'
+    | 'globe'
+    | 'whatsapp'
+    | 'mail'
+    | 'archive'
+    | 'book'
+    | 'shield';
+  description?: string;
+};
+
+const author = 'Micah Felix Azanduna';
+const amazonSearch = (title: string) =>
+  `https://www.amazon.co.uk/s?k=${encodeURIComponent(`${title} ${author}`)}`;
+
+export const ministry = {
+  name: 'The AFM Hub',
+  shortName: 'AFM',
+  minister: 'Prophet Micah Felix Azandunah (D.D)',
+  tagline: 'Raising spiritually grounded and purpose-driven men and women.',
+  logo: require('../../assets/images/logo.png') as ImageSource,
+  heroImage: undefined as ImageSource | undefined, // TODO: a clean photo of Prophet Azandunah (no text over it)
+  appShareUrl: '', // TODO: App Store / Play Store / website link used by "Share App"
+  privacyPolicyUrl: '', // TODO: required by the App Store and Google Play
+  handbookUrl: '', // TODO: link to The AFM Handbook
+
+  about: {
+    headline: 'About the Ministry',
+    story: `Prophet Micah Felix Azandunah (D.D) is a prophet, theologian, apologist, author, and transformational leader whose influence reaches believers across the world. He is the founder of the AFM Family Network, the Alleluia Faith Mission Global Assembly, the Young and Useful Summit (YouUseMe), and The Great Gathering, all dedicated to raising spiritually grounded and purpose-driven men and women.
+
+He is the creator of the popular Hagin Channel on Telegram, established in honor of Kenneth E. Hagin, and also curates a respected theological resource channel on Telegram, providing doctrinal materials from renowned theologians to strengthen young Christians in their walk with God.
+
+A prolific author, Prophet Azandunah has written impactful books such as The 1001 Scriptures: Genesis to Revelation, The Maker of Men, and The Voice of Honor. His mentorship has shaped thousands globally, guiding them into clarity, maturity, and divine purpose.
+
+Known for simplifying deep biblical truths with precision and grace, he is a seasoned transformologist whose teachings inspire change and build strong doctrinal foundations. He is also the founder of the luxury fragrance brand The House of Azandunah, and is widely recognized as The Brand AFM—a symbol of excellence, transformation, and divine assignment.
+
+Prophet Micah Felix Azandunah stands as a prophet, teacher, father, mentor, and change agent, committed to advancing the Kingdom with wisdom, integrity, and power.`,
+    missionStatement: {
+      title: 'The AFM Mission Statement',
+      intro: `The AFM Family Network is a dynamic group of people driven by a common goal, that is, to bring the Kingdom here and now. It is led by God, through His humble servant; Azanduna F. Micah.
+
+The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
+      sections: [
+        { heading: 'Our Vision', icon: 'eye-outline', text: 'Our vision is to see men and women rise in the Kingdom to fulfil the task at hand; The Great Commission.' },
+        { heading: 'Our Mission', icon: 'flag-outline', text: 'To raise men and women to live their lives not as theirs but as channels through which the King of Glory will find expression. That He will use them to cause tremendous and unrecoverable impact down here on earth.' },
+        { heading: 'Our Process', icon: 'git-network-outline', text: 'To provide the sheepfold of God with Kingdom Strategies through: The Preaching of the Gospel of our Lord Jesus Christ, Conferences, Seminars, Resources sharing, Fellowship, Partnership and Mentorship.' },
+        { heading: 'Our Invitation', icon: 'hand-left-outline', text: 'We believe that every vision set in motion will never lack support. Thus, we invite your prayers, talents and support to keep this moving. According to Napoleon Hill; "Strength and growth come only through continuous effort and struggle." Anyone can join The AFM Family Network.' },
+      ] as { heading: string; icon: 'eye-outline' | 'flag-outline' | 'git-network-outline' | 'hand-left-outline'; text: string }[],
+      signed: 'Azanduna Felix Micah (President, The AFM)',
+    },
+    ministries: [
+      'AFM Family Network',
+      'Alleluia Faith Mission Global Assembly',
+      'Young and Useful Summit (YouUseMe)',
+      'The Great Gathering',
+    ],
+    introVideoYoutubeId: '', // TODO: YouTube ID of the video shown on the About screen
+    serviceTimes: [] as { day: string; detail: string }[], // TODO: e.g. { day: 'Sunday', detail: 'Worship Service · 10:00 AM' }
+    address: '', // TODO: church address, or leave '' to hide
+  },
+
+  contact: {
+    email: '', // TODO: receives Contact Us messages and prayer requests
+    whatsapp: '', // TODO: international format without "+", e.g. "233201234567"
+    givingUrl: '', // TODO: online giving link, or '' to hide the Give button
+  },
+
+  /** The "Stream All 500+ Audio Sermons" archive directory. */
+  sermonArchive: {
+    title: 'Stream All 500+ Audio Sermons',
+    subtitle: 'Instantly access the full archive directory of messages',
+    url: '', // TODO: link to the full audio sermon archive
+  },
+
+  /** Where people can watch / listen / follow. Shown on Home, Sermons and Connect. */
+  socials: [
+    { id: 'yt', label: 'Watch on YouTube', url: '', icon: 'youtube', description: 'Full sermons & live services' }, // TODO
+    { id: 'sp', label: 'Listen on Spotify', url: '', icon: 'spotify', description: 'Messages on the go' }, // TODO
+    { id: 'tg', label: 'Join on Telegram', url: '', icon: 'telegram', description: 'Daily teachings & resources' }, // TODO
+    { id: 'ig', label: 'Follow on Instagram', url: '', icon: 'instagram', description: 'Inspiration & updates' }, // TODO
+  ] as LinkItem[],
+
+  archive: [
+    { id: 'a1', label: 'Audio Sermon Archive', url: '', icon: 'archive', description: '500+ messages' }, // TODO: same as sermonArchive.url
+    { id: 'a2', label: 'Hagin Channel (Telegram)', url: '', icon: 'telegram', description: 'In honor of Kenneth E. Hagin' }, // TODO
+    { id: 'a3', label: 'Theological Resources (Telegram)', url: '', icon: 'telegram', description: 'Doctrinal materials from renowned theologians' }, // TODO
+  ] as LinkItem[],
+
+  /**
+   * Individual sermons to feature in the app (optional). While this list is
+   * empty, the Sermons screen shows the archive and platform links instead.
+   * Example:
+   * { id: 's1', title: 'The Voice of Honor', date: '2026-09-20', series: 'Honour',
+   *   scripture: 'Romans 13:7', summary: '…', youtubeId: 'dQw4w9WgXcQ' },
+   */
+  sermons: [] as Sermon[],
+
+  quotes: [
+    { id: 'q1', text: 'Behind every successful man, there is an influence.' },
+    { id: 'q2', text: 'Packaging will take you to the market, but quality is what will keep you there.' },
+    { id: 'q3', text: "A hospital without doctors and nurses is not even a hospital, it's a pending mortuary; a church without spiritual leaders is a club." },
+    { id: 'q4', text: 'After many years, you will look like your decisions.' },
+    { id: 'q5', text: 'After we’re gone, we’ll be remembered for two things: the problems we solve and the ones we create. I want to be remembered for both!' },
+    { id: 'q6', text: 'Age is not just a number! It is an indication of the experience of wasted years or used years... Value the aged, they have lessons you can learn from.' },
+  ] as Quote[],
+  quoteSource: 'AFM',
+
+  books: [
+    {
+      id: 'maker-of-men',
+      title: 'The Maker of Men',
+      description: 'A call to raise and become men of substance, shaped by God for purpose, leadership and lasting impact.', // TODO: official blurb
+      cover: require('../../assets/images/book-maker-of-men.jpg'),
+      amazonUrl: amazonSearch('The Maker of Men'), // TODO: exact Amazon product link
+    },
+    {
+      id: '1001-scriptures',
+      title: '1001 Scriptures',
+      subtitle: 'Genesis – Revelation',
+      description: 'A carefully curated journey through 1001 scriptures from Genesis to Revelation, to strengthen your faith and doctrinal foundation.', // TODO: official blurb
+      cover: require('../../assets/images/book-1001-scriptures.jpg'),
+      amazonUrl: amazonSearch('1001 Scriptures Genesis Revelation'), // TODO: exact Amazon product link
+    },
+    {
+      id: 'voice-of-honor',
+      title: 'The Voice of Honor',
+      subtitle: 'Honour and Dishonour',
+      description: 'An exploration of honour and dishonour — how honour opens doors, and how dishonour closes them.', // TODO: official blurb
+      cover: require('../../assets/images/book-voice-of-honor.jpg'),
+      amazonUrl: amazonSearch('The Voice of Honor Honour and Dishonour'), // TODO: exact Amazon product link
+    },
+  ] as Book[],
+
+  fragrances: {
+    brandName: 'House of Azandunah',
+    brandStory: 'A luxury fragrance brand founded by Prophet Micah Felix Azandunah — crafted as a symbol of excellence.',
+    shopUrl: '', // TODO: online shop link for the whole collection
+    // TODO: replace these placeholder products with the real fragrances, photos, prices and links
+    items: [
+      {
+        id: 'f1',
+        name: 'Signature Scent',
+        tagline: 'Product details coming soon',
+        description: 'Add the fragrance description, notes, size, price and a photo in src/content/ministry.ts.',
+        buyUrl: '',
+      },
+      {
+        id: 'f2',
+        name: 'Signature Scent II',
+        tagline: 'Product details coming soon',
+        description: 'Add the fragrance description, notes, size, price and a photo in src/content/ministry.ts.',
+        buyUrl: '',
+      },
+    ] as Fragrance[],
+  },
+};
