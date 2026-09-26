@@ -26,7 +26,7 @@ Text messages and AI writing are optional. Leave them out and everything else st
 4. **Storage → brand** bucket: upload `supabase/brand/afm.jpg`, named exactly `afm.jpg`. It's the photo at the top of every newsletter.
 
 ## 2. Email (Brevo)
-1. Sign up at https://www.brevo.com, then **Senders & IP → Senders**: add and verify the address emails come from.
+1. Sign up at https://www.brevo.com, then **Senders & IP → Senders**: add and verify the address emails come from. For now that's **princeanim88@gmail.com**; switch to the ministry address later by verifying it in Brevo and updating `NEWSLETTER_FROM_EMAIL`.
    - Email providers increasingly reject bulk mail sent "from" a free @gmail.com address. For reliable delivery, use an address on the ministry's own domain (for example `news@theafmhub.org`, a domain costs about $10/year) and verify the domain in Brevo. Replies still go to theafmfamily@gmail.com.
 2. **SMTP & API → API keys**: create a key (used for newsletters).
 3. **SMTP & API → SMTP**: note the SMTP login and create an SMTP key (used for account emails).
@@ -47,7 +47,7 @@ The app asks people to type a code, which works reliably in phone apps. In Supab
 - **Email**: on, with **Confirm email** on.
 - **Phone** (text-message codes): turn on and choose **Twilio**. Enter your Account SID, Auth Token and Messaging Service SID (from https://console.twilio.com).
 - **Google**:
-  1. At https://console.cloud.google.com, create a project, then go to **APIs & Services → OAuth consent screen**. Choose External, app name `The AFM HUB`, support email theafmfamily@gmail.com.
+  1. At https://console.cloud.google.com, create a project, then go to **APIs & Services → OAuth consent screen**. Choose External, app name `The AFM HUB`, support email princeanim88@gmail.com.
   2. **Credentials → Create credentials → OAuth client ID → Web application**. Under Authorized redirect URIs add `https://<your-project>.supabase.co/auth/v1/callback`.
   3. Paste the Client ID and Client Secret into Supabase's Google provider.
 - **Authentication → URL Configuration → Redirect URLs**: add `afmhub://auth-callback` and `exp://**`. The second one is for testing in Expo Go.
@@ -75,12 +75,14 @@ npx supabase functions deploy unsubscribe --no-verify-jwt
 After changing the ministry's details in `src/content/ministry.ts` (links, PayPal, theme), run `node scripts/build-newsletter-brand.js` and deploy again so newsletters match.
 
 ## 6. Make the owner account the admin
-1. In the app: **More → Sign in → Create account** with theafmfamily@gmail.com and confirm the code.
+The owner is **princeanim88@gmail.com**. More owners can be added the same way, for example the ministry address once it's available.
+1. In the app: **More → Sign in → Create account** with princeanim88@gmail.com and confirm the code.
 2. In Supabase **SQL Editor**, run:
    ```sql
    update public.profiles set is_admin = true
-   where id = (select id from auth.users where email = 'theafmfamily@gmail.com');
+   where id = (select id from auth.users where email = 'princeanim88@gmail.com');
    ```
+   To add another admin later, run it again with their email. To remove one, use `is_admin = false`.
 3. Reopen **More**. **Owner dashboard** now appears. Upload a flyer, tap **Write it with AI** or type the message, tap **Email me a preview**, then **Publish & send**.
 
 ## 7. Push notifications in store builds

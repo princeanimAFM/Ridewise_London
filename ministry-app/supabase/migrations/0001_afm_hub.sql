@@ -235,8 +235,8 @@ create policy "storage: admin delete" on storage.objects for delete to authentic
 
 -- ---------------------------------------------------------------------------
 -- AFTER you have signed up in the app with the owner's account, make it the
--- admin by running this line (change the email if needed):
+-- admin by running this line (change the email to add or switch owners):
 --
 --   update public.profiles set is_admin = true
---   where id = (select id from auth.users where email = 'theafmfamily@gmail.com');
+--   where id = (select id from auth.users where email = 'princeanim88@gmail.com');
 -- ---------------------------------------------------------------------------
