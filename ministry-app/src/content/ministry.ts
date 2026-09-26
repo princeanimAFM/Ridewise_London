@@ -103,9 +103,9 @@ export const ministry = {
     quotes: require('../../assets/photos/micah-white-shirt.jpg') as ImageSource,
     sermons: require('../../assets/photos/micah-red-suit-full.jpg') as ImageSource,
   },
-  appShareUrl: '', // TODO: App Store / Play Store / website link used by "Share App"
-  // Web address of docs/privacy.html once hosted (needed for the App Store and Google Play listings)
-  privacyPolicyUrl: '',
+  appShareUrl: 'https://afm-hub.expo.app', // website link used by "Share App"
+  // Privacy policy page on the website (needed for the App Store and Google Play listings)
+  privacyPolicyUrl: 'https://afm-hub.expo.app/privacy.html',
 
   about: {
     headline: 'About the Ministry',
