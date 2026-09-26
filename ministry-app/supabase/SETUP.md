@@ -75,7 +75,7 @@ npx supabase functions deploy unsubscribe --no-verify-jwt
 After changing the ministry's details in `src/content/ministry.ts` (links, PayPal, theme), run `node scripts/build-newsletter-brand.js` and deploy again so newsletters match.
 
 ## 6. Make the owner account the admin
-The owner is **princeanim88@gmail.com**. More owners can be added the same way, for example the ministry address once it's available.
+The owner is **princeanim88@gmail.com**. `supabase/migrations/0002_owner_admin.sql` makes that address admin automatically once its email is confirmed, so steps 1–2 below are only needed for other owners. More owners can be added the same way, for example the ministry address once it's available.
 1. In the app: **More → Sign in → Create account** with princeanim88@gmail.com and confirm the code.
 2. In Supabase **SQL Editor**, run:
    ```sql
