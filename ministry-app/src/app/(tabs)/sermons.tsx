@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { ministry } from '@/content/ministry';
 import { useEpisodes } from '@/lib/podcast';
 import { sermonsByDate } from '@/lib/content';
@@ -32,6 +33,7 @@ export default function Sermons() {
         <Text style={styles.heroTitle}>Sermons & Teachings</Text>
         <Text style={styles.heroSub}>{episodes.length ? `${episodes.length} messages to play in the app` : '500+ audio messages'}</Text>
       </PhotoHero>
+      <Button label="Watch live services" icon="radio-outline" variant="outline" onPress={() => router.push('/live')} style={{ marginBottom: space.md }} />
       {episodes.length > 0 && (
         <View style={[styles.search, { backgroundColor: t.surface, borderColor: t.border }]}>
           <Ionicons name="search-outline" size={20} color={t.textMuted} />

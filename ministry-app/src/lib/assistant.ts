@@ -145,11 +145,40 @@ const intents: Intent[] = [
     }),
   },
   {
-    words: ['give', 'giving', 'donate', 'donation', 'offering', 'tithe'],
-    reply: () =>
-      ministry.contact.givingUrl
-        ? { text: 'Thank you for supporting the ministry! Tap below to give online.', actions: [{ label: 'Give', url: ministry.contact.givingUrl }] }
-        : { text: `Thank you for wanting to support the ministry! Online giving isn't in the app yet — please email ${email} and the team will guide you.`, actions: [go('Contact Us', '/connect')] },
+    words: ['give', 'giving', 'donate', 'donation', 'offering', 'offerings', 'tithe', 'paypal', 'momo', 'cashapp', 'bank', 'seed'],
+    phrases: ['cash app', 'mobile money', 'v cash'],
+    reply: () => ({
+      text: `Thank you for supporting the ministry! You can give by:\n${ministry.giving.methods.map((m) => `• ${m.label}: ${m.value}`).join('\n')}\nThe Give screen has copy buttons for each one.`,
+      actions: [go('Open Give', '/give'), { label: 'PayPal', url: ministry.contact.givingUrl }],
+    }),
+  },
+  {
+    words: ['live', 'stream', 'streaming', 'watch', 'service', 'services', 'church'],
+    phrases: ['live service', 'live stream'],
+    reply: () => ({ text: 'You can watch live services inside the app on the Live screen. When Prophet Micah is ministering live on YouTube, it plays there.', actions: [go('Watch Live', '/live'), go('Notifications', '/notifications')] }),
+  },
+  {
+    words: ['newsletter', 'subscribe', 'subscription', 'unsubscribe', 'updates'],
+    reply: () => ({
+      text: 'Subscribe to the AFM Newsletter to get announcements, flyers and upcoming programmes by email or text message. Every message has a one-tap unsubscribe link.',
+      actions: [go('Subscribe', '/subscribe'), go('Announcements', '/announcements')],
+    }),
+  },
+  {
+    words: ['announcement', 'announcements', 'programme', 'programmes', 'program', 'programs', 'event', 'events', 'flyer', 'upcoming'],
+    reply: () => ({ text: 'Upcoming programmes and flyers are on the Announcements screen.', actions: [go('Announcements', '/announcements'), go('Get them by email or text', '/subscribe')] }),
+  },
+  {
+    words: ['account', 'login', 'signin', 'sign', 'password', 'register', 'signup'],
+    reply: () => ({
+      text: 'You can create an account with your email, your Google account or your phone number from More → Sign in. If you forget your password, tap "Forgot password?" and we will email you a code.',
+      actions: [go('Sign in', '/account'), go('Reset password', '/account/forgot')],
+    }),
+  },
+  {
+    words: ['theme', 'year'],
+    phrases: ['year of the blessing'],
+    reply: () => ({ text: `Our theme for ${ministry.themeOfTheYear.year} is "${ministry.themeOfTheYear.title}".`, actions: [go('About Ministry', '/about')] }),
   },
   {
     words: ['archive', 'hagin'],

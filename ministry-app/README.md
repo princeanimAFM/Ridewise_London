@@ -13,6 +13,12 @@ It replaces the earlier Adalo version.
 | **Quotes** | 51 quotes by AFM with search, a daily Quote of the Day, and a Share button on each |
 | **Store** | AFM Books (exact Amazon links) and House of Azanduna fragrances |
 | **More** | AFM Assistant, About Ministry (Mission Statement), Biography, The AFM Handbook, Archive, Contact Us, Prayer Request, Share App, Privacy Policy |
+| **Live** | Live services from YouTube (@thebrandmicah), streamed inside the app |
+| **Give** | PayPal, Cash App, MTN MoMo, Telecel Cash and Fidelity Bank details, with copy buttons |
+| **Accounts** | Optional sign-in with email and password, Google, or a text-message code; password reset by emailed code |
+| **Newsletter** | Subscribe by email and/or text; every message greets the subscriber by first name |
+| **Owner dashboard** | Upload a flyer, let AI write the message, then send by email, text and app notification |
+| **Notifications** | A daily AFM quote, plus announcement alerts |
 | **AFM Assistant** | A chat helper that answers common questions instantly and opens the right screen. It can also answer anything else with AI once the server in `server/` is deployed |
 
 ## Editing content
@@ -39,6 +45,10 @@ the in-app logo, app icon, Android icon, splash image and favicon.
 
 Put new photos in `assets/photos/` and update the `photos` section in
 `src/content/ministry.ts`.
+
+### Accounts, newsletter, notifications (backend)
+
+See [`supabase/SETUP.md`](supabase/SETUP.md).
 
 ### AI for the assistant
 

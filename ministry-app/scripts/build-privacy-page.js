@@ -15,7 +15,7 @@ new Function('module', 'exports', js)(mod, mod.exports);
 const p = mod.exports.privacy;
 
 const esc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const link = (s) => esc(s).replace(/([\w.+-]+@[\w-]+\.[\w.]+)/g, '<a href="mailto:$1">$1</a>');
+const link = (s) => esc(s).replace(/([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/g, '<a href="mailto:$1">$1</a>');
 
 const para = (b) => `  <p>${link(b)}</p>`;
 const section = (s) =>

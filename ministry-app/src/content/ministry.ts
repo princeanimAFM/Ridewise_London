@@ -86,6 +86,8 @@ export const ministry = {
   name: 'The AFM HUB',
   shortName: 'AFM',
   minister: 'Prophet Micah Felix Azanduna (D.D)',
+  /** Theme for the year — shown on Home and in every newsletter. Update each new year. */
+  themeOfTheYear: { year: '2026', title: 'Our Year of the Blessing' },
   tagline: 'Raising spiritually grounded and purpose-driven men and women.',
   logo: require('../../assets/images/logo.png') as ImageSource,
   heroImage: require('../../assets/images/prophet-micah.jpg') as ImageSource | undefined,
@@ -141,9 +143,10 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
   },
 
   contact: {
-    email: 'princeanim88@gmail.com', // receives Contact Us messages and prayer requests
+    email: 'theafmfamily@gmail.com', // receives Contact Us messages and prayer requests
     whatsapp: '', // TODO: international format without "+", e.g. "233201234567"
-    givingUrl: '', // TODO: online giving link, or '' to hide the Give button
+    // Main online giving link (PayPal). Shown as the Give button and in every newsletter.
+    givingUrl: 'https://www.paypal.com/paypalme/AfmDiaspora',
   },
 
   /**
@@ -155,6 +158,44 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
     feedUrl: 'https://feed.podbean.com/theafmpodcast/feed.xml',
     pageUrl: 'https://theafmpodcast.podbean.com/',
     shareUrl: 'https://www.podbean.com/pa/pbblog-hshtw-14f15f9',
+  },
+
+  /**
+   * Live services on YouTube. The Live screen plays whatever is streaming on
+   * the channel right now. Optional: add the channel ID (starts with "UC",
+   * shown in YouTube Studio → Settings → Channel → Advanced) to use YouTube's
+   * embedded player instead of the mobile YouTube page.
+   */
+  live: {
+    youtubeHandle: 'thebrandmicah',
+    channelId: '',
+  },
+
+  /**
+   * Accounts, newsletter and announcements run on Supabase (see supabase/SETUP.md).
+   * Paste your project's URL and "anon public" key here. The anon key is safe
+   * to include in the app — the database's security rules protect the data.
+   * While these are empty, those features show "coming soon".
+   */
+  backend: {
+    supabaseUrl: '',
+    supabaseAnonKey: '',
+  },
+
+  /**
+   * Ways to give offerings. Shown on the Give screen (with copy buttons) and in
+   * every newsletter. `url` makes the method tappable; leave it out for
+   * account numbers people send to from their own app.
+   */
+  giving: {
+    intro: 'Thank you for partnering with the ministry. Your offerings support the preaching of the Gospel, conferences, mentorship and outreach.',
+    methods: [
+      { id: 'paypal', label: 'PayPal', value: '@AfmDiaspora', url: 'https://www.paypal.com/paypalme/AfmDiaspora', note: 'Card or PayPal balance, from anywhere' },
+      { id: 'cashapp', label: 'Cash App', value: '$AsuamahRuth', url: 'https://cash.app/$AsuamahRuth', note: 'United States' },
+      { id: 'momo', label: 'MTN Mobile Money (MoMo)', value: '0554405880', note: 'Ghana' },
+      { id: 'vcash', label: 'Telecel Cash (V Cash)', value: '0506023820', note: 'Ghana' },
+      { id: 'bank', label: 'Bank transfer — Fidelity Bank', value: '2030801199719', note: 'Account number' }, // TODO: add the account name for the bank transfer
+    ] as { id: string; label: string; value: string; url?: string; note?: string }[],
   },
 
   /**
@@ -189,8 +230,8 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
     { id: 'a1', label: 'The AFM Podcast (Podbean)', url: 'https://theafmpodcast.podbean.com/', icon: 'podcast', description: '500+ audio messages' },
     { id: 'a2', label: 'YouTube Channel', url: 'https://youtube.com/@thebrandmicah', icon: 'youtube', description: 'Video sermons & teachings' },
     { id: 'a3', label: 'Telegram: Rabbi Micah', url: 'https://t.me/rabbimicah', icon: 'telegram', description: 'Teachings & resources' },
-    { id: 'a4', label: 'Hagin Channel (Telegram)', url: '', icon: 'telegram', description: 'In honor of Kenneth E. Hagin' }, // TODO
-    { id: 'a5', label: 'Theological Resources (Telegram)', url: '', icon: 'telegram', description: 'Doctrinal materials from renowned theologians' }, // TODO
+    { id: 'a4', label: 'Hagin Channel (Telegram)', url: 'https://t.me/KennethHagin', icon: 'telegram', description: 'In honor of Kenneth E. Hagin' },
+    { id: 'a5', label: 'Theological Channel (Telegram)', url: 'https://t.me/theologicalchannel', icon: 'telegram', description: 'Doctrinal materials from renowned theologians' },
   ] as LinkItem[],
 
   /**

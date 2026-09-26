@@ -17,17 +17,17 @@ export const privacy = {
   appName: 'The AFM HUB',
   publisher: 'The AFM Family Network (Alleluia Faith Mission)',
   effectiveDate: '26 September 2026',
-  contactEmail: 'princeanim88@gmail.com',
+  contactEmail: 'theafmfamily@gmail.com',
 
   summary:
-    'The AFM HUB does not require an account, does not show ads, does not track you across apps or websites, and does not sell or share your personal information. The only personal information we receive is what you choose to send us, such as a prayer request or a question to the AFM Assistant.',
+    'The AFM HUB can be used without an account. It does not show ads, does not track you across apps or websites, and does not sell or share your personal information. We only receive what you choose to give us: an optional account, a newsletter subscription, a prayer request, or a question to the AFM Assistant.',
 
   sections: [
     {
       heading: '1. Who we are',
       body: [
         'The AFM HUB ("the app") is published by The AFM Family Network (Alleluia Faith Mission) ("we", "us", "our"), the ministry of Prophet Micah Felix Azanduna (D.D). We are responsible for the personal information described in this policy (the "data controller" under EU and UK law).',
-        'Contact for all privacy matters: princeanim88@gmail.com.',
+        'Contact for all privacy matters: theafmfamily@gmail.com.',
       ],
     },
     {
@@ -40,13 +40,17 @@ export const privacy = {
       heading: '3. Information we collect',
       body: ['a) Information you choose to give us:'],
       bullets: [
+        'Account (optional): your first and last name, email address and/or mobile number, and a password (stored only in encrypted, hashed form). If you sign in with Google, we receive your name and email address from Google.',
+        'Newsletter subscription (optional): your first name, email address and/or mobile number, and whether you want announcements by email, text message or both.',
         'Prayer requests and emails: your name (optional), your email address, and the content of your message, when you send a prayer request or contact us by email.',
         'Questions to the AFM Assistant: the text of your questions and the recent messages in that chat, when a question needs the AI service to answer it.',
+        'Notifications (optional): if you allow notifications, your phone’s push address (a random identifier from Apple or Google) so we can send announcements. The daily AFM quote is scheduled on your phone and sends us nothing.',
         'Launch notifications: your email address, if you email us to be told when a product such as the House of Azanduna collection launches.',
+        'Offerings: giving is done through PayPal, Cash App, mobile money or your bank, outside the app. We receive the payment information those services share with account holders (such as your name and the amount); the app itself does not collect card or bank details.',
       ],
       after: [
         'b) Technical information handled automatically: when the app loads sermons or answers an Assistant question, the services involved (see section 6) receive standard technical information such as your IP address, device type and the time of the request, as happens with any internet connection.',
-        'c) Information we do not collect: we do not collect your precise or approximate location, contacts, photos, microphone or camera input, health information, payment details, advertising identifiers or browsing history. The app has no accounts, no analytics or crash-reporting tools, and no advertising.',
+        'c) Information we do not collect: we do not collect your precise or approximate location, contacts, photos (other than flyer images the ministry’s owner chooses to upload), microphone or camera input, health information, payment details, advertising identifiers or browsing history. Accounts are optional, and the app has no analytics or crash-reporting tools and no advertising.',
       ],
     },
     {
@@ -54,6 +58,8 @@ export const privacy = {
       bullets: [
         'To read, pray over and respond to prayer requests and messages you send us.',
         'To answer your questions in the AFM Assistant.',
+        'To create and secure your account, including sending sign-in, confirmation and password-reset codes by email or text message.',
+        'To send you the newsletter you subscribed to, addressed to you by first name, with ministry announcements, flyers and upcoming programmes.',
         'To send you a launch notice you asked for.',
         'To keep the app and its services working securely, including preventing abuse (for example, limiting how many Assistant questions can be sent each minute).',
         'To meet legal obligations.',
@@ -63,7 +69,8 @@ export const privacy = {
     {
       heading: '5. Legal bases (EU and UK users)',
       bullets: [
-        'Consent: when you choose to send a prayer request, email or Assistant question. You can withdraw consent at any time by contacting us; this does not affect earlier processing.',
+        'Consent: when you subscribe to the newsletter or choose to send a prayer request, email or Assistant question. You can withdraw consent at any time (every newsletter has an unsubscribe link); this does not affect earlier processing.',
+        'Contract: to provide your account when you create one.',
         'Legitimate interests: to run the app securely and prevent abuse, where these interests are not overridden by your rights.',
         'Legal obligation: where we must keep or disclose information by law.',
       ],
@@ -75,7 +82,12 @@ export const privacy = {
       heading: '6. Who we share information with',
       body: ['We do not sell or rent personal information, and we do not share it for targeted advertising. We share information only with service providers that help run the app, under their own terms and privacy commitments:'],
       bullets: [
-        'Anthropic (Claude), which writes AFM Assistant answers. It processes questions under its commercial terms and does not use them to train its models by default.',
+        'Supabase, which hosts accounts, newsletter subscriptions and announcements.',
+        'Brevo, which delivers newsletter and account emails.',
+        'Twilio, which delivers text messages (sign-in codes and announcements, if you choose them).',
+        'Google, if you choose "Continue with Google" to sign in.',
+        'Expo, Apple and Google, which deliver push notifications to your phone if you allow them.',
+        'Anthropic (Claude), which writes AFM Assistant answers and helps the ministry draft announcements. It processes this text under its commercial terms and does not use it to train its models by default.',
         'Cloudflare, which hosts the AFM Assistant service.',
         'Podbean, which hosts and streams The AFM Podcast.',
         'Our email provider, which delivers and stores emails you send us.',
@@ -95,6 +107,9 @@ export const privacy = {
         'Prayer requests and emails: for as long as needed to pray with you and respond, and no longer than 24 months, unless you ask us to delete them sooner.',
         'AFM Assistant chats: we do not keep a history. The conversation is cleared from the app when you close the Assistant. Our service providers may keep request logs for a short period for security and abuse prevention, under their own policies.',
         'Launch-notification emails: until the launch notice is sent or you ask us to stop.',
+        'Accounts: until you ask us to delete your account.',
+        'Push addresses: until you turn off announcement notifications, uninstall the app, or the address stops working.',
+        'Newsletter subscriptions: until you unsubscribe or ask us to delete them. A record of which announcements were sent to you is kept for up to 12 months.',
       ],
     },
     {
@@ -117,20 +132,21 @@ export const privacy = {
       ],
       after: [
         'California residents: you have the right to know what personal information we collect, use and disclose; to request its deletion or correction; and not to be discriminated against for using these rights. We do not sell or share personal information as defined by the CCPA/CPRA, and we do not use sensitive personal information to infer characteristics about you.',
-        'To use any of these rights, email princeanim88@gmail.com. We will reply within one month (or within the time your local law requires) and may ask you to confirm your identity first.',
+        'To use any of these rights, email theafmfamily@gmail.com. We will reply within one month (or within the time your local law requires) and may ask you to confirm your identity first.',
+        'Deleting your account: in the app go to More → My Account → Request account deletion, or email theafmfamily@gmail.com with the subject "Delete my AFM HUB account" from the address you signed up with. We delete your account, profile and newsletter subscription within 30 days.',
       ],
     },
     {
       heading: '11. Children',
       body: [
-        'The app is suitable for all ages but is not directed at children under 13, and we do not knowingly collect personal information from children under 13 (or under 16 where local law requires). Children should ask a parent or guardian before sending a prayer request or using the AFM Assistant. If you believe a child has sent us personal information, contact us and we will delete it.',
+        'The app is suitable for all ages but is not directed at children under 13, and we do not knowingly collect personal information from children under 13 (or under 16 where local law requires). You must be at least 13 to create an account or subscribe to the newsletter. Children should ask a parent or guardian before sending a prayer request or using the AFM Assistant. If you believe a child has sent us personal information, contact us and we will delete it.',
       ],
     },
     {
       heading: '12. Links and future features',
       body: [
         'The app links to other services such as YouTube, Amazon and social media. We are not responsible for their privacy practices.',
-        'Some features are planned, such as the House of Azanduna shop. If a new feature collects additional information (for example, orders, payments or notifications), we will update this policy before it launches and, where required, ask for your consent.',
+        'Some features are planned, such as the House of Azanduna shop. If a new feature collects additional information (for example, orders), we will update this policy before it launches and, where required, ask for your consent.',
       ],
     },
     {
@@ -141,7 +157,7 @@ export const privacy = {
     },
     {
       heading: '14. Contact us',
-      body: ['For questions, requests or complaints about privacy, email princeanim88@gmail.com.'],
+      body: ['For questions, requests or complaints about privacy, email theafmfamily@gmail.com.'],
     },
   ] as PrivacySection[],
 };

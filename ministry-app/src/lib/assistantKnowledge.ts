@@ -83,10 +83,29 @@ export function buildKnowledge(): string {
   add('## Quotes by AFM', ...m.quotes.map((q) => `- "${q.text}"`));
 
   add(
+    `## Theme for ${m.themeOfTheYear.year}`,
+    `"${m.themeOfTheYear.title}"`,
+  );
+
+  add(
+    '## Giving offerings (Give screen: More → Give an Offering)',
+    m.giving.intro,
+    ...m.giving.methods.map((g) => `- ${g.label}: ${g.value}${g.note ? ` (${g.note})` : ''}`),
+  );
+
+  add(
+    '## Newsletter, announcements and accounts',
+    '- Newsletter: More → Newsletter. Subscribe with first name plus email and/or mobile number; choose email, text messages or both. Every message greets you by first name and has an unsubscribe link.',
+    '- Announcements: More → Announcements shows upcoming programmes and flyers.',
+    '- Live services: the Live screen (Home → Watch Live Services, or More → Live Services) streams services from YouTube @thebrandmicah inside the app.',
+    '- Notifications: More → Notifications turns on a daily AFM quote and announcement alerts.',
+    '- Accounts (optional): More → Sign in. Sign in with email and password, Google, or a text-message code. "Forgot password?" emails a 6-digit code. To delete an account: More → My Account → Request account deletion.',
+  );
+
+  add(
     '## Contact',
     `Email: ${m.contact.email}`,
     m.contact.whatsapp ? `WhatsApp: +${m.contact.whatsapp}` : 'WhatsApp: not listed yet.',
-    m.contact.givingUrl ? `Giving: ${m.contact.givingUrl}` : 'Online giving: not set up in the app yet; email the contact address to support the ministry.',
     m.about.serviceTimes.length
       ? `Service times: ${m.about.serviceTimes.map((s) => `${s.day} ${s.detail}`).join('; ')}`
       : 'Service times and church address: not listed in the app yet.',

@@ -27,7 +27,8 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
-      ]
+      ],
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.afm.hub"
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -48,6 +49,21 @@
         "expo-audio",
         {
           "enableBackgroundPlayback": true
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "The AFM HUB uses your photos only when you choose a flyer to upload in the Owner Dashboard.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2D6A3E"
         }
       ]
     ],
