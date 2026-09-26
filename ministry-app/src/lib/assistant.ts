@@ -138,9 +138,9 @@ const intents: Intent[] = [
     reply: () => ({ text: `You can reach the ministry by email at ${email}.`, actions: [go('Contact Us', '/connect'), { label: 'Send an email', url: `mailto:${email}` }] }),
   },
   {
-    words: ['youtube', 'telegram', 'spotify', 'instagram', 'facebook', 'social', 'follow', 'channel'],
+    words: ['youtube', 'telegram', 'spotify', 'instagram', 'facebook', 'tiktok', 'social', 'follow', 'channel'],
     reply: () => ({
-      text: `Follow Prophet Micah on YouTube (@thebrandmicah), Telegram (@rabbimicah), Facebook and more. All the links are on the Contact Us screen.`,
+      text: `Follow Prophet Micah on YouTube (@thebrandmicah), Instagram (@thebrandafm), TikTok (@dr_micah_azanduna and @rabbiazanduna), Telegram (@rabbimicah) and Facebook. All the links are on the Contact Us screen.`,
       actions: [go('Contact Us', '/connect')],
     }),
   },

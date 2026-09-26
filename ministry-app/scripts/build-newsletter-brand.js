@@ -18,7 +18,7 @@ const brand = {
   giving: m.giving.methods.map(({ label, value, url }) => ({ label, value, url: url || '' })),
   appUrl: m.appShareUrl || '',
   sermonsUrl: m.podcast.pageUrl,
-  socials: m.socials.filter((s) => s.url).map((s) => ({ label: s.label.replace(/^(Watch on|Listen on|Follow on|Join on) /, ''), url: s.url })),
+  socials: m.socials.filter((s) => s.url).map((s) => ({ label: s.label.replace(/^(Watch on|Listen on|Follow on|Join on) /, '').replace(/^TikTok: .*/, (l) => `TikTok (${s.description})`), url: s.url })),
 };
 fs.writeFileSync(path.join(root, 'supabase/functions/_shared/brand.json'), JSON.stringify(brand, null, 2) + '\n');
 console.log('Wrote supabase/functions/_shared/brand.json');
