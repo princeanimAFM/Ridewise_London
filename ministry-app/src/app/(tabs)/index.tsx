@@ -100,7 +100,7 @@ export default function Home() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: t.text }]}>{ministry.minister}</Text>
             <Text numberOfLines={3} style={{ color: t.textMuted, marginTop: 4 }}>
-              Prophet, theologian, apologist, author and founder of the AFM Family Network.
+              Teaching prophet, philanthropist, theologian and founder of the Alleluia Faith Mission Global Assembly and the AFM Family Network.
             </Text>
             <Text style={{ color: t.accent, fontWeight: '700', marginTop: space.sm }}>Read his biography →</Text>
           </View>

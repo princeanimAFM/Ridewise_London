@@ -26,8 +26,13 @@ export default function Biography() {
       </PhotoHero>
 
       <View style={styles.body}>
-        <Text style={[styles.intro, { color: t.text }]}>{biography.intro}</Text>
+        {biography.intro.map((p, i) => (
+          <Text key={i} style={[i === 0 ? styles.intro : styles.introMore, { color: t.text }]}>
+            {p}
+          </Text>
+        ))}
 
+        <View style={{ height: space.sm }} />
         <View style={[styles.facts, { backgroundColor: t.surface, borderColor: t.border }]}>
           {biography.facts.map((f, i) => (
             <View key={f.value} style={[styles.fact, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: t.border }]}>
@@ -88,7 +93,8 @@ const styles = StyleSheet.create({
   roleText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
   knownAs: { color: '#DCE8DC', fontStyle: 'italic', marginTop: space.md },
   body: { padding: space.md },
-  intro: { fontFamily: fonts.serif, fontSize: 19, lineHeight: 29, marginBottom: space.lg },
+  intro: { fontFamily: fonts.serif, fontSize: 20, lineHeight: 30, marginBottom: space.md },
+  introMore: { fontSize: 16, lineHeight: 24, marginBottom: space.md },
   facts: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, marginBottom: space.lg },
   fact: { paddingHorizontal: space.md, paddingVertical: space.sm + 2 },
   factLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 1.2 },
