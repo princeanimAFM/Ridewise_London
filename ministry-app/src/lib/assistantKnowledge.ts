@@ -78,6 +78,7 @@ export function buildKnowledge(): string {
     `## ${m.fragrances.brandName} (Store tab)`,
     m.fragrances.brandStory,
     m.fragrances.launched ? 'The collection is available in the Store tab.' : 'The brand has not launched yet. There are no products, prices or ordering yet; people can ask to be told at launch from the Store tab.',
+    m.fragrances.launched ? '' : `Sneak peek of upcoming scents (labelled "Rabbi Azanduna"): ${[...new Set(m.fragrances.previewPhotos.map((p) => p.name))].join(', ')}. No prices or release date yet.`,
   );
 
   add('## Quotes by AFM', ...m.quotes.map((q) => `- "${q.text}"`));

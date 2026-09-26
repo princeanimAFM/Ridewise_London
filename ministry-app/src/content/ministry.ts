@@ -194,7 +194,7 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
       { id: 'cashapp', label: 'Cash App', value: '$AsuamahRuth', url: 'https://cash.app/$AsuamahRuth', note: 'United States' },
       { id: 'momo', label: 'MTN Mobile Money (MoMo)', value: '0554405880', note: 'Ghana' },
       { id: 'vcash', label: 'Telecel Cash (V Cash)', value: '0506023820', note: 'Ghana' },
-      { id: 'bank', label: 'Bank transfer — Fidelity Bank', value: '2030801199719', note: 'Account number' }, // TODO: add the account name for the bank transfer
+      { id: 'bank', label: 'Bank transfer — Fidelity Bank', value: '2030801199719', note: 'Account name: Micah Felix Azanduna · Sunyani branch' },
     ] as { id: string; label: string; value: string; url?: string; note?: string }[],
   },
 
@@ -287,7 +287,13 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
      */
     launched: false,
     /** Photos shown as a "Sneak peek" on the Coming soon page before launch (files in assets/perfumes/). */
-    previewPhotos: [] as ImageSource[],
+    previewPhotos: [
+      { name: 'Excellent Spirit', image: require('../../assets/perfumes/excellent-spirit.jpg') },
+      { name: 'Miracle Oud', image: require('../../assets/perfumes/miracle-oud.jpg') },
+      { name: 'Green Pastures', image: require('../../assets/perfumes/green-pastures.jpg') },
+      { name: 'Man of God', image: require('../../assets/perfumes/man-of-god.jpg') },
+      { name: 'Man of God', image: require('../../assets/perfumes/man-of-god-label.jpg') },
+    ] as { name: string; image: ImageSource }[],
     items: [] as Fragrance[],
   },
 };
