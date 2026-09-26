@@ -286,6 +286,8 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
      *   image: require('../../assets/images/<photo>.jpg'), buyUrl: 'https://…' },
      */
     launched: false,
+    /** Photos shown as a "Sneak peek" on the Coming soon page before launch (files in assets/perfumes/). */
+    previewPhotos: [] as ImageSource[],
     items: [] as Fragrance[],
   },
 };

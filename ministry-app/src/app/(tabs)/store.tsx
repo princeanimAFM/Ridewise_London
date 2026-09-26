@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ministry } from '@/content/ministry';
@@ -71,6 +71,13 @@ export default function Store() {
               <Text style={[styles.soonKicker, { color: t.gold }]}>COMING SOON</Text>
               <Text style={styles.soonTitle}>{ministry.fragrances.brandName}</Text>
               <Text style={styles.soonText}>The collection is being prepared. Check back here for the launch.</Text>
+              {ministry.fragrances.previewPhotos.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.peek} contentContainerStyle={{ gap: space.sm, paddingHorizontal: 2 }}>
+                  {ministry.fragrances.previewPhotos.map((src, i) => (
+                    <Artwork key={i} uri={src} icon="sparkles" style={styles.peekPhoto} />
+                  ))}
+                </ScrollView>
+              )}
               <Button
                 label="Ask to be told at launch"
                 icon="mail-outline"
@@ -95,6 +102,8 @@ const styles = StyleSheet.create({
   soon: { borderRadius: 20, padding: space.lg, alignItems: 'center', gap: space.xs },
   soonKicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2, marginTop: space.sm },
   soonTitle: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', textAlign: 'center' },
+  peek: { alignSelf: 'stretch', marginTop: space.md },
+  peekPhoto: { width: 200, height: 250, borderRadius: radius.md },
   soonText: { color: '#DCE8DC', textAlign: 'center', marginTop: space.xs },
   tabs: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
