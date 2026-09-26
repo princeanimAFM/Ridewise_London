@@ -20,6 +20,21 @@ const Ctx = createContext<AuthContext | null>(null);
 
 WebBrowser.maybeCompleteAuthSession();
 
+// The Google redirect can reach both signInWithGoogle and the auth-callback screen;
+// a code can only be exchanged once, so share one exchange per code.
+const exchanges = new Map<string, Promise<void>>();
+export function completeGoogleSignIn(code: string) {
+  if (!supabase) return Promise.resolve();
+  let p = exchanges.get(code);
+  if (!p) {
+    p = supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+      if (error) throw error;
+    });
+    exchanges.set(code, p);
+  }
+  return p;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -61,8 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const errorDescription = typeof queryParams?.error_description === 'string' ? queryParams.error_description : undefined;
     if (errorDescription) throw new Error(errorDescription);
     if (!code) throw new Error('Google sign-in did not complete. Please try again.');
-    const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-    if (exchangeError) throw exchangeError;
+    await completeGoogleSignIn(code);
   };
 
   const value: AuthContext = {
