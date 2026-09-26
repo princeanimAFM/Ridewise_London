@@ -102,7 +102,8 @@ export const ministry = {
     sermons: require('../../assets/photos/micah-red-suit-full.jpg') as ImageSource,
   },
   appShareUrl: '', // TODO: App Store / Play Store / website link used by "Share App"
-  privacyPolicyUrl: '', // TODO: required by the App Store and Google Play
+  // Web address of docs/privacy.html once hosted (needed for the App Store and Google Play listings)
+  privacyPolicyUrl: '',
 
   about: {
     headline: 'About the Ministry',

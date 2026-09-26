@@ -27,7 +27,7 @@ export default function More() {
       <ListRow icon="share-social-outline" title="Share App" subtitle={`Invite others to ${ministry.name}`} onPress={shareApp} />
 
       <SectionHeader title="Legal" />
-      <ListRow icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => openLink(ministry.privacyPolicyUrl)} />
+      <ListRow icon="shield-checkmark-outline" title="Privacy Policy" onPress={() => router.push('/privacy')} />
 
       <Text style={{ color: t.textMuted, textAlign: 'center', marginTop: space.xl }}>
         {ministry.name} · v{Constants.expoConfig?.version ?? '1.0.0'}

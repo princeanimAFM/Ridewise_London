@@ -23,6 +23,7 @@ export default function RootLayout() {
         <Stack.Screen name="biography" options={{ title: 'Biography' }} />
         <Stack.Screen name="handbook" options={{ title: 'The AFM Handbook' }} />
         <Stack.Screen name="assistant" options={{ title: 'AFM Assistant' }} />
+        <Stack.Screen name="privacy" options={{ title: 'Privacy Policy' }} />
         <Stack.Screen name="book/[id]" options={{ title: 'Book' }} />
         <Stack.Screen name="fragrance/[id]" options={{ title: 'Fragrance' }} />
         <Stack.Screen name="about" options={{ title: 'About Ministry' }} />

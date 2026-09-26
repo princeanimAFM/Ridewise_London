@@ -25,6 +25,7 @@ Everything is in `src/content/`:
 | `quotes.ts` | The quotes. **To add one, add a line at the end of the list.** |
 | `biography.ts` | The Biography screen |
 | `handbook.ts` | The AFM Handbook screen |
+| `privacy.ts` | The Privacy Policy. Run `node scripts/build-privacy-page.js` after editing to update `docs/privacy.html` |
 
 Search for `TODO` to find details that still need filling in. Brand colours are in `src/theme.ts`.
 
@@ -63,5 +64,5 @@ npx eas-cli@latest submit --platform all
 ```
 
 You need an Apple Developer account ($99/year) and a Google Play Console account ($25 one-off).
-Both stores require a **Privacy Policy URL**: set `privacyPolicyUrl` in the content file.
+Both stores require a **Privacy Policy URL**. Host `docs/privacy.html` (for example on GitHub Pages or Netlify, or share the published page publicly) and put its address in the store listings and in `privacyPolicyUrl`.
 Update the bundle identifier (`com.afm.hub`) in `app.json` if you prefer a different one.
