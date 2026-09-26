@@ -70,13 +70,19 @@ function SignIn() {
         Sign in to manage your newsletter and stay connected with the AFM family.
       </Body>
 
-      <Button label="Continue with Google" icon="logo-google" variant="outline" onPress={() => run(signInWithGoogle)} />
-      <Divider label="or" />
+      {ministry.backend.googleSignIn && (
+        <>
+          <Button label="Continue with Google" icon="logo-google" variant="outline" onPress={() => run(signInWithGoogle)} />
+          <Divider label="or" />
+        </>
+      )}
 
-      <View style={styles.tabs}>
-        <Chip label="Email" active={mode === 'email'} onPress={() => setMode('email')} />
-        <Chip label="Phone (text code)" active={mode === 'phone'} onPress={() => setMode('phone')} />
-      </View>
+      {ministry.backend.phoneSignIn && (
+        <View style={styles.tabs}>
+          <Chip label="Email" active={mode === 'email'} onPress={() => setMode('email')} />
+          <Chip label="Phone (text code)" active={mode === 'phone'} onPress={() => setMode('phone')} />
+        </View>
+      )}
 
       {!!error && <Notice kind="error">{error}</Notice>}
 

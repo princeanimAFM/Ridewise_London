@@ -180,6 +180,9 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
   backend: {
     supabaseUrl: '',
     supabaseAnonKey: '',
+    // Turn these on once set up in Supabase (see supabase/SETUP.md, step 4).
+    googleSignIn: false,
+    phoneSignIn: false,
   },
 
   /**

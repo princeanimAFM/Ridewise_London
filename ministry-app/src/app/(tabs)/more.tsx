@@ -17,7 +17,7 @@ export default function More() {
       <ListRow
         icon="person-circle-outline"
         title={session ? `Hello, ${displayName(profile, session)}` : 'Sign in or create account'}
-        subtitle={session ? 'My account & newsletter' : 'Email, Google or phone'}
+        subtitle={session ? 'My account & newsletter' : 'Manage your newsletter and more'}
         onPress={() => router.push('/account')}
       />
       {profile?.is_admin && <ListRow icon="megaphone-outline" title="Owner dashboard" subtitle="Upload flyers & send announcements" onPress={() => router.push('/admin')} />}
