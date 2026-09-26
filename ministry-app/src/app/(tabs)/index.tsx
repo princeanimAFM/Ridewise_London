@@ -1,4 +1,4 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -13,6 +13,7 @@ import { PhotoHero } from '@/components/PhotoHero';
 import { useEpisodes } from '@/lib/podcast';
 import { useAnnouncements } from '@/lib/announcements';
 import { backendReady } from '@/lib/supabase';
+import { openLink } from '@/lib/links';
 import { AnnouncementCard } from '@/components/AnnouncementCard';
 import { NotificationInvite } from '@/components/NotificationInvite';
 import { Artwork, IconName, Screen, SectionHeader } from '@/components/ui';
@@ -69,6 +70,22 @@ export default function Home() {
             </Pressable>
           ))}
         </View>
+
+        {Platform.OS === 'web' && !!ministry.playStoreUrl && (
+          <Pressable
+            onPress={() => openLink(ministry.playStoreUrl)}
+            style={({ pressed }) => [styles.assistant, { backgroundColor: t.primary, borderColor: t.primary }, pressed && { opacity: 0.85 }]}
+          >
+            <View style={[styles.assistantIcon, { backgroundColor: t.gold }]}>
+              <Ionicons name="logo-google-playstore" size={22} color="#1A1A1A" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 16 }}>Get the app on your phone</Text>
+              <Text style={{ color: '#DCE8DC', marginTop: 2 }}>Free on Google Play, with notifications and offline quotes</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#DCE8DC" />
+          </Pressable>
+        )}
 
         <Pressable
           onPress={() => router.push('/live')}
