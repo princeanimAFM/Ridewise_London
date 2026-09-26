@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "The AFM Hub",
+    "name": "The AFM HUB",
     "slug": "afm-hub",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -33,6 +33,12 @@
           "image": "./assets/splash-icon.png",
           "imageWidth": 200,
           "backgroundColor": "#FFFFFF"
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "enableBackgroundPlayback": true
         }
       ]
     ]

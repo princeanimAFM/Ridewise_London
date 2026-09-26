@@ -69,6 +69,7 @@ export type LinkItem = {
     | 'x'
     | 'telegram'
     | 'spotify'
+    | 'apple'
     | 'podcast'
     | 'globe'
     | 'whatsapp'
@@ -84,27 +85,27 @@ const amazonSearch = (title: string) =>
   `https://www.amazon.co.uk/s?k=${encodeURIComponent(`${title} ${author}`)}`;
 
 export const ministry = {
-  name: 'The AFM Hub',
+  name: 'The AFM HUB',
   shortName: 'AFM',
-  minister: 'Prophet Micah Felix Azandunah (D.D)',
+  minister: 'Prophet Micah Felix Azanduna (D.D)',
   tagline: 'Raising spiritually grounded and purpose-driven men and women.',
   logo: require('../../assets/images/logo.png') as ImageSource,
-  heroImage: undefined as ImageSource | undefined, // TODO: a clean photo of Prophet Azandunah (no text over it)
+  heroImage: require('../../assets/images/prophet-micah.jpg') as ImageSource | undefined,
+  portrait: require('../../assets/images/prophet-micah-portrait.jpg') as ImageSource,
   appShareUrl: '', // TODO: App Store / Play Store / website link used by "Share App"
   privacyPolicyUrl: '', // TODO: required by the App Store and Google Play
-  handbookUrl: '', // TODO: link to The AFM Handbook
 
   about: {
     headline: 'About the Ministry',
-    story: `Prophet Micah Felix Azandunah (D.D) is a prophet, theologian, apologist, author, and transformational leader whose influence reaches believers across the world. He is the founder of the AFM Family Network, the Alleluia Faith Mission Global Assembly, the Young and Useful Summit (YouUseMe), and The Great Gathering, all dedicated to raising spiritually grounded and purpose-driven men and women.
+    story: `Prophet Micah Felix Azanduna (D.D) is a prophet, theologian, apologist, author, and transformational leader whose influence reaches believers across the world. He is the founder of the AFM Family Network, the Alleluia Faith Mission Global Assembly, the Young and Useful Summit (YouUseMe), and The Great Gathering, all dedicated to raising spiritually grounded and purpose-driven men and women.
 
 He is the creator of the popular Hagin Channel on Telegram, established in honor of Kenneth E. Hagin, and also curates a respected theological resource channel on Telegram, providing doctrinal materials from renowned theologians to strengthen young Christians in their walk with God.
 
-A prolific author, Prophet Azandunah has written impactful books such as The 1001 Scriptures: Genesis to Revelation, The Maker of Men, and The Voice of Honor. His mentorship has shaped thousands globally, guiding them into clarity, maturity, and divine purpose.
+A prolific author, Prophet Azanduna has written impactful books such as The 1001 Scriptures: Genesis to Revelation, The Maker of Men, and The Voice of Honor. His mentorship has shaped thousands globally, guiding them into clarity, maturity, and divine purpose.
 
-Known for simplifying deep biblical truths with precision and grace, he is a seasoned transformologist whose teachings inspire change and build strong doctrinal foundations. He is also the founder of the luxury fragrance brand The House of Azandunah, and is widely recognized as The Brand AFM—a symbol of excellence, transformation, and divine assignment.
+Known for simplifying deep biblical truths with precision and grace, he is a seasoned transformologist whose teachings inspire change and build strong doctrinal foundations. He is also the founder of the luxury fragrance brand The House of Azanduna, and is widely recognized as The Brand AFM—a symbol of excellence, transformation, and divine assignment.
 
-Prophet Micah Felix Azandunah stands as a prophet, teacher, father, mentor, and change agent, committed to advancing the Kingdom with wisdom, integrity, and power.`,
+Prophet Micah Felix Azanduna stands as a prophet, teacher, father, mentor, and change agent, committed to advancing the Kingdom with wisdom, integrity, and power.`,
     missionStatement: {
       title: 'The AFM Mission Statement',
       intro: `The AFM Family Network is a dynamic group of people driven by a common goal, that is, to bring the Kingdom here and now. It is led by God, through His humble servant; Azanduna F. Micah.
@@ -135,25 +136,41 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
     givingUrl: '', // TODO: online giving link, or '' to hide the Give button
   },
 
+  /**
+   * The AFM Podcast on Podbean. The app reads the RSS feed live, so every new
+   * episode uploaded to Podbean appears in the app automatically.
+   */
+  podcast: {
+    title: 'The AFM Podcast',
+    feedUrl: 'https://feed.podbean.com/theafmpodcast/feed.xml',
+    pageUrl: 'https://theafmpodcast.podbean.com/',
+    shareUrl: 'https://www.podbean.com/pa/pbblog-hshtw-14f15f9',
+  },
+
   /** The "Stream All 500+ Audio Sermons" archive directory. */
   sermonArchive: {
     title: 'Stream All 500+ Audio Sermons',
     subtitle: 'Instantly access the full archive directory of messages',
-    url: '', // TODO: link to the full audio sermon archive
+    url: 'https://theafmpodcast.podbean.com/',
   },
 
   /** Where people can watch / listen / follow. Shown on Home, Sermons and Connect. */
   socials: [
-    { id: 'yt', label: 'Watch on YouTube', url: '', icon: 'youtube', description: 'Full sermons & live services' }, // TODO
-    { id: 'sp', label: 'Listen on Spotify', url: '', icon: 'spotify', description: 'Messages on the go' }, // TODO
-    { id: 'tg', label: 'Join on Telegram', url: '', icon: 'telegram', description: 'Daily teachings & resources' }, // TODO
-    { id: 'ig', label: 'Follow on Instagram', url: '', icon: 'instagram', description: 'Inspiration & updates' }, // TODO
+    { id: 'yt', label: 'Watch on YouTube', url: 'https://youtube.com/@thebrandmicah', icon: 'youtube', description: '@thebrandmicah' },
+    { id: 'pb', label: 'The AFM Podcast', url: 'https://theafmpodcast.podbean.com/', icon: 'podcast', description: 'Podbean' },
+    { id: 'sp', label: 'Listen on Spotify', url: 'https://open.spotify.com/show/6WjSecJ6T3ZQBASwTDI1Bc', icon: 'spotify', description: 'The AFM Podcast' },
+    { id: 'tg', label: 'Join on Telegram', url: 'https://t.me/rabbimicah', icon: 'telegram', description: '@rabbimicah' },
+    { id: 'ap', label: 'Apple Podcasts', url: 'https://podcasts.apple.com/us/podcast/the-afm-podcast/id1523355747', icon: 'apple', description: 'The AFM Podcast' },
+    { id: 'fb', label: 'Follow on Facebook', url: 'https://www.facebook.com/thebrandafm/', icon: 'facebook', description: 'The Brand AFM' },
+    { id: 'ig', label: 'Follow on Instagram', url: '', icon: 'instagram', description: 'Inspiration & updates' }, // TODO: Instagram link
   ] as LinkItem[],
 
   archive: [
-    { id: 'a1', label: 'Audio Sermon Archive', url: '', icon: 'archive', description: '500+ messages' }, // TODO: same as sermonArchive.url
-    { id: 'a2', label: 'Hagin Channel (Telegram)', url: '', icon: 'telegram', description: 'In honor of Kenneth E. Hagin' }, // TODO
-    { id: 'a3', label: 'Theological Resources (Telegram)', url: '', icon: 'telegram', description: 'Doctrinal materials from renowned theologians' }, // TODO
+    { id: 'a1', label: 'The AFM Podcast (Podbean)', url: 'https://theafmpodcast.podbean.com/', icon: 'podcast', description: '500+ audio messages' },
+    { id: 'a2', label: 'YouTube Channel', url: 'https://youtube.com/@thebrandmicah', icon: 'youtube', description: 'Video sermons & teachings' },
+    { id: 'a3', label: 'Telegram: Rabbi Micah', url: 'https://t.me/rabbimicah', icon: 'telegram', description: 'Teachings & resources' },
+    { id: 'a4', label: 'Hagin Channel (Telegram)', url: '', icon: 'telegram', description: 'In honor of Kenneth E. Hagin' }, // TODO
+    { id: 'a5', label: 'Theological Resources (Telegram)', url: '', icon: 'telegram', description: 'Doctrinal materials from renowned theologians' }, // TODO
   ] as LinkItem[],
 
   /**
@@ -202,8 +219,8 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
   ] as Book[],
 
   fragrances: {
-    brandName: 'House of Azandunah',
-    brandStory: 'A luxury fragrance brand founded by Prophet Micah Felix Azandunah — crafted as a symbol of excellence.',
+    brandName: 'House of Azanduna',
+    brandStory: 'A luxury fragrance brand founded by Prophet Micah Felix Azanduna — crafted as a symbol of excellence.',
     shopUrl: '', // TODO: online shop link for the whole collection
     // TODO: replace these placeholder products with the real fragrances, photos, prices and links
     items: [

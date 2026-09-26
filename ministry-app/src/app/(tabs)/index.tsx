@@ -1,4 +1,4 @@
-import { ImageBackground, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -9,6 +9,8 @@ import { ArchiveCard } from '@/components/ArchiveCard';
 import { PlatformGrid } from '@/components/PlatformGrid';
 import { QuoteCard } from '@/components/QuoteCard';
 import { SermonCard } from '@/components/SermonCard';
+import { EpisodeRow } from '@/components/EpisodeRow';
+import { useEpisodes } from '@/lib/podcast';
 import { Artwork, IconName, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -18,12 +20,13 @@ export default function Home() {
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const latest = sermonsByDate[0];
+  const { episodes } = useEpisodes();
 
   const shortcuts: Shortcut[] = [
     { icon: 'play-circle-outline', label: 'Sermons', onPress: () => router.push('/sermons') },
     { icon: 'book-outline', label: 'Books', onPress: () => router.push({ pathname: '/store', params: { tab: 'books' } }) },
     { icon: 'sparkles-outline', label: 'Fragrance', onPress: () => router.push({ pathname: '/store', params: { tab: 'fragrance' } }) },
-    { icon: 'chatbubble-ellipses-outline', label: 'Quotes', onPress: () => router.push('/quotes') },
+    { icon: 'library-outline', label: 'Handbook', onPress: () => router.push('/handbook') },
     { icon: 'information-circle-outline', label: 'About', onPress: () => router.push('/about') },
     ministry.contact.givingUrl
       ? { icon: 'gift-outline', label: 'Give', onPress: () => openLink(ministry.contact.givingUrl) }
@@ -43,16 +46,7 @@ export default function Home() {
 
   return (
     <Screen padded={false}>
-      {ministry.heroImage ? (
-        <ImageBackground
-          source={typeof ministry.heroImage === 'string' ? { uri: ministry.heroImage } : ministry.heroImage}
-          style={{ backgroundColor: t.primary }}
-        >
-          <View style={styles.overlay}>{heroContent}</View>
-        </ImageBackground>
-      ) : (
-        <View style={{ backgroundColor: t.primary }}>{heroContent}</View>
-      )}
+      <View style={{ backgroundColor: t.primary }}>{heroContent}</View>
 
       <View style={{ padding: space.md }}>
         <View style={styles.grid}>
@@ -73,6 +67,30 @@ export default function Home() {
 
         <View style={{ height: space.md }} />
         <QuoteCard quote={quoteOfTheDay()} featured />
+
+        {episodes.length > 0 && (
+          <>
+            <SectionHeader title="Latest Messages" action="See all" onAction={() => router.push('/sermons')} />
+            {episodes.slice(0, 3).map((e) => (
+              <EpisodeRow key={e.id} episode={e} />
+            ))}
+          </>
+        )}
+
+        <SectionHeader title="Meet the Prophet" />
+        <Pressable
+          onPress={() => router.push('/founder')}
+          style={({ pressed }) => [styles.feature, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.85 }]}
+        >
+          <Artwork uri={ministry.portrait} icon="person" style={styles.portrait} />
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: t.text }]}>{ministry.minister}</Text>
+            <Text numberOfLines={3} style={{ color: t.textMuted, marginTop: 4 }}>
+              Prophet, theologian, apologist, author and founder of the AFM Family Network.
+            </Text>
+            <Text style={{ color: t.accent, fontWeight: '700', marginTop: space.sm }}>Read his story →</Text>
+          </View>
+        </Pressable>
 
         {latest && (
           <>
@@ -101,7 +119,6 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  overlay: { backgroundColor: 'rgba(14,21,16,0.6)' },
   heroInner: { paddingHorizontal: space.lg, paddingBottom: space.xl + space.md, alignItems: 'center' },
   logoWrap: { backgroundColor: '#FFFFFF', borderRadius: 48, padding: 6, marginBottom: space.md },
   logo: { width: 84, height: 84, borderRadius: 42 },
@@ -118,5 +135,15 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   cover: { width: 130, height: 195, borderRadius: radius.sm },
+  feature: {
+    flexDirection: 'row',
+    gap: space.md,
+    alignItems: 'center',
+    padding: space.md,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  portrait: { width: 96, height: 96, borderRadius: 48 },
+  featureTitle: { fontFamily: fonts.serif, fontSize: 17, fontWeight: '700' },
   bookTitle: { fontWeight: '600', marginTop: space.xs },
 });

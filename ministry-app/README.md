@@ -1,6 +1,6 @@
 # The AFM Hub — mobile app
 
-The official app for Prophet Micah Felix Azandunah (D.D) and the AFM Family Network.
+The official app for Prophet Micah Felix Azanduna (D.D) and the AFM Family Network.
 It is built with Expo (React Native), so one codebase runs on iPhone, Android and the web.
 It replaces the earlier Adalo version.
 
@@ -11,7 +11,7 @@ It replaces the earlier Adalo version.
 | **Home** | Logo and welcome, shortcuts, the "Stream All 500+ Audio Sermons" archive, Quote of the Day, Watch/Listen/Follow buttons, AFM Books |
 | **Sermons** | Sermon archive and YouTube / Spotify / Telegram / Instagram. Once individual sermons are added, you get search, series filters and a detail page |
 | **Quotes** | A new Quote of the Day each day, plus every quote with a share button (WhatsApp, Instagram, etc.) |
-| **Store** | AFM Books (covers, Buy on Amazon) and House of Azandunah fragrances (order by link, WhatsApp or email) |
+| **Store** | AFM Books (covers, Buy on Amazon) and House of Azanduna fragrances (order by link, WhatsApp or email) |
 | **More** | About Ministry (founder bio and the AFM Mission Statement), The AFM Handbook, Archive, Contact Us, Prayer Request, Share App, Privacy Policy |
 
 There is no forced sign-up screen. Visitors go straight to the content.

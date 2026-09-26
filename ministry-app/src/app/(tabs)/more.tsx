@@ -11,9 +11,10 @@ export default function More() {
   return (
     <Screen>
       <SectionHeader title="Ministry" />
-      <ListRow icon="people-outline" title="About Ministry" subtitle="Our founder & the AFM Mission Statement" onPress={() => router.push('/about')} />
-      <ListRow icon="library-outline" title="The AFM Handbook" subtitle="Read the handbook" onPress={() => openLink(ministry.handbookUrl)} />
-      <ListRow icon="archive-outline" title="Archive" subtitle="500+ audio sermons & Telegram channels" onPress={() => router.push('/archive')} />
+      <ListRow icon="people-outline" title="About Ministry" subtitle="The AFM Mission Statement" onPress={() => router.push('/about')} />
+      <ListRow icon="person-outline" title="Our Founder" subtitle={ministry.minister} onPress={() => router.push('/founder')} />
+      <ListRow icon="library-outline" title="The AFM Handbook" subtitle="FAQs, anchor scripture, slogans & code of conduct" onPress={() => router.push('/handbook')} />
+      <ListRow icon="archive-outline" title="Archive" subtitle="Podcast, YouTube & Telegram" onPress={() => router.push('/archive')} />
 
       <SectionHeader title="Get Involved" />
       <ListRow icon="chatbox-ellipses-outline" title="Contact Us" subtitle="Social media, email & WhatsApp" onPress={() => router.push('/connect')} />

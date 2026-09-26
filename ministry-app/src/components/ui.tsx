@@ -6,18 +6,22 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { fonts, radius, space, useTheme } from '@/theme';
 import type { LinkItem } from '@/content/ministry';
 import { openLink } from '@/lib/links';
+import { MiniPlayer } from './MiniPlayer';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
-export function Screen({ children, padded = true }: { children: ReactNode; padded?: boolean }) {
+export function Screen({ children, padded = true, player = true }: { children: ReactNode; padded?: boolean; player?: boolean }) {
   const t = useTheme();
   return (
-    <ScrollView
-      style={{ backgroundColor: t.background }}
-      contentContainerStyle={[padded && { padding: space.md }, { paddingBottom: space.xl }]}
-    >
-      <View style={styles.maxWidth}>{children}</View>
-    </ScrollView>
+    <View style={{ flex: 1, backgroundColor: t.background }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={[padded && { padding: space.md }, { paddingBottom: space.xl }]}
+      >
+        <View style={styles.maxWidth}>{children}</View>
+      </ScrollView>
+      {player && <MiniPlayer />}
+    </View>
   );
 }
 
@@ -128,6 +132,7 @@ const linkIcons: Record<LinkItem['icon'], RowIcon> = {
   x: 'logo-x',
   telegram: { fa: 'telegram' },
   spotify: { fa: 'spotify' },
+  apple: 'logo-apple',
   podcast: 'mic',
   globe: 'globe-outline',
   whatsapp: 'logo-whatsapp',

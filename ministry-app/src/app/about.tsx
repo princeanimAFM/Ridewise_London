@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ministry } from '@/content/ministry';
-import { openLink, youtubeThumb, youtubeUrl } from '@/lib/links';
-import { Artwork, Body, Card, Screen, SectionHeader, Title } from '@/components/ui';
+import { Artwork, Body, Card, ListRow, Screen, SectionHeader, Title } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 const paragraphs = (text: string) => text.split(/\n\s*\n/).map((p) => p.trim());
 
+/** About Ministry: the AFM Mission Statement. */
 export default function About() {
   const t = useTheme();
   const { about } = ministry;
@@ -14,36 +15,10 @@ export default function About() {
   return (
     <Screen>
       <View style={styles.header}>
-        <Artwork uri={ministry.heroImage ?? ministry.logo} icon="person" style={styles.photo} />
-        <Text style={[styles.kicker, { color: t.accent }]}>OUR FOUNDER</Text>
-        <Title style={{ textAlign: 'center' }}>{ministry.minister}</Title>
+        <Artwork uri={ministry.logo} icon="leaf" style={styles.logo} />
+        <Title style={{ textAlign: 'center' }}>{ms.title}</Title>
       </View>
-      {paragraphs(about.story).map((p, i) => (
-        <Body key={i} style={{ marginBottom: space.md }}>
-          {p}
-        </Body>
-      ))}
-
-      {!!about.introVideoYoutubeId && (
-        <Card onPress={() => openLink(youtubeUrl(about.introVideoYoutubeId))} style={{ marginBottom: space.md }}>
-          <Artwork uri={youtubeThumb(about.introVideoYoutubeId)} icon="play-circle" style={styles.video} />
-          <View style={styles.playBadge}>
-            <Ionicons name="play" size={28} color="#FFFFFF" />
-          </View>
-        </Card>
-      )}
-
-      <SectionHeader title="Ministries" />
-      <Card style={{ padding: space.md }}>
-        {about.ministries.map((m) => (
-          <View key={m} style={styles.listRow}>
-            <Ionicons name="leaf-outline" size={18} color={t.accent} />
-            <Text style={{ color: t.text, fontSize: 16, flex: 1 }}>{m}</Text>
-          </View>
-        ))}
-      </Card>
-
-      <SectionHeader title={ms.title} />
+      <Text style={[styles.network, { color: t.accent }]}>THE AFM FAMILY NETWORK</Text>
       {paragraphs(ms.intro).map((p, i) => (
         <Body key={i} style={{ marginBottom: space.md }}>
           {p}
@@ -55,12 +30,16 @@ export default function About() {
             <View style={[styles.sectionIcon, { backgroundColor: t.surfaceAlt }]}>
               <Ionicons name={s.icon} size={20} color={t.accent} />
             </View>
-            <Text style={[styles.sectionTitle, { color: t.text }]}>{s.heading}</Text>
+            <Text style={[styles.sectionTitle, { color: t.text }]}>{s.heading.toUpperCase()}</Text>
           </View>
           <Body>{s.text}</Body>
         </Card>
       ))}
       <Text style={[styles.signed, { color: t.textMuted }]}>Signed: {ms.signed}</Text>
+
+      <SectionHeader title="Learn More" />
+      <ListRow icon="person-outline" title="Our Founder" subtitle={ministry.minister} onPress={() => router.push('/founder')} />
+      <ListRow icon="library-outline" title="The AFM Handbook" subtitle="FAQs, anchor scripture, slogans & code of conduct" onPress={() => router.push('/handbook')} />
 
       {about.serviceTimes.length > 0 && (
         <>
@@ -88,26 +67,12 @@ export default function About() {
 
 const styles = StyleSheet.create({
   header: { alignItems: 'center', marginBottom: space.md },
-  photo: { width: 140, height: 140, borderRadius: 70, marginBottom: space.md },
-  kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 1.5, marginBottom: space.xs },
-  video: { width: '100%', aspectRatio: 16 / 9 },
-  playBadge: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginLeft: -30,
-    marginTop: -30,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 6 },
+  logo: { width: 96, height: 96, borderRadius: 48, marginBottom: space.md },
   section: { padding: space.md, marginBottom: space.sm, borderRadius: radius.md },
   sectionHead: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.sm },
   sectionIcon: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' },
-  sectionTitle: { fontFamily: fonts.serif, fontSize: 18, fontWeight: '700' },
+  sectionTitle: { fontFamily: fonts.serif, fontSize: 16, fontWeight: '700', letterSpacing: 1 },
+  network: { fontSize: 13, fontWeight: '700', letterSpacing: 1.5, marginBottom: space.sm },
   signed: { fontStyle: 'italic', textAlign: 'right', marginTop: space.sm },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 6 },
 });

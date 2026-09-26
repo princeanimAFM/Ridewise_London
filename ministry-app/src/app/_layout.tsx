@@ -1,11 +1,12 @@
 import Stack from 'expo-router/stack';
 import { StatusBar } from 'expo-status-bar';
 import { useTheme } from '@/theme';
+import { PlayerProvider } from '@/lib/player';
 
 export default function RootLayout() {
   const t = useTheme();
   return (
-    <>
+    <PlayerProvider>
       <StatusBar style="light" />
       <Stack
         screenOptions={{
@@ -18,6 +19,9 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="sermon/[id]" options={{ title: 'Sermon' }} />
+        <Stack.Screen name="episode/[id]" options={{ title: 'Sermon' }} />
+        <Stack.Screen name="founder" options={{ title: 'Our Founder' }} />
+        <Stack.Screen name="handbook" options={{ title: 'The AFM Handbook' }} />
         <Stack.Screen name="book/[id]" options={{ title: 'Book' }} />
         <Stack.Screen name="fragrance/[id]" options={{ title: 'Fragrance' }} />
         <Stack.Screen name="about" options={{ title: 'About Ministry' }} />
@@ -25,6 +29,6 @@ export default function RootLayout() {
         <Stack.Screen name="archive" options={{ title: 'Archive' }} />
         <Stack.Screen name="prayer" options={{ title: 'Prayer Request' }} />
       </Stack>
-    </>
+    </PlayerProvider>
   );
 }
