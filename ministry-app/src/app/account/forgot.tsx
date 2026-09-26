@@ -61,14 +61,14 @@ export default function Forgot() {
         </>
       ) : step === 'email' ? (
         <>
-          <Body muted style={{ marginBottom: space.md }}>We'll email you a 6-digit code to set a new password.</Body>
+          <Body muted style={{ marginBottom: space.md }}>We'll email you a code to set a new password.</Body>
           <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="emailAddress" />
           <Button label={busy ? 'Sending…' : 'Email me a code'} icon="mail-outline" onPress={sendCode} />
         </>
       ) : (
         <>
           <Body muted style={{ marginBottom: space.md }}>Enter the code we sent to {email.trim()} and choose a new password.</Body>
-          <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={6} />
+          <Field label="Code from the email" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={10} placeholder="e.g. 12345678" />
           <Field label="New password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" hint="At least 8 characters." />
           <Button label={busy ? 'Saving…' : 'Set new password'} icon="key-outline" onPress={reset} />
           <Button label="Send a new code" variant="outline" onPress={sendCode} style={{ marginTop: space.sm }} />

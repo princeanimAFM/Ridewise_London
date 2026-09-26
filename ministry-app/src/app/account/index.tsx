@@ -99,8 +99,8 @@ function SignIn() {
         </>
       ) : (
         <>
-          <Field label="Mobile number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" placeholder="+233201234567" hint="Include your country code. We'll text you a 6-digit code." />
-          {codeSent && <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="sms-otp" textContentType="oneTimeCode" maxLength={6} />}
+          <Field label="Mobile number" value={phone} onChangeText={setPhone} keyboardType="phone-pad" autoComplete="tel" placeholder="+233201234567" hint="Include your country code. We'll text you a code." />
+          {codeSent && <Field label="Code from the text" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))} keyboardType="number-pad" autoComplete="sms-otp" textContentType="oneTimeCode" maxLength={10} />}
           {codeSent ? (
             <>
               <Button label={busy ? 'Checking…' : 'Verify and sign in'} icon="checkmark-circle-outline" onPress={verifyPhoneCode} />

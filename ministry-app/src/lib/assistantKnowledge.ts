@@ -100,7 +100,7 @@ export function buildKnowledge(): string {
     '- Announcements: More → Announcements shows upcoming programmes and flyers.',
     '- Live services: the Live screen (Home → Watch Live Services, or More → Live Services) streams services from YouTube @thebrandmicah inside the app.',
     '- Notifications: More → Notifications turns on a daily AFM quote and announcement alerts.',
-    '- Accounts (optional): More → Sign in. Sign in with email and password, Google, or a text-message code. "Forgot password?" emails a 6-digit code. To delete an account: More → My Account → Request account deletion.',
+    '- Accounts (optional): More → Sign in. Sign in with email and password, Google, or a text-message code. "Forgot password?" emails a code. To delete an account: More → My Account → Request account deletion.',
   );
 
   add(

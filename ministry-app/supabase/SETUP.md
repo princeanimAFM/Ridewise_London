@@ -32,7 +32,7 @@ Text messages and AI writing are optional. Leave them out and everything else st
 3. **SMTP & API → SMTP**: note the SMTP login and create an SMTP key (used for account emails).
 4. In Supabase, go to **Authentication → Emails → SMTP Settings** and enable custom SMTP: host `smtp-relay.brevo.com`, port `587`, your Brevo SMTP login and key, sender name `The AFM HUB`.
 
-## 3. Account emails use 6-digit codes
+## 3. Account emails use codes
 The app asks people to type a code, which works reliably in phone apps. In Supabase, go to **Authentication → Emails → Templates**:
 - **Confirm signup**: subject `Your AFM HUB code`, body:
   ```html

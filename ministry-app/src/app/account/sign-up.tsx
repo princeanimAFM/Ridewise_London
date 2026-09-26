@@ -80,9 +80,9 @@ export default function SignUp() {
       ) : (
         <>
           <Body muted style={{ marginBottom: space.md }}>
-            We emailed a 6-digit code to {email.trim()}. Enter it below to confirm your account.
+            We emailed a code to {email.trim()}. Enter it below to confirm your account.
           </Body>
-          <Field label="6-digit code" value={code} onChangeText={setCode} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={6} />
+          <Field label="Code from the email" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={10} placeholder="e.g. 12345678" />
           <Button label={busy ? 'Checking…' : 'Confirm'} icon="checkmark-circle-outline" onPress={verify} />
           <Button label="Email me a new code" variant="outline" onPress={resend} style={{ marginTop: space.sm }} />
         </>
