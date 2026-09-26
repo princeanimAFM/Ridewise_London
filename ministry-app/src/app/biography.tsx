@@ -2,13 +2,14 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { biography } from '@/content/biography';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { PlatformGrid } from '@/components/PlatformGrid';
 import { PhotoHero } from '@/components/PhotoHero';
 import { Artwork, Body, Button, IconName, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 export default function Biography() {
+  const ministry = useContent();
   const t = useTheme();
   return (
     <Screen padded={false}>

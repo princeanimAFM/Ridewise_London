@@ -8,11 +8,9 @@
  * Secret: ANTHROPIC_API_KEY (optional ANTHROPIC_MODEL, default claude-opus-5).
  */
 import Anthropic from 'npm:@anthropic-ai/sdk';
-import brandJson from '../_shared/brand.json' with { type: 'json' };
-import { corsHeaders, json, publicUrl, requireAdmin } from '../_shared/auth.ts';
-import { type Brand, formatEventDate } from '../_shared/newsletter.ts';
-
-const brand = brandJson as Brand;
+import { adminClient, corsHeaders, json, publicUrl, requireAdmin } from '../_shared/auth.ts';
+import { liveBrand } from '../_shared/liveBrand.ts';
+import { formatEventDate } from '../_shared/newsletter.ts';
 
 const schema = {
   type: 'object',
@@ -41,6 +39,7 @@ Deno.serve(async (req) => {
   const notes = (input.notes ?? '').slice(0, 4000);
   if (!title && !notes && !input.flyer_path) return json({ error: 'Add a title, some notes or a flyer first.' }, 400);
 
+  const brand = await liveBrand(adminClient());
   const instructions = `You write newsletter announcements for ${brand.name}, the ministry of ${brand.minister} and the AFM Family Network.
 The theme for ${brand.theme.year} is "${brand.theme.title}".
 

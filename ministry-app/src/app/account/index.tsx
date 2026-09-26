@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { displayName, useAuth } from '@/lib/auth';
 import { friendlyError, supabase } from '@/lib/supabase';
 import { openLink } from '@/lib/links';
@@ -19,6 +19,7 @@ export default function Account() {
 }
 
 function SignIn() {
+  const ministry = useContent();
   const { signInWithGoogle } = useAuth();
   const [mode, setMode] = useState<'email' | 'phone'>('email');
   const [email, setEmail] = useState('');
@@ -115,6 +116,7 @@ function SignIn() {
 }
 
 function MyAccount() {
+  const ministry = useContent();
   const t = useTheme();
   const { session, profile, refreshProfile, signOut } = useAuth();
   const [first, setFirst] = useState(profile?.first_name ?? '');

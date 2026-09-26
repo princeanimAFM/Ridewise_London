@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink, whatsappUrl } from '@/lib/links';
 import { Artwork, Body, Button, Screen, Title } from '@/components/ui';
 import { radius, space, useTheme } from '@/theme';
 
 export default function FragranceDetail() {
+  const ministry = useContent();
   const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const item = ministry.fragrances.items.find((f) => f.id === id);

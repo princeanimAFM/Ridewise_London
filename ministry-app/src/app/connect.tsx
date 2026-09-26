@@ -1,9 +1,10 @@
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { whatsappUrl } from '@/lib/links';
 import { Body, LinkRow, Screen, SectionHeader } from '@/components/ui';
 import { space } from '@/theme';
 
 export default function Connect() {
+  const ministry = useContent();
   const wa = whatsappUrl(`Hello ${ministry.name}!`);
   return (
     <Screen>

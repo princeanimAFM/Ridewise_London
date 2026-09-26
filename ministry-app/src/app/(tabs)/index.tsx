@@ -2,7 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { quoteOfTheDay, sermonsByDate } from '@/lib/content';
 import { ArchiveCard } from '@/components/ArchiveCard';
 import { PlatformGrid } from '@/components/PlatformGrid';
@@ -21,6 +21,7 @@ import { fonts, radius, space, useTheme } from '@/theme';
 type Shortcut = { icon: IconName; label: string; onPress: () => void };
 
 export default function Home() {
+  const ministry = useContent();
   const t = useTheme();
   const insets = useSafeAreaInsets();
   const latest = sermonsByDate[0];

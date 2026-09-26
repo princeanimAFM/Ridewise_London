@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { flyerUrl, friendlyError, supabase } from '@/lib/supabase';
 import type { Announcement } from '@/lib/announcements';
@@ -174,6 +175,10 @@ export default function Admin() {
           </View>
         ))}
       </View>
+
+      <Button label="Edit app content" icon="create-outline" onPress={() => router.push('/manage')} style={{ marginTop: space.md }} />
+      <Body muted style={{ marginTop: space.xs }}>Books, perfumes, quotes, giving details, links, service times and the theme.</Body>
+      <Button label="Admins" icon="people-outline" variant="outline" onPress={() => router.push('/admins')} style={{ marginTop: space.sm }} />
 
       <SectionHeader title="New announcement" />
       {!!error && <Notice kind="error">{error}</Notice>}

@@ -5,6 +5,7 @@ const ts = require('typescript');
 
 const root = path.resolve(__dirname, '..');
 const cache = {};
+let assetId = 0;
 
 function load(file) {
   const abs = path.resolve(file);
@@ -14,7 +15,7 @@ function load(file) {
   const mod = { exports: {} };
   cache[abs] = mod;
   const req = (id) => {
-    if (/\.(png|jpe?g)$/.test(id)) return 0;
+    if (/\.(png|jpe?g)$/.test(id)) return ++assetId; // like Metro: a unique number per image
     if (id === 'react-native') return { Platform: { OS: 'node' } };
     const base = id.startsWith('@/') ? path.join(root, 'src', id.slice(2)) : path.resolve(path.dirname(abs), id);
     for (const ext of ['.ts', '.tsx', '/index.ts']) if (fs.existsSync(base + ext)) return load(base + ext);

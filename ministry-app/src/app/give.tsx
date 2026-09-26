@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { PhotoHero } from '@/components/PhotoHero';
 import { Body, Screen } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 export default function Give() {
+  const ministry = useContent();
   const t = useTheme();
   const [copied, setCopied] = useState('');
   const copy = async (id: string, value: string) => {

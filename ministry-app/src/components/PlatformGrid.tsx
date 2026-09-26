@@ -1,12 +1,13 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { View } from 'react-native';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { radius, space, useTheme } from '@/theme';
 import { linkIcon, RowGlyph } from './ui';
 
 /** Watch on YouTube / Listen on Spotify / Telegram / Instagram buttons. */
 export function PlatformGrid() {
+  const ministry = useContent();
   const t = useTheme();
   return (
     <View style={styles.grid}>

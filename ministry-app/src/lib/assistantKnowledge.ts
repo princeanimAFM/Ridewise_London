@@ -1,6 +1,6 @@
 import { biography } from '@/content/biography';
 import { handbook } from '@/content/handbook';
-import { ministry } from '@/content/ministry';
+import { liveMinistry as ministry } from './liveContent';
 
 /**
  * Everything the AFM Assistant knows, as plain text. Built from the same

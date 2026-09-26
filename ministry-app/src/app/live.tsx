@@ -3,18 +3,18 @@ import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-nativ
 import { router } from 'expo-router';
 import { WebView } from 'react-native-webview';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { Body, Button, Card, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
-const { youtubeHandle, channelId } = ministry.live;
-const channelLiveUrl = `https://www.youtube.com/@${youtubeHandle}/live`;
-const playerUrl = channelId
-  ? `https://www.youtube.com/embed/live_stream?channel=${channelId}&autoplay=1&playsinline=1`
-  : `https://m.youtube.com/@${youtubeHandle}/live`;
-
 export default function Live() {
+  const ministry = useContent();
+  const { youtubeHandle, channelId } = ministry.live;
+  const channelLiveUrl = `https://www.youtube.com/@${youtubeHandle}/live`;
+  const playerUrl = channelId
+    ? `https://www.youtube.com/embed/live_stream?channel=${channelId}&autoplay=1&playsinline=1`
+    : `https://m.youtube.com/@${youtubeHandle}/live`;
   const t = useTheme();
   const [key, setKey] = useState(0);
   const [loading, setLoading] = useState(true);

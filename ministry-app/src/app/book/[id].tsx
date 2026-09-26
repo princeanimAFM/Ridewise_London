@@ -1,11 +1,12 @@
 import { StyleSheet, Text } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink, shareText } from '@/lib/links';
 import { Artwork, Body, Button, Screen, Title } from '@/components/ui';
 import { radius, space, useTheme } from '@/theme';
 
 export default function BookDetail() {
+  const ministry = useContent();
   const t = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const book = ministry.books.find((b) => b.id === id);

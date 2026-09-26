@@ -1,4 +1,4 @@
-import { ministry } from '@/content/ministry';
+import { liveMinistry as ministry } from './liveContent';
 
 export const sermonsByDate = [...ministry.sermons].sort((a, b) => b.date.localeCompare(a.date));
 

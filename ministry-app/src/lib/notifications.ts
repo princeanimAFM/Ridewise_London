@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
-import { ministry } from '@/content/ministry';
+import { liveMinistry as ministry } from './liveContent';
 import { supabase } from './supabase';
 
 /**

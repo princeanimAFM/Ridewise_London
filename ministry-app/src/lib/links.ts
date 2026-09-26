@@ -1,6 +1,6 @@
 import { Alert, Linking, Platform, Share } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
-import { ministry } from '@/content/ministry';
+import { liveMinistry as ministry } from './liveContent';
 
 /** Opens a link: web pages in an in-app browser, everything else (mailto, whatsapp, apps) externally. */
 export async function openLink(url: string | undefined) {

@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TextInput } from 'react-native';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink, whatsappUrl } from '@/lib/links';
 import { Body, Button, Screen, Title } from '@/components/ui';
 import { radius, space, useTheme } from '@/theme';
 
 export default function Prayer() {
+  const ministry = useContent();
   const t = useTheme();
   const [name, setName] = useState('');
   const [request, setRequest] = useState('');

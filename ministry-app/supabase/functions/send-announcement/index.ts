@@ -10,17 +10,15 @@
  *   TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, and TWILIO_FROM or TWILIO_MESSAGING_SERVICE_SID   (text messages)
  *   EXPO_ACCESS_TOKEN (optional; only if "enhanced push security" is on in Expo)   (push notifications)
  */
-import brandJson from '../_shared/brand.json' with { type: 'json' };
 import { adminClient, corsHeaders, json, publicUrl, requireAdmin } from '../_shared/auth.ts';
+import { liveBrand } from '../_shared/liveBrand.ts';
 import { type Brand, renderEmail, renderSms } from '../_shared/newsletter.ts';
-
-const brand = brandJson as Brand;
 
 type Subscriber = { id: string; first_name: string; email: string | null; phone: string | null; unsubscribe_token: string };
 
 const env = (k: string) => Deno.env.get(k) ?? '';
 
-async function sendEmail(to: { email: string; name: string }, subject: string, html: string, text: string, unsubscribeUrl: string) {
+async function sendEmail(brand: Brand, to: { email: string; name: string }, subject: string, html: string, text: string, unsubscribeUrl: string) {
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': env('BREVO_API_KEY'), 'Content-Type': 'application/json', accept: 'application/json' },
@@ -123,6 +121,7 @@ Deno.serve(async (req) => {
   const { data: a, error } = await db.from('announcements').select('*').eq('id', payload.announcement_id).single();
   if (error || !a) return json({ error: 'Announcement not found' }, 404);
 
+  const brand = await liveBrand(db);
   const announcement = { ...a, flyer_url: a.flyer_path ? publicUrl('flyers', a.flyer_path) : null };
   const headerImageUrl = env('NEWSLETTER_HEADER_IMAGE_URL') || publicUrl('brand', 'afm.jpg');
   const unsubBase = `${env('SUPABASE_URL')}/functions/v1/unsubscribe`;
@@ -134,7 +133,7 @@ Deno.serve(async (req) => {
     const fake = { id: '', first_name: 'Friend', email: payload.test_email, phone: null, unsubscribe_token: 'preview' };
     const email = renderEmail({ brand, announcement, firstName: 'Friend', headerImageUrl, unsubscribeUrl: unsubUrl(fake, 'email') });
     try {
-      await sendEmail({ email: payload.test_email, name: 'Friend' }, `[Preview] ${email.subject}`, email.html, email.text, unsubUrl(fake, 'email'));
+      await sendEmail(brand, { email: payload.test_email, name: 'Friend' }, `[Preview] ${email.subject}`, email.html, email.text, unsubUrl(fake, 'email'));
       return json({ preview: true, sentTo: payload.test_email });
     } catch (e) {
       return json({ error: String(e) }, 502);
@@ -154,7 +153,7 @@ Deno.serve(async (req) => {
         const url = unsubUrl(s, 'email');
         const email = renderEmail({ brand, announcement, firstName: s.first_name, headerImageUrl, unsubscribeUrl: url });
         try {
-          await sendEmail({ email: s.email!, name: s.first_name }, email.subject, email.html, email.text, url);
+          await sendEmail(brand, { email: s.email!, name: s.first_name }, email.subject, email.html, email.text, url);
           results.emailSent++;
           log.push({ announcement_id: a.id, subscriber_id: s.id, channel: 'email', status: 'sent', error: null });
         } catch (e) {

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { Artwork, Body, Button, Card, Chip, Screen, Title } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
@@ -10,6 +10,7 @@ import { fonts, radius, space, useTheme } from '@/theme';
 type Tab = 'books' | 'fragrance';
 
 export default function Store() {
+  const ministry = useContent();
   const t = useTheme();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [tab, setTab] = useState<Tab>(params.tab === 'fragrance' ? 'fragrance' : 'books');

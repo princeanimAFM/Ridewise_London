@@ -3,6 +3,7 @@ import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollVie
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { AssistantAction, AssistantReply, ChatTurn, answer, suggestedQuestions } from '@/lib/assistant';
 import { openLink } from '@/lib/links';
 import { Artwork } from '@/components/ui';
@@ -17,6 +18,7 @@ const welcome: Bubble = {
 };
 
 export default function Assistant() {
+  const ministry = useContent();
   const t = useTheme();
   const [bubbles, setBubbles] = useState<Bubble[]>([welcome]);
   const [input, setInput] = useState('');

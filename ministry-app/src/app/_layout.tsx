@@ -5,6 +5,7 @@ import { PlayerProvider } from '@/lib/player';
 import { AuthProvider } from '@/lib/auth';
 import { maybeAskForReview } from '@/lib/review';
 import { refreshNotifications, supported as notificationsSupported } from '@/lib/notifications';
+import { syncContent } from '@/lib/contentSync';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
@@ -13,7 +14,8 @@ export default function RootLayout() {
   const t = useTheme();
   useEffect(() => {
     maybeAskForReview();
-    refreshNotifications();
+    // Daily quotes are scheduled after the latest quotes have loaded.
+    syncContent().finally(refreshNotifications);
     if (!notificationsSupported) return;
     // Tapping a notification opens the matching screen.
     const open = (response: Notifications.NotificationResponse | null) => {
@@ -50,6 +52,9 @@ export default function RootLayout() {
         <Stack.Screen name="subscribe" options={{ title: 'Newsletter' }} />
         <Stack.Screen name="announcements" options={{ title: 'Announcements' }} />
         <Stack.Screen name="admin" options={{ title: 'Owner Dashboard' }} />
+        <Stack.Screen name="admins" options={{ title: 'Admins' }} />
+        <Stack.Screen name="manage/index" options={{ title: 'Edit App Content' }} />
+        <Stack.Screen name="manage/[section]" options={{ title: 'Edit' }} />
         <Stack.Screen name="give" options={{ title: 'Give' }} />
         <Stack.Screen name="notifications" options={{ title: 'Notifications' }} />
         <Stack.Screen name="live" options={{ title: 'Live' }} />

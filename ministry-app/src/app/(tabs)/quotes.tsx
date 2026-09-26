@@ -2,20 +2,21 @@ import { useMemo, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { PhotoHero } from '@/components/PhotoHero';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { quoteOfTheDay } from '@/lib/content';
 import { QuoteCard } from '@/components/QuoteCard';
 import { Body, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 export default function Quotes() {
+  const ministry = useContent();
   const t = useTheme();
   const today = quoteOfTheDay();
   const [query, setQuery] = useState('');
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     return ministry.quotes.filter((x) => x.id !== today.id && (!q || x.text.toLowerCase().includes(q)));
-  }, [query, today.id]);
+  }, [query, today.id, ministry.quotes]);
 
   return (
     <Screen>

@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 import { biography } from '@/content/biography';
 import { handbook } from '@/content/handbook';
-import { ministry } from '@/content/ministry';
+import { liveMinistry as ministry } from './liveContent';
 import { buildInstructions } from './assistantKnowledge';
 import { quoteOfTheDay } from './content';
 
@@ -15,7 +15,6 @@ export type AssistantReply = { text: string; actions: AssistantAction[]; source:
 // ---------------------------------------------------------------------------
 
 const go = (label: string, route: string, params?: Record<string, string>): AssistantAction => ({ label, route, params });
-const email = ministry.contact.email;
 
 type Intent = { words: string[]; phrases?: string[]; reply: () => { text: string; actions: AssistantAction[] } };
 
@@ -88,7 +87,7 @@ const intents: Intent[] = [
   {
     words: ['join', 'member', 'membership'],
     reply: () => ({
-      text: `${faqText('Who can join')} To get connected, email ${email}.`,
+      text: `${faqText('Who can join')} To get connected, email ${ministry.contact.email}.`,
       actions: [go('Mission Statement', '/about'), go('Contact Us', '/connect')],
     }),
   },
@@ -135,7 +134,7 @@ const intents: Intent[] = [
   },
   {
     words: ['contact', 'email', 'phone', 'whatsapp'],
-    reply: () => ({ text: `You can reach the ministry by email at ${email}.`, actions: [go('Contact Us', '/connect'), { label: 'Send an email', url: `mailto:${email}` }] }),
+    reply: () => ({ text: `You can reach the ministry by email at ${ministry.contact.email}.`, actions: [go('Contact Us', '/connect'), { label: 'Send an email', url: `mailto:${ministry.contact.email}` }] }),
   },
   {
     words: ['youtube', 'telegram', 'spotify', 'instagram', 'facebook', 'tiktok', 'social', 'follow', 'channel'],
@@ -277,8 +276,8 @@ export async function answer(question: string, history: ChatTurn[]): Promise<Ass
   }
   if (guided) return guided;
   return {
-    text: `I'm not sure about that one. I can help with sermons, quotes, Prophet Micah's books and biography, the AFM Handbook and the Mission Statement. For anything else, email ${email}.`,
-    actions: [go('Handbook', '/handbook'), go('About Ministry', '/about'), { label: 'Email the ministry', url: `mailto:${email}` }],
+    text: `I'm not sure about that one. I can help with sermons, quotes, Prophet Micah's books and biography, the AFM Handbook and the Mission Statement. For anything else, email ${ministry.contact.email}.`,
+    actions: [go('Handbook', '/handbook'), go('About Ministry', '/about'), { label: 'Email the ministry', url: `mailto:${ministry.contact.email}` }],
     source: 'fallback',
   };
 }

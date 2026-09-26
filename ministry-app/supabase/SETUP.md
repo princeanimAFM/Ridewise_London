@@ -74,16 +74,23 @@ npx supabase functions deploy unsubscribe --no-verify-jwt
 ```
 After changing the ministry's details in `src/content/ministry.ts` (links, PayPal, theme), run `node scripts/build-newsletter-brand.js` and deploy again so newsletters match.
 
-## 6. Make the owner account the admin
-The owner is **princeanim88@gmail.com**. `supabase/migrations/0002_owner_admin.sql` makes that address admin automatically once its email is confirmed, so steps 1–2 below are only needed for other owners. More owners can be added the same way, for example the ministry address once it's available.
-1. In the app: **More → Sign in → Create account** with princeanim88@gmail.com and confirm the code.
-2. In Supabase **SQL Editor**, run:
-   ```sql
-   update public.profiles set is_admin = true
-   where id = (select id from auth.users where email = 'princeanim88@gmail.com');
-   ```
-   To add another admin later, run it again with their email. To remove one, use `is_admin = false`.
-3. Reopen **More**. **Owner dashboard** now appears. Upload a flyer, tap **Write it with AI** or type the message, tap **Email me a preview**, then **Publish & send**.
+## 6. The owner account and other admins
+The owner is **princeanim88@gmail.com**. `migrations/0002_owner_admin.sql` makes that account an admin automatically once its email is confirmed.
+1. In the app: **More → Sign in → Create account** with princeanim88@gmail.com and enter the emailed code.
+2. Reopen **More**. **Owner dashboard** and **Edit app content** now appear. Nobody else sees them.
+3. **Add or remove admins in the app:** Owner dashboard → **Admins**. The person creates an account and confirms their email first, then an admin enters that email. The owner account can't be removed, and admins can't remove themselves.
+
+## 6b. Editing content from the app
+Run `migrations/0003_app_content.sql` and `migrations/0004_admins.sql` (SQL Editor, or `npx supabase db push`). Then **Owner dashboard → Edit app content** lets admins change the following without an app update:
+- books
+- perfumes, and switching the shop from "Coming soon" to launched
+- quotes
+- giving details
+- service times
+- social and archive links
+- the theme of the year, the contact email, WhatsApp, and the live-service channel
+
+Each area uses the content built into the app until it's first edited. Newsletters pick up the edited theme, giving details and links automatically. Redeploy `send-announcement` and `draft-announcement` once after running 0003.
 
 ## 7. Push notifications in store builds
 - **Android**: create a Firebase project (https://console.firebase.google.com) and add an Android app with package `com.afm.hub`. Then go to **Project settings → Service accounts → Generate new private key**, and upload that JSON to Expo with `npx eas-cli credentials` (Android → Google Service Account → FCM V1).

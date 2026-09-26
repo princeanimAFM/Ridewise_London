@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { fonts, space, useTheme } from '@/theme';
 import { Card } from './ui';
 
 /** The "Stream All 500+ Audio Sermons" call to action. */
 export function ArchiveCard() {
+  const ministry = useContent();
   const t = useTheme();
   const { title, subtitle, url } = ministry.sermonArchive;
   return (

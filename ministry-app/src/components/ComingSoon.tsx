@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { ministry } from '@/content/ministry';
+import { useContent } from '@/lib/liveContent';
 import { Screen } from './ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 /** Shown for account/newsletter features until the backend is connected. */
 export function BackendComingSoon({ feature }: { feature: string }) {
+  const ministry = useContent();
   const t = useTheme();
   return (
     <Screen>
