@@ -31,7 +31,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test-build:android": "npx eas-cli@latest build --profile preview --platform android",
+    "test-build:ios": "npx eas-cli@latest build --profile preview --platform ios"
   },
   "private": true
 }

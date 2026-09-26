@@ -8,7 +8,10 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.afm.hub"
+      "bundleIdentifier": "com.afm.hub",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -41,6 +44,7 @@
           "enableBackgroundPlayback": true
         }
       ]
-    ]
+    ],
+    "description": "The official app of Prophet Micah Felix Azanduna (D.D) and the AFM Family Network."
   }
 }
