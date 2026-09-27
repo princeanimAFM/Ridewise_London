@@ -112,9 +112,9 @@ export const ministry = {
     quotes: require('../../assets/photos/micah-white-shirt.jpg') as ImageSource,
     sermons: require('../../assets/photos/micah-red-suit-full.jpg') as ImageSource,
   },
-  appShareUrl: 'https://afm-hub.expo.app', // website link used by "Share App"
+  appShareUrl: 'https://theafmchurch.org', // website link used by "Share App"
   // Privacy policy page on the website (needed for the App Store and Google Play listings)
-  privacyPolicyUrl: 'https://afm-hub.expo.app/privacy.html',
+  privacyPolicyUrl: 'https://theafmchurch.org/privacy.html',
   // Fill in once the app is live on Google Play: shows "Get it on Google Play" on the website.
   playStoreUrl: '', // 'https://play.google.com/store/apps/details?id=com.afm.hub'
 
