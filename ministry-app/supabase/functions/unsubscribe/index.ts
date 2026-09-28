@@ -11,12 +11,12 @@ const brand = brandJson as { name: string; email: string };
 const page = (title: string, message: string, status = 200) =>
   new Response(
     `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title></head>
-<body style="margin:0;background:#F5F7F3;font-family:Arial,Helvetica,sans-serif;color:#1C2320;">
+<body style="margin:0;background:#F4F7FC;font-family:Arial,Helvetica,sans-serif;color:#1C2320;">
 <div style="max-width:480px;margin:60px auto;padding:28px;background:#fff;border-radius:14px;text-align:center;">
-<div style="color:#9A7616;font-weight:700;letter-spacing:2px;font-size:12px;">${brand.name.toUpperCase()}</div>
+<div style="color:#1646A8;font-weight:700;letter-spacing:2px;font-size:12px;">${brand.name.toUpperCase()}</div>
 <h1 style="font-family:Georgia,serif;font-size:24px;margin:10px 0;">${title}</h1>
-<p style="font-size:16px;line-height:1.5;color:#5E6B62;">${message}</p>
-<p style="font-size:14px;color:#5E6B62;">Questions? <a href="mailto:${brand.email}" style="color:#2D6A3E;">${brand.email}</a></p>
+<p style="font-size:16px;line-height:1.5;color:#5B6474;">${message}</p>
+<p style="font-size:14px;color:#5B6474;">Questions? <a href="mailto:${brand.email}" style="color:#1646A8;">${brand.email}</a></p>
 </div></body></html>`,
     { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } },
   );
