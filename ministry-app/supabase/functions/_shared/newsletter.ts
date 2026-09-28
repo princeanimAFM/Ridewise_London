@@ -28,7 +28,7 @@ const esc = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 /** Makes bare links in text clickable after escaping. */
-const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#1646A8;font-weight:600;">$1</a>');
+const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#2D6A3E;font-weight:600;">$1</a>');
 
 export function formatEventDate(iso?: string | null) {
   if (!iso) return '';
@@ -38,8 +38,8 @@ export function formatEventDate(iso?: string | null) {
 }
 
 function button(label: string, url: string, primary: boolean) {
-  const bg = primary ? '#1646A8' : '#E8EEFB';
-  const fg = primary ? '#FFFFFF' : '#1646A8';
+  const bg = primary ? '#C9A227' : '#2D6A3E';
+  const fg = primary ? '#1A1A1A' : '#FFFFFF';
   return `<a href="${esc(url)}" style="display:inline-block;margin:6px 4px;padding:12px 20px;border-radius:8px;background:${bg};color:${fg};font-weight:700;text-decoration:none;font-family:Arial,Helvetica,sans-serif;font-size:15px;">${esc(label)}</a>`;
 }
 
@@ -68,33 +68,33 @@ export function renderEmail(opts: {
   const giving = (brand.giving ?? [])
     .map(
       (g) =>
-        `<tr><td style="padding:6px 0;font-size:14px;color:#5B6474;">${esc(g.label)}</td><td style="padding:6px 0;font-size:14px;font-weight:700;color:#1C2320;text-align:right;">${
-          g.url ? `<a href="${esc(g.url)}" style="color:#1646A8;">${esc(g.value)}</a>` : esc(g.value)
+        `<tr><td style="padding:6px 0;font-size:14px;color:#5E6B62;">${esc(g.label)}</td><td style="padding:6px 0;font-size:14px;font-weight:700;color:#1C2320;text-align:right;">${
+          g.url ? `<a href="${esc(g.url)}" style="color:#2D6A3E;">${esc(g.value)}</a>` : esc(g.value)
         }</td></tr>`,
     )
     .join('');
 
   const socials = brand.socials
-    .map((s) => `<a href="${esc(s.url)}" style="color:#1646A8;font-weight:600;text-decoration:none;margin:0 6px;white-space:nowrap;display:inline-block;">${esc(s.label)}</a>`)
-    .join('<span style="color:#A3ACBC;">·</span>');
+    .map((s) => `<a href="${esc(s.url)}" style="color:#2D6A3E;font-weight:600;text-decoration:none;margin:0 6px;white-space:nowrap;display:inline-block;">${esc(s.label)}</a>`)
+    .join('<span style="color:#9AA79E;">·</span>');
 
   const html = `<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(a.title)}</title></head>
-<body style="margin:0;padding:0;background:#EEF3FB;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF3FB;">
+<body style="margin:0;padding:0;background:#EEF2EC;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#EEF2EC;">
 <tr><td align="center" style="padding:24px 12px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;background:#FFFFFF;border-radius:14px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;">
-  <tr><td style="background:#1646A8;">
+  <tr><td style="background:#2D6A3E;">
     <img src="${esc(headerImageUrl)}" width="600" alt="${esc(brand.minister)}" style="display:block;width:100%;max-width:600px;height:auto;max-height:340px;object-fit:cover;object-position:top;border:0;">
   </td></tr>
-  <tr><td style="background:#1646A8;padding:18px 24px;text-align:center;">
-    <div style="color:#BFD3FF;font-size:12px;font-weight:700;letter-spacing:2px;">THEME FOR ${esc(brand.theme.year)}</div>
+  <tr><td style="background:#2D6A3E;padding:18px 24px;text-align:center;">
+    <div style="color:#C9A227;font-size:12px;font-weight:700;letter-spacing:2px;">THEME FOR ${esc(brand.theme.year)}</div>
     <div style="color:#FFFFFF;font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;margin-top:4px;">${esc(brand.theme.title)}</div>
   </td></tr>
   <tr><td style="padding:28px 24px 8px;">
     <p style="margin:0 0 16px;font-size:17px;color:#1C2320;">Dear ${esc(firstName)},</p>
     <h1 style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#1C2320;">${esc(a.title)}</h1>
-    ${date ? `<p style="margin:0 0 16px;color:#1646A8;font-weight:700;font-size:14px;letter-spacing:.5px;">${esc(date.toUpperCase())}</p>` : ''}
+    ${date ? `<p style="margin:0 0 16px;color:#9A7616;font-weight:700;font-size:14px;letter-spacing:.5px;">${esc(date.toUpperCase())}</p>` : ''}
   </td></tr>
   ${a.flyer_url ? `<tr><td style="padding:4px 24px 16px;"><img src="${esc(a.flyer_url)}" width="552" alt="${esc(a.title)} flyer" style="display:block;width:100%;height:auto;border-radius:10px;border:0;"></td></tr>` : ''}
   <tr><td style="padding:0 24px 8px;">${paragraphs}
@@ -102,17 +102,17 @@ export function renderEmail(opts: {
   </td></tr>
   <tr><td align="center" style="padding:20px 18px 8px;">${buttons}</td></tr>
   ${giving ? `<tr><td style="padding:10px 24px 6px;">
-    <div style="background:#F4F7FC;border-radius:10px;padding:14px 16px;">
-      <div style="color:#1646A8;font-size:12px;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">GIVE AN OFFERING</div>
+    <div style="background:#F5F7F3;border-radius:10px;padding:14px 16px;">
+      <div style="color:#9A7616;font-size:12px;font-weight:700;letter-spacing:1.5px;margin-bottom:6px;">GIVE AN OFFERING</div>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${giving}</table>
     </div>
   </td></tr>` : ''}
   <tr><td align="center" style="padding:14px 24px 22px;font-size:14px;">${socials}</td></tr>
-  <tr><td style="background:#F4F7FC;padding:18px 24px;text-align:center;font-size:12px;line-height:1.6;color:#5B6474;">
+  <tr><td style="background:#F5F7F3;padding:18px 24px;text-align:center;font-size:12px;line-height:1.6;color:#5E6B62;">
     ${esc(brand.name)} · ${esc(brand.minister)}<br>
-    Questions or prayer requests: <a href="mailto:${esc(brand.email)}" style="color:#1646A8;">${esc(brand.email)}</a><br>
+    Questions or prayer requests: <a href="mailto:${esc(brand.email)}" style="color:#2D6A3E;">${esc(brand.email)}</a><br>
     You are receiving this because you subscribed to ${esc(brand.name)} announcements.
-    <a href="${esc(unsubscribeUrl)}" style="color:#5B6474;">Unsubscribe</a>
+    <a href="${esc(unsubscribeUrl)}" style="color:#5E6B62;">Unsubscribe</a>
   </td></tr>
 </table>
 </td></tr></table>

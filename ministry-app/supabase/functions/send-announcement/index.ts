@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
 
   const brand = await liveBrand(db);
   const announcement = { ...a, flyer_url: a.flyer_path ? publicUrl('flyers', a.flyer_path) : null };
-  const headerImageUrl = env('NEWSLETTER_HEADER_IMAGE_URL') || publicUrl('brand', 'email-header.jpg');
+  const headerImageUrl = env('NEWSLETTER_HEADER_IMAGE_URL') || publicUrl('brand', 'email-header.png');
   const unsubBase = `${env('SUPABASE_URL')}/functions/v1/unsubscribe`;
   const unsubUrl = (s: Subscriber, channel: 'email' | 'sms') => `${unsubBase}?t=${s.unsubscribe_token}&c=${channel}`;
 
