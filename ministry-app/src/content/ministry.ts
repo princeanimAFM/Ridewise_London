@@ -112,9 +112,9 @@ export const ministry = {
     quotes: require('../../assets/photos/micah-white-shirt.jpg') as ImageSource,
     sermons: require('../../assets/photos/micah-red-suit-full.jpg') as ImageSource,
   },
-  appShareUrl: 'https://afm-hub.expo.app', // website link used by "Share App"
+  appShareUrl: 'https://theafmchurch.org', // website link used by "Share App"
   // Privacy policy page on the website (needed for the App Store and Google Play listings)
-  privacyPolicyUrl: 'https://afm-hub.expo.app/privacy.html',
+  privacyPolicyUrl: 'https://theafmchurch.org/privacy.html',
   // Fill in once the app is live on Google Play: shows "Get it on Google Play" on the website.
   playStoreUrl: '', // 'https://play.google.com/store/apps/details?id=com.afm.hub'
 
@@ -149,8 +149,13 @@ The AFM Family Network is incorporated into The Alleluia Faith Mission.`,
       'The Great Gathering',
     ],
     introVideoYoutubeId: '', // TODO: YouTube ID of the video shown on the About screen
-    serviceTimes: [] as { day: string; detail: string }[], // TODO: e.g. { day: 'Sunday', detail: 'Worship Service · 10:00 AM' }
-    address: '', // TODO: church address, or leave '' to hide
+    serviceTimes: [
+      { day: 'Sunday', detail: 'International Word Assembly · 8:00 AM' },
+      { day: 'Tuesday', detail: 'Time with the Rabbi · 6:00 PM' },
+      { day: 'Friday', detail: 'Friday Miracle Service · 6:00 PM' },
+      { day: 'Sunday night', detail: 'International Online Prayer Connect on Zoom · 8:00 PM Ghana time (Meeting ID 76330941, passcode AFM)' },
+    ] as { day: string; detail: string }[],
+    address: 'The AFM Center, Asuakwa, Sunyani (opposite the old police checkpoint, Barracks), Ghana',
   },
 
   contact: {
