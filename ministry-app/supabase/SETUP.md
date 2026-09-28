@@ -30,7 +30,8 @@ Text messages and AI writing are optional. Leave them out and everything else st
    - Email providers increasingly reject bulk mail sent "from" a free @gmail.com address. For reliable delivery, use an address on the ministry's own domain (for example `news@theafmhub.org`, a domain costs about $10/year) and verify the domain in Brevo. Replies still go to theafmfamily@gmail.com.
 2. **SMTP & API → API keys**: create a key (used for newsletters).
 3. **SMTP & API → SMTP**: note the SMTP login and create an SMTP key (used for account emails).
-4. In Supabase, go to **Authentication → Emails → SMTP Settings** and enable custom SMTP: host `smtp-relay.brevo.com`, port `587`, your Brevo SMTP login and key, sender name `The AFM HUB`.
+4. Account emails (codes, password resets) use branded templates with the AFM logo from https://theafmchurch.org/logo.png, set in **Authentication → Emails → Templates**. The email rate limit (**Authentication → Rate limits**) is 60 per hour; Supabase's default of 2 per hour is far too low once members sign up.
+5. In Supabase, go to **Authentication → Emails → SMTP Settings** and enable custom SMTP: host `smtp-relay.brevo.com`, port `587`, your Brevo SMTP login and key, sender name `The AFM HUB`.
 
 ## 3. Account emails use codes
 The app asks people to type a code, which works reliably in phone apps. In Supabase, go to **Authentication → Emails → Templates**:
