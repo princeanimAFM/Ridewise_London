@@ -26,7 +26,7 @@ Text messages and AI writing are optional. Leave them out and everything else st
 4. **Storage → brand** bucket: upload `supabase/brand/afm.jpg`, named exactly `afm.jpg`. It's the photo at the top of every newsletter.
 
 ## 2. Email (Brevo)
-1. Sign up at https://www.brevo.com, then **Senders & IP → Senders**: add and verify the address emails come from. Since 28 September 2026 that's **theafmfamily@gmail.com** (verified in Brevo). Supabase's SMTP sender email and the `NEWSLETTER_FROM_EMAIL` secret both use it.
+1. Sign up at https://www.brevo.com, then **Senders & IP → Senders**: add and verify the address emails come from. Since 28 September 2026 that's **"The AFM HUB" <hello@theafmchurch.org>**. The domain theafmchurch.org is authenticated in Brevo (Brevo code TXT, `brevo1._domainkey` and `brevo2._domainkey` CNAMEs in Squarespace DNS), and hello@ forwards to theafmfamily@gmail.com through Squarespace email forwarding. Supabase's SMTP sender and the `NEWSLETTER_FROM_EMAIL` / `NEWSLETTER_FROM_NAME` secrets use it; newsletter replies go to theafmfamily@gmail.com.
    - Email providers increasingly reject bulk mail sent "from" a free @gmail.com address. For reliable delivery, use an address on the ministry's own domain (for example `news@theafmhub.org`, a domain costs about $10/year) and verify the domain in Brevo. Replies still go to theafmfamily@gmail.com.
 2. **SMTP & API → API keys**: create a key (used for newsletters).
 3. **SMTP & API → SMTP**: note the SMTP login and create an SMTP key (used for account emails).
