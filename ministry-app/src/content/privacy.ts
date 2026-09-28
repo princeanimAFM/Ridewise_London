@@ -10,13 +10,13 @@
  * the House of Azanduna shop, update the relevant sections and the date.
  */
 
-export type PrivacySection = { heading: string; body?: string[]; bullets?: string[]; after?: string[] };
+export type PrivacySection = { id?: string; heading: string; body?: string[]; bullets?: string[]; after?: string[] };
 
 export const privacy = {
   title: 'Privacy Policy',
   appName: 'The AFM HUB',
   publisher: 'The AFM Family Network (Alleluia Faith Mission)',
-  effectiveDate: '26 September 2026',
+  effectiveDate: '28 September 2026',
   contactEmail: 'theafmfamily@gmail.com',
 
   summary:
@@ -139,30 +139,46 @@ export const privacy = {
       after: [
         'California residents: you have the right to know what personal information we collect, use and disclose; to request its deletion or correction; and not to be discriminated against for using these rights. We do not sell or share personal information as defined by the CCPA/CPRA, and we do not use sensitive personal information to infer characteristics about you.',
         'To use any of these rights, email theafmfamily@gmail.com. We will reply within one month (or within the time your local law requires) and may ask you to confirm your identity first.',
-        'Deleting your account: in the app go to More → My Account → Request account deletion, or email theafmfamily@gmail.com with the subject "Delete my AFM HUB account" from the address you signed up with. We delete your account, profile (including any profile photo) and newsletter subscription within 30 days.',
+        'To delete your account, see section 11.',
       ],
     },
     {
-      heading: '11. Children',
+      id: 'delete-account',
+      heading: '11. Deleting your account',
+      body: [
+        'You can ask us to delete your The AFM HUB account and its data at any time, whether or not you still have the app installed. There are two ways:',
+      ],
+      bullets: [
+        'In the app: go to More → My Account → Request account deletion. This opens an email to us, already filled in with your account details; just send it.',
+        'By email: send a message to theafmfamily@gmail.com with the subject "Delete my AFM HUB account", from the email address (or including the mobile number) you signed up with.',
+      ],
+      after: [
+        'We may ask you to confirm the request comes from you. Within 30 days we permanently delete your account and sign-in details, your name, email address and mobile number, your profile photo, your newsletter subscription and your notification push address, and we email you to confirm.',
+        'What we keep: nothing that identifies you, except where the law requires us to keep a record, and any prayer requests or emails you sent us, which are kept for no longer than 24 months (see section 8). You can ask us to delete those at the same time. Payments made through PayPal, Cash App, mobile money or your bank are held by those services under their own policies.',
+        'If you only want to stop the newsletter without deleting your account, use the unsubscribe link in any newsletter email.',
+      ],
+    },
+    {
+      heading: '12. Children',
       body: [
         'The app is suitable for all ages but is not directed at children under 13, and we do not knowingly collect personal information from children under 13 (or under 16 where local law requires). You must be at least 13 to create an account or subscribe to the newsletter. Children should ask a parent or guardian before sending a prayer request or using the AFM Assistant. If you believe a child has sent us personal information, contact us and we will delete it.',
       ],
     },
     {
-      heading: '12. Links and future features',
+      heading: '13. Links and future features',
       body: [
         'The app links to other services such as YouTube, Amazon and social media. We are not responsible for their privacy practices.',
         'Library files are provided free by the ministry. Some features are planned, such as the House of Azanduna shop and paid e-books. If a new feature collects additional information (for example, orders or payment requests), we will update this policy before it launches and, where required, ask for your consent.',
       ],
     },
     {
-      heading: '13. Changes to this policy',
+      heading: '14. Changes to this policy',
       body: [
         'We may update this policy from time to time. We will change the effective date at the top and, for significant changes, give notice in the app. The latest version is always available in the app under More → Privacy Policy.',
       ],
     },
     {
-      heading: '14. Contact us',
+      heading: '15. Contact us',
       body: ['For questions, requests or complaints about privacy, email theafmfamily@gmail.com.'],
     },
   ] as PrivacySection[],

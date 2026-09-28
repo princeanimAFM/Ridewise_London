@@ -20,7 +20,7 @@ const link = (s) => esc(s).replace(/([\w.+-]+@[\w-]+(?:\.[\w-]+)+)/g, '<a href="
 const para = (b) => `  <p>${link(b)}</p>`;
 const section = (s) =>
   [
-    `  <h2>${esc(s.heading)}</h2>`,
+    `  <h2${s.id ? ` id="${esc(s.id)}"` : ''}>${esc(s.heading)}</h2>`,
     ...(s.body || []).map(para),
     s.bullets ? `  <ul>\n${s.bullets.map((b) => `    <li>${link(b)}</li>`).join('\n')}\n  </ul>` : '',
     ...(s.after || []).map(para),
