@@ -20,19 +20,18 @@ Privacy policy for the Play listing: https://theafmchurch.org/privacy.html
 - Test APK 695e8c08: the one linked from the launch flyers and QR codes
 - Play bundle 97413c3b (version code 5): superseded by 609d0a24
 
-## Before uploading to Google Play
+## Google Play setup (done 28 September 2026)
 
-Google Play signs apps with its own key by default, so the Play version will not
-install over an APK people downloaded directly; they would have to uninstall first.
-To let Play updates install over the existing APK instead:
-
-1. In Play Console, when creating the app, choose to **use your own app signing key**
-   (not "Google-generated").
-2. Export the key EAS used for these builds: `npx eas-cli@latest credentials`
-   → Android → production → Keystore → Download.
-3. Upload that keystore to Play Console as the app signing key.
-
-If you skip this, tell existing users to uninstall the APK and install from Play.
+- **App signing:** Play Console uses the app's own EAS keystore as the app signing key
+  (uploaded via "Export and upload a key from Java keystore"; certificate SHA-256
+  `53:AC:E5:85:39:83:3F:80:2B:A3:F8:54:F3:4F:4B:6C:E0:48:18:C2:87:EA:C3:FB:46:E8:21:33:D7:59:59:99`).
+  This is the same key that signed the flyer APK and the test APKs, so the Play version
+  installs over them as an update. **Never replace or regenerate the Android keystore in EAS.**
+- **Closed testing:** track "Church testers", email list "AFM Church testers", all countries.
+  Release 6 (1.0.0) sent for review on 28 September 2026. Production access needs
+  12+ testers opted in for 14 days in a row.
+- **Reviewer login** (App content → Sign in details): afmhub.review@gmail.com, a normal member account.
+- **Store listing text and images:** `store/LISTING.md` and `store/`.
 
 ## On launch day
 
