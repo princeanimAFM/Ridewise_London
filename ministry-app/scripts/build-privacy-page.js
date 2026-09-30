@@ -28,7 +28,11 @@ const section = (s) =>
     .filter(Boolean)
     .join('\n');
 
-const html = `<title>${esc(p.appName)} Privacy Policy</title>
+const html = `<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(p.appName)} Privacy Policy</title>
 <meta name="description" content="How ${esc(p.appName)} handles your information.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:wght@600;700&family=Source+Sans+3:wght@400;600&display=swap">
