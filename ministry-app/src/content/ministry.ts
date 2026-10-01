@@ -65,6 +65,8 @@ export type Fragrance = {
   price?: string;
   image?: ImageSource;
   buyUrl?: string;
+  /** "The vision behind it": a YouTube, Google Drive or .mp4 link. */
+  video?: string;
 };
 
 export type LinkItem = {

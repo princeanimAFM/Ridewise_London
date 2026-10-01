@@ -2,7 +2,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { useContent } from '@/lib/liveContent';
 import { openLink, whatsappUrl } from '@/lib/links';
-import { Artwork, Body, Button, Screen, Title } from '@/components/ui';
+import { Artwork, Body, Button, Screen, SectionHeader, Title } from '@/components/ui';
+import { VideoPlayer } from '@/components/VideoPlayer';
+import { sizePrices } from '@/lib/video';
 import { radius, space, useTheme } from '@/theme';
 
 export default function FragranceDetail() {
@@ -12,6 +14,7 @@ export default function FragranceDetail() {
   const item = ministry.fragrances.items.find((f) => f.id === id);
   if (!item) return <Screen><Body>Product not found.</Body></Screen>;
 
+  const sizes = sizePrices(item.size, item.price);
   const orderOnWhatsapp = whatsappUrl(`Hello, I would like to order ${item.name}${item.size ? ` (${item.size})` : ''}.`);
 
   return (
@@ -33,10 +36,28 @@ export default function FragranceDetail() {
         </View>
       )}
 
-      <View style={[styles.priceRow, { borderColor: t.border }]}>
-        <Text style={{ color: t.textMuted }}>{item.size}</Text>
-        <Text style={[styles.price, { color: t.text }]}>{item.price}</Text>
-      </View>
+      {item.video ? (
+        <>
+          <SectionHeader title="The vision behind it" />
+          <VideoPlayer link={item.video} />
+        </>
+      ) : null}
+
+      {sizes.length > 0 ? (
+        <View style={[styles.sizes, { borderColor: t.border }]}>
+          {sizes.map((r, i) => (
+            <View key={r.size} style={[styles.sizeRow, i > 0 && { borderTopWidth: StyleSheet.hairlineWidth, borderColor: t.border }]}>
+              <Text style={{ color: t.textMuted, fontSize: 16 }}>{r.size}</Text>
+              <Text style={[styles.price, { color: t.text }]}>{r.price}</Text>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={[styles.priceRow, { borderColor: t.border }]}>
+          <Text style={{ color: t.textMuted }}>{item.size}</Text>
+          <Text style={[styles.price, { color: t.text }]}>{item.price}</Text>
+        </View>
+      )}
 
       {item.buyUrl ? (
         <Button label="Buy Now" icon="bag-handle-outline" variant="gold" onPress={() => openLink(item.buyUrl)} style={{ marginBottom: space.sm }} />
@@ -46,12 +67,13 @@ export default function FragranceDetail() {
       ) : !item.buyUrl ? (
         <Button label="Enquire by Email" icon="mail-outline" onPress={() => openLink(`mailto:${ministry.contact.email}?subject=${encodeURIComponent(`Order: ${item.name}`)}`)} />
       ) : null}
+
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  image: { width: '100%', aspectRatio: 1, borderRadius: radius.md, marginBottom: space.md },
+  image: { width: '100%', aspectRatio: 4 / 5, borderRadius: radius.md, marginBottom: space.md },
   brand: { fontSize: 12, fontWeight: '700', letterSpacing: 1.5 },
   notes: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
   note: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 },
@@ -65,4 +87,6 @@ const styles = StyleSheet.create({
     marginVertical: space.lg,
   },
   price: { fontSize: 22, fontWeight: '700' },
+  sizes: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, marginVertical: space.lg },
+  sizeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: space.sm + 2 },
 });

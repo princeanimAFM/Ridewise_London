@@ -31,7 +31,7 @@ export type Details = {
   collectionName: string;
 };
 export type BookRow = { id: string; title: string; subtitle?: string; description?: string; cover?: string; amazonUrl: string; price?: string };
-export type PerfumeRow = { id: string; name: string; image?: string; tagline?: string; description?: string; notes?: string; size?: string; price?: string; buyUrl?: string };
+export type PerfumeRow = { id: string; name: string; image?: string; tagline?: string; description?: string; notes?: string; size?: string; price?: string; buyUrl?: string; video?: string };
 export type QuoteRow = { id: string; text: string };
 export type GivingRow = { id: string; label: string; value: string; url?: string; note?: string };
 export type ServiceRow = { id: string; day: string; detail: string };
@@ -86,7 +86,7 @@ export function builtinValue(key: ContentKey): unknown {
       return m.books.map((b): BookRow => ({ id: b.id, title: b.title, subtitle: b.subtitle ?? '', description: b.description, cover: imageRef(b.cover), amazonUrl: b.amazonUrl, price: b.price ?? '' }));
     case 'perfumes':
       return m.fragrances.items.length
-        ? m.fragrances.items.map((f): PerfumeRow => ({ id: f.id, name: f.name, image: imageRef(f.image), tagline: f.tagline, description: f.description, notes: f.notes?.join(', ') ?? '', size: f.size ?? '', price: f.price ?? '', buyUrl: f.buyUrl ?? '' }))
+        ? m.fragrances.items.map((f): PerfumeRow => ({ id: f.id, name: f.name, image: imageRef(f.image), tagline: f.tagline, description: f.description, notes: f.notes?.join(', ') ?? '', size: f.size ?? '', price: f.price ?? '', buyUrl: f.buyUrl ?? '', video: f.video ?? '' }))
         : m.fragrances.previewPhotos.map((p, i): PerfumeRow => ({ id: `peek-${i + 1}`, name: p.name, image: imageRef(p.image) }));
     case 'quotes':
       return m.quotes.map((q): QuoteRow => ({ id: q.id, text: q.text }));
@@ -168,6 +168,7 @@ function build(o: Overrides): Content {
         price: opt(p.price),
         image: imageFrom(p.image),
         buyUrl: opt(p.buyUrl),
+        video: opt(p.video),
       })),
     },
     socials: socials ? socials.map(link) : m.socials,

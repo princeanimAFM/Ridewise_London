@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
+import { priceSummary } from '@/lib/video';
 import { Artwork, Body, Button, Card, Chip, Screen, Title } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -61,7 +62,13 @@ export default function Store() {
                     <Text numberOfLines={1} style={{ color: t.textMuted, fontSize: 13 }}>
                       {f.tagline}
                     </Text>
-                    {f.price && <Text style={{ color: t.accent, fontWeight: '700', marginTop: 2 }}>{f.price}</Text>}
+                    {f.price && <Text style={{ color: t.accent, fontWeight: '700', marginTop: 2 }}>{priceSummary(f.size, f.price)}</Text>}
+                    {f.video ? (
+                      <View style={styles.videoTag}>
+                        <Ionicons name="play-circle" size={14} color={t.gold} />
+                        <Text style={{ color: t.textMuted, fontSize: 12 }}>The vision</Text>
+                      </View>
+                    ) : null}
                   </View>
                 </Card>
               ))}
@@ -116,7 +123,8 @@ const styles = StyleSheet.create({
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   tile: { flexBasis: '46%', flexGrow: 1, maxWidth: '48.5%' },
   bookCover: { width: '100%', aspectRatio: 2 / 3, borderTopLeftRadius: radius.md, borderTopRightRadius: radius.md },
-  fragranceImage: { width: '100%', aspectRatio: 1 },
+  fragranceImage: { width: '100%', aspectRatio: 4 / 5 },
+  videoTag: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
   tileText: { padding: space.sm },
   tileTitle: { fontSize: 15, fontWeight: '700' },
 });
