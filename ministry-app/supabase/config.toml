@@ -1,0 +1,9 @@
+# Supabase CLI settings for The AFM HUB functions.
+[functions.unsubscribe]
+verify_jwt = false
+
+[functions.send-announcement]
+verify_jwt = true
+
+[functions.draft-announcement]
+verify_jwt = true

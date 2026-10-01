@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile App Proposal Template</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  :root { --navy: #1F3A5F; --accent: #C9A227; --ink: #1D232B; --muted: #5E6773; --line: #DCE1E7; --soft: #F4F6F9; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Liberation Sans', Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3 { font-family: 'Liberation Serif', Georgia, serif; color: var(--navy); line-height: 1.2; }
+  h1 { font-size: 28pt; margin: 0; }
+  h2 { font-size: 15.5pt; margin: 20px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 12pt; margin: 12px 0 4px; }
+  p { margin: 6px 0; }
+  ul { margin: 4px 0 8px; padding-left: 18px; }
+  li { margin: 2px 0; }
+  .fill { background: #FFF4CC; padding: 0 4px; border-radius: 3px; font-weight: 600; }
+  .guide { background: #EAF1FB; border-left: 4px solid var(--navy); padding: 8px 12px; border-radius: 4px; margin: 8px 0; font-size: 9.5pt; page-break-inside: avoid; }
+  .guide b:first-child { color: var(--navy); }
+  .cover { height: 215mm; display: flex; flex-direction: column; justify-content: space-between; }
+  .band { background: var(--navy); color: #fff; border-radius: 10px; padding: 34px 28px; margin-top: 20mm; }
+  .band h1 { color: #fff; }
+  .band .kicker { color: var(--accent); letter-spacing: 3px; font-weight: 700; font-size: 10pt; }
+  .band p { color: #D5DEEA; font-size: 12pt; }
+  .meta td { border: none; padding: 3px 12px 3px 0; font-size: 11pt; }
+  .meta td:first-child { color: var(--muted); width: 140px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 9.5pt; }
+  th { background: var(--navy); color: #fff; text-align: left; padding: 6px 8px; }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:nth-child(even) td { background: #FAFBFC; }
+  .pk th { text-align: center; } .pk td { text-align: center; } .pk td:first-child, .pk th:first-child { text-align: left; }
+  .yes { color: #2D6A3E; font-weight: 700; } .no { color: #A0A7B0; }
+  .price td { font-weight: 700; font-size: 11pt; background: var(--soft) !important; }
+  .cols { display: flex; gap: 14px; } .cols > div { flex: 1; }
+  .box { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; page-break-inside: avoid; }
+  .sign { display: flex; gap: 24px; margin-top: 18px; }
+  .sign div { flex: 1; }
+  .line { border-bottom: 1px solid var(--ink); height: 34px; margin-bottom: 4px; }
+  .small { font-size: 8.5pt; color: var(--muted); }
+  .pb { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<!-- ============ HOW TO USE (remove before sending) ============ -->
+<div class="guide" style="font-size:10pt">
+  <b>How to use this template</b> (remove this box and the blue guidance boxes before sending)<br>
+  Fill in everything <span class="fill">highlighted like this</span>. The prices shown are <b>suggestions</b>: use the lower end for small churches, NGOs and local businesses in Ghana, and the higher end for larger or international organisations. Blue boxes explain the reasoning so you can talk the client through it. Tip: send the client the name of the organisation, the features they want and your prices, and ask Claude to produce a filled-in, ready-to-send PDF.
+</div>
+
+<div class="cover">
+  <div class="band">
+    <div class="kicker">PROPOSAL</div>
+    <h1>Mobile App for <span class="fill" style="color:#1D232B">[Client Organisation]</span></h1>
+    <p>Design, development, app-store publishing and ongoing support for an Android and iPhone app.</p>
+  </div>
+  <table class="meta">
+    <tr><td>Prepared for</td><td><span class="fill">[Contact name, title]</span></td></tr>
+    <tr><td>Prepared by</td><td><span class="fill">[Your name / studio name]</span> · <span class="fill">[phone]</span> · <span class="fill">[email]</span></td></tr>
+    <tr><td>Date</td><td><span class="fill">[Date]</span></td></tr>
+    <tr><td>Valid until</td><td><span class="fill">[Date + 30 days]</span></td></tr>
+    <tr><td>Reference</td><td><span class="fill">[P-2026-001]</span></td></tr>
+  </table>
+</div>
+
+<!-- ============ 1 ============ -->
+<h2 class="pb">1. Summary</h2>
+<p><span class="fill">[Client Organisation]</span> wants a mobile app that brings its <span class="fill">[messages, events, resources, products]</span> together in one place, keeps members informed with announcements and newsletters, and makes it easy to <span class="fill">[give / buy / book / get in touch]</span>.</p>
+<p>This proposal covers building the app, setting up the systems behind it, publishing it on the Google Play Store <span class="fill">[and Apple App Store]</span>, training your team, and supporting it after launch.</p>
+<div class="guide"><b>Why this matters:</b> open with the client's goals in their own words. They buy outcomes (members informed, more giving, easy access) more than features.</div>
+
+<!-- ============ 2 ============ -->
+<h2>2. What the app will do</h2>
+<div class="cols">
+  <div>
+    <h3>For members and the public</h3>
+    <ul>
+      <li>Home screen with the latest content and announcements</li>
+      <li>Audio and video: stream messages in the app, with background play and lock-screen controls</li>
+      <li>Live streaming of services or events from YouTube</li>
+      <li>Daily quotes or devotionals, easy to share</li>
+      <li>Store: books and products with buy links</li>
+      <li>Giving: PayPal, Mobile Money and bank details with one-tap copy</li>
+      <li>About, leadership biography, handbook or FAQs</li>
+      <li>Social media and contact links, prayer or contact requests</li>
+      <li>Optional accounts: email sign-up, password reset</li>
+      <li>Newsletter sign-up by email or text</li>
+      <li>Push notifications for announcements and daily messages</li>
+      <li>AI assistant that answers questions about the organisation</li>
+    </ul>
+  </div>
+  <div>
+    <h3>For your team (admin dashboard in the app)</h3>
+    <ul>
+      <li>Post announcements with a flyer, and send them by email, text and push notification in one tap</li>
+      <li>"Write it with AI" to draft announcements from a few notes</li>
+      <li>Edit books, products, quotes, giving details, links, service times and the theme, with no app update needed</li>
+      <li>Add or remove admins</li>
+      <li>Subscriber counts and delivery results</li>
+    </ul>
+    <h3>Also included</h3>
+    <ul>
+      <li>App icon, store graphics and screenshots</li>
+      <li>Privacy policy and Play Store data-safety forms</li>
+      <li>Store listing text</li>
+      <li>Handover guide and a training session</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 3 ============ -->
+<h2 class="pb">3. Packages and price</h2>
+<table class="pk">
+  <tr><th>Feature</th><th>Starter</th><th>Standard</th><th>Premium</th></tr>
+  <tr><td>Content screens: about, biography, FAQs, contact, social links</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Audio and video streaming, live services</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Daily quotes, store with buy links, giving screen</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Google Play Store publishing</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Accounts, newsletter sign-up, push notifications</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Admin dashboard: announcements with email, text and push</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Admin content editing: books, products, quotes, links</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>AI assistant and "Write it with AI"</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+  <tr><td>Apple App Store (iPhone) publishing</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+  <tr><td>Custom branding pack (icon, splash, store graphics)</td><td>Basic</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Revision rounds</td><td>1</td><td>2</td><td>3</td></tr>
+  <tr><td>Free bug fixes after launch</td><td>30 days</td><td>60 days</td><td>90 days</td></tr>
+  <tr class="price"><td>One-time price</td><td><span class="fill">[$2,500–5,000]</span></td><td><span class="fill">[$6,000–12,000]</span></td><td><span class="fill">[$12,000+]</span></td></tr>
+</table>
+<div class="guide"><b>Pricing guide:</b> for Ghanaian or West African clients, Starter is about GH₵ 30,000–55,000, Standard GH₵ 65,000–130,000 and Premium GH₵ 130,000+ (convert at the day's rate). For US, UK or EU clients the same work is often priced 2–4 times higher. Agencies charge $30,000–80,000+. Quote in one currency and state it clearly.</div>
+
+<h3>Payment schedule</h3>
+<table>
+  <tr><th>Milestone</th><th>Share</th><th>Amount</th></tr>
+  <tr><td>Deposit, on signing (work starts)</td><td>50%</td><td><span class="fill">[amount]</span></td></tr>
+  <tr><td>Test version delivered to your phones</td><td>30%</td><td><span class="fill">[amount]</span></td></tr>
+  <tr><td>App live on the store(s)</td><td>20%</td><td><span class="fill">[amount]</span></td></tr>
+</table>
+<p>Payment by <span class="fill">[bank transfer / Mobile Money / PayPal]</span> within <span class="fill">[7]</span> days of each invoice. Work pauses if a payment is more than <span class="fill">[14]</span> days late.</p>
+
+<!-- ============ 4 ============ -->
+<h2>4. Timeline</h2>
+<table>
+  <tr><th>Week</th><th>What happens</th><th>What we need from you</th></tr>
+  <tr><td>1</td><td>Kick-off, content gathering, design direction</td><td>Logo, photos, text, links, giving details</td></tr>
+  <tr><td>2–4</td><td>Build the app and admin dashboard</td><td>Quick answers to questions</td></tr>
+  <tr><td>5</td><td>Test version on your phones, revisions</td><td>Feedback within 3 days</td></tr>
+  <tr><td>5–7</td><td>Google Play closed test (new accounts must test with 12+ people for 14 days), store listing</td><td>12+ testers' Gmail addresses</td></tr>
+  <tr><td>7–8</td><td>Store review and launch, training session</td><td>Store account access</td></tr>
+</table>
+<p class="small">Timeline starts when the deposit and content are received. Store review times are set by Google and Apple.</p>
+
+<!-- ============ 5 ============ -->
+<h2 class="pb">5. What's included and what isn't</h2>
+<div class="cols">
+  <div class="box">
+    <h3>Included</h3>
+    <ul>
+      <li>Everything in the chosen package</li>
+      <li>Setting up the app's backend, email and notification services in your name</li>
+      <li>Store listing, graphics, privacy policy, data-safety answers</li>
+      <li>Revision rounds as listed</li>
+      <li>Bug fixes for the period listed after launch</li>
+      <li>One training session (online or in person) and a written guide</li>
+    </ul>
+  </div>
+  <div class="box">
+    <h3>Not included (quoted separately)</h3>
+    <ul>
+      <li>Fees charged by third-party services (see section 6)</li>
+      <li>Writing, photography or video production</li>
+      <li>New features after sign-off</li>
+      <li>Changes needed because a third party changes its rules or pricing</li>
+      <li>Websites, unless agreed</li>
+      <li>Support after the free period, unless on a support plan (section 7)</li>
+    </ul>
+  </div>
+</div>
+
+<!-- ============ 6 ============ -->
+<h2>6. Running costs (paid by you, directly to each service)</h2>
+<p>These services run behind the app. They're billed to <b>your</b> card in <b>your</b> accounts, so you always control them. Most are free while the app is small.</p>
+<table>
+  <tr><th>Service</th><th>What it does</th><th>Free allowance</th><th>When it costs</th></tr>
+  <tr><td>Google Play</td><td>Android store</td><td>—</td><td>$25 once</td></tr>
+  <tr><td>Apple Developer</td><td>iPhone store</td><td>—</td><td>$99 per year (if iPhone)</td></tr>
+  <tr><td>Supabase</td><td>Accounts, database, photos, sending</td><td>50,000 users, 1 GB files, 5 GB bandwidth/month</td><td>$25/month when larger</td></tr>
+  <tr><td>Brevo</td><td>Email newsletters and codes</td><td>300 emails a day</td><td>From about $9/month for 5,000 emails</td></tr>
+  <tr><td>SMS provider</td><td>Text announcements (optional)</td><td>—</td><td>Per text, depends on country and provider</td></tr>
+  <tr><td>Expo</td><td>App builds, push notifications</td><td>Push notifications free</td><td>Not needed normally</td></tr>
+  <tr><td>Anthropic (AI)</td><td>AI assistant and drafting (optional)</td><td>—</td><td>A few cents per use (prepaid)</td></tr>
+  <tr><td>Domain</td><td>Web address and branded email (optional)</td><td>—</td><td>About $10–20 per year</td></tr>
+</table>
+<p><b>Typical total:</b> $0/month at launch, about $10–50/month as the audience grows. Text messages are the one cost that can climb quickly, so we recommend free push notifications and email as the main channels.</p>
+<div class="guide"><b>Why the client pays these directly:</b> they own the accounts and data, you're never out of pocket, and nothing breaks if you part ways. If the client prefers one bill, you can pay the services and re-bill them monthly, usually with a 10–20% handling fee. Put that in writing.</div>
+
+<!-- ============ 7 ============ -->
+<h2 class="pb">7. Support plans (optional, monthly)</h2>
+<table class="pk">
+  <tr><th></th><th>Basic</th><th>Standard</th><th>Premium</th></tr>
+  <tr><td>Keeping services running and monitored</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Bug fixes</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Yearly Android and iOS updates (stores require these)</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Small changes and help each month</td><td>1 hour</td><td>4 hours</td><td>10 hours</td></tr>
+  <tr><td>Response time</td><td>3 working days</td><td>1 working day</td><td>Same day</td></tr>
+  <tr><td>Monthly usage and cost report</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+  <tr><td>Newsletter and content help</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+  <tr class="price"><td>Per month</td><td><span class="fill">[$100]</span></td><td><span class="fill">[$250]</span></td><td><span class="fill">[$500]</span></td></tr>
+</table>
+<p>Extra work beyond the plan is <span class="fill">[$25–60]</span> per hour, or a fixed price per feature agreed in advance. Plans run month to month with <span class="fill">[30]</span> days' notice to cancel.</p>
+<div class="guide"><b>Why you need this:</b> Google and Apple require apps to be updated for new phone software roughly once a year, or the app can be hidden from the store. A support plan pays you for that responsibility and gives you steady monthly income.</div>
+
+<!-- ============ 8 ============ -->
+<h2>8. Ownership, accounts and privacy</h2>
+<ul>
+  <li><b>Your accounts:</b> the store, backend, email and domain accounts are created in <span class="fill">[Client Organisation]</span>'s name. <span class="fill">[Your name]</span> is added as a team member for the build and support.</li>
+  <li><b>Code and content:</b> when paid in full, you own the app's content and receive the source code. <span class="fill">[Your name]</span> may reuse general, non-client-specific code and may show the app in their portfolio.</li>
+  <li><b>Your data:</b> member and subscriber data belongs to you, is stored in your accounts, and is only used to run the app.</li>
+  <li><b>Changes in scope:</b> new requests after sign-off are quoted in writing before work starts.</li>
+  <li><b>Store approval:</b> we follow Google's and Apple's rules and handle any review feedback. Final approval decisions rest with the stores.</li>
+</ul>
+
+<!-- ============ 9 ============ -->
+<h2>9. Acceptance</h2>
+<p>Package chosen: <span class="fill">[Starter / Standard / Premium]</span> &nbsp;·&nbsp; Support plan: <span class="fill">[None / Basic / Standard / Premium]</span> &nbsp;·&nbsp; Total one-time price: <span class="fill">[amount]</span></p>
+<div class="sign">
+  <div><div class="line"></div>For <span class="fill">[Client Organisation]</span><br><span class="small">Name, title, date</span></div>
+  <div><div class="line"></div>For <span class="fill">[Your name / studio]</span><br><span class="small">Name, date</span></div>
+</div>
+<p class="small" style="margin-top:24px">Third-party prices are approximate as of <span class="fill">[month year]</span> and set by each provider.</p>
+
+</body>
+</html>
