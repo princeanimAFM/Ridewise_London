@@ -206,6 +206,7 @@ export const sections: Section[] = [
       { key: 'storeLaunched', label: 'Launched: open the shop', kind: 'switch', group: 'House of Azanduna', hint: 'Off shows "Coming soon" with the sneak peek. On shows the perfumes as products.' },
       { key: 'brandStory', label: 'Brand story', kind: 'multiline' },
       { key: 'collectionName', label: 'Name on the bottles', placeholder: 'Rabbi Azanduna' },
+      { key: 'orderPhones', label: 'Order phone numbers', placeholder: '0592 717 859, 0555 181 555', hint: 'Shown as Call buttons on each perfume. Separate with commas.' },
       { key: 'shopUrl', label: 'Online shop link (optional)', kind: 'url', placeholder: 'https://…' },
     ],
   },
