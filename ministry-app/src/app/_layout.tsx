@@ -9,6 +9,7 @@ import { syncContent } from '@/lib/contentSync';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
+import { Linking } from 'react-native';
 
 export default function RootLayout() {
   const t = useTheme();
@@ -20,7 +21,10 @@ export default function RootLayout() {
     // Tapping a notification opens the matching screen.
     const open = (response: Notifications.NotificationResponse | null) => {
       const url = response?.notification.request.content.data?.url;
-      if (typeof url === 'string' && url.startsWith('/')) router.push(url as never);
+      if (typeof url !== 'string') return;
+      if (url.startsWith('/')) router.push(url as never);
+      // Telegram posts and other outside links open in their own app (t.me opens Telegram).
+      else if (/^https:\/\//.test(url)) Linking.openURL(url).catch(() => {});
     };
     open(Notifications.getLastNotificationResponse());
     const sub = Notifications.addNotificationResponseReceivedListener(open);
