@@ -86,6 +86,8 @@ npx expo export -p web
 npx eas-cli@latest deploy --prod --non-interactive
 ```
 
+`eas update` also writes to `dist/`, so run the web export again after publishing an update and before deploying.
+
 The site's address is shown after deploying (for example `https://afm-hub.expo.app`). The privacy policy is at `<address>/privacy.html`, and that's the link Google Play asks for. After the first deploy, put the address in `appShareUrl` and `<address>/privacy.html` in `privacyPolicyUrl` in `src/content/ministry.ts`. Redeploy whenever the app's code changes. Content edited in the Owner dashboard appears on the website automatically.
 
 `public/index.html` is the website's page shell, generated from the app's content by `node scripts/build-web-home.js`. It holds the search-engine and link-preview details, and a readable welcome page (name, theme, biography, links) that search engines index and visitors see while the app loads. Run it again after changing ministry details, and set `playStoreUrl` in `src/content/ministry.ts` once the app is live to add "Get it on Google Play" buttons. After deploying, add the site to Google Search Console (search.google.com/search-console) and submit `<address>/sitemap.xml` so Google finds it sooner.
