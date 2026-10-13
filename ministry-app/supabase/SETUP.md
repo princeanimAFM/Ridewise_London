@@ -105,3 +105,10 @@ When you handle an account deletion request, also delete the member's folder in 
 - **Android**: create a Firebase project (https://console.firebase.google.com) and add an Android app with package `com.afm.hub`. Then go to **Project settings → Service accounts → Generate new private key**, and upload that JSON to Expo with `npx eas-cli credentials` (Android → Google Service Account → FCM V1).
 - **iPhone**: handled automatically by EAS when you build with your Apple Developer account.
 - The daily AFM quote needs none of this. It's scheduled on the phone.
+
+## 8. Telegram channel notifications
+New posts in the AFM Telegram channel send a push to everyone who allows announcement
+notifications (function `telegram-webhook`, table `telegram_posts`, both deployed 13 October 2026).
+- Bot: **@afmhub_notify_bot**, added to the channel as an admin with no extra permissions.
+- Secrets: `TELEGRAM_BOT_TOKEN` (from @BotFather), `TELEGRAM_WEBHOOK_SECRET` (set), optional `TELEGRAM_CHANNEL`.
+- To (re)register the webhook, open `https://<project>.supabase.co/functions/v1/telegram-webhook?setup=<TELEGRAM_WEBHOOK_SECRET>` once.
