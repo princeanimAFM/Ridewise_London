@@ -73,7 +73,7 @@ export default function Subscribe() {
       <PhotoHero source={ministry.photos.home} height={220} position="top" style={styles.hero}>
         <Text style={[styles.kicker, { color: t.gold }]}>STAY CONNECTED</Text>
         <Text style={styles.title}>The AFM Newsletter</Text>
-        <Text style={styles.sub}>Announcements, flyers and upcoming programmes</Text>
+        <Text style={[styles.sub, { color: t.onPrimaryMuted }]}>Announcements, flyers and upcoming programmes</Text>
       </PhotoHero>
 
       {done ? (
@@ -110,5 +110,5 @@ const styles = StyleSheet.create({
   hero: { borderRadius: radius.lg, marginBottom: space.md },
   kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2 },
   title: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', marginTop: 2 },
-  sub: { color: '#DCE8DC', marginTop: 4 },
+  sub: { marginTop: 4 },
 });

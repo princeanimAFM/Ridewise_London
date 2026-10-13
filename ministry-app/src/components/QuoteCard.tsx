@@ -17,7 +17,7 @@ export function QuoteCard({ quote, featured }: { quote: Quote; featured?: boolea
       <Ionicons name="chatbox-ellipses" size={featured ? 28 : 20} color={t.gold} />
       <Text style={[styles.text, { color: fg, fontSize: featured ? 22 : 18 }]}>“{quote.text}”</Text>
       <View style={styles.footer}>
-        <Text style={{ color: featured ? '#DCE8DC' : t.textMuted, flex: 1 }}>— {quote.source ?? ministry.quoteSource}</Text>
+        <Text style={{ color: featured ? t.onPrimaryMuted : t.textMuted, flex: 1 }}>— {quote.source ?? ministry.quoteSource}</Text>
         <Button label="Share" icon="share-social-outline" variant={featured ? 'gold' : 'outline'} onPress={share} style={styles.share} />
       </View>
     </View>

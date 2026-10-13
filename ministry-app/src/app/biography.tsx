@@ -23,7 +23,7 @@ export default function Biography() {
             </View>
           ))}
         </View>
-        <Text style={styles.knownAs}>Known as {biography.knownAs.join(' · ')}</Text>
+        <Text style={[styles.knownAs, { color: t.onPrimaryMuted }]}>Known as {biography.knownAs.join(' · ')}</Text>
       </PhotoHero>
 
       <View style={styles.body}>
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   roles: { flexDirection: 'row', flexWrap: 'wrap', gap: space.xs, marginTop: space.md },
   role: { borderRadius: 999, borderWidth: 1, borderColor: 'rgba(255,255,255,0.35)', paddingHorizontal: 10, paddingVertical: 4 },
   roleText: { color: '#FFFFFF', fontSize: 13, fontWeight: '600' },
-  knownAs: { color: '#DCE8DC', fontStyle: 'italic', marginTop: space.md },
+  knownAs: { fontStyle: 'italic', marginTop: space.md },
   body: { padding: space.md },
   intro: { fontFamily: fonts.serif, fontSize: 20, lineHeight: 30, marginBottom: space.md },
   introMore: { fontSize: 16, lineHeight: 24, marginBottom: space.md },

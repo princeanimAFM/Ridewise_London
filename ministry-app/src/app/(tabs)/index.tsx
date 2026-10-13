@@ -66,7 +66,7 @@ export default function Home() {
           <Text style={[styles.welcome, { color: t.gold }]}>WELCOME TO</Text>
           <Text style={styles.name}>{ministry.name}</Text>
           <Text style={styles.minister}>{ministry.minister}</Text>
-          <Text style={styles.tagline}>{ministry.tagline}</Text>
+          <Text style={[styles.tagline, { color: t.onPrimaryMuted }]}>{ministry.tagline}</Text>
         </View>
       </PhotoHero>
 
@@ -94,9 +94,9 @@ export default function Home() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 16 }}>Get the app on your phone</Text>
-              <Text style={{ color: '#DCE8DC', marginTop: 2 }}>Free on Google Play, with notifications and offline quotes</Text>
+              <Text style={{ color: t.onPrimaryMuted, marginTop: 2 }}>Free on Google Play, with notifications and offline quotes</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#DCE8DC" />
+            <Ionicons name="chevron-forward" size={20} color={t.onPrimaryMuted} />
           </Pressable>
         )}
 
@@ -150,9 +150,9 @@ export default function Home() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={{ color: '#FFFFFF', fontWeight: '700', fontSize: 16 }}>Get the AFM Newsletter</Text>
-              <Text style={{ color: '#DCE8DC', marginTop: 2 }}>Announcements by email or text</Text>
+              <Text style={{ color: t.onPrimaryMuted, marginTop: 2 }}>Announcements by email or text</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#DCE8DC" />
+            <Ionicons name="chevron-forward" size={20} color={t.onPrimaryMuted} />
           </Pressable>
         )}
 
@@ -243,7 +243,7 @@ const styles = StyleSheet.create({
   logo: { width: 52, height: 52, borderRadius: 26 },
   name: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 34, fontWeight: '700', marginTop: 2 },
   minister: { color: '#FFFFFF', fontSize: 15, fontWeight: '600', marginTop: space.xs },
-  tagline: { color: '#DCE8DC', fontStyle: 'italic', marginTop: space.xs },
+  tagline: { fontStyle: 'italic', marginTop: space.xs },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: -space.lg },
   shortcut: {
     flexBasis: '31%',

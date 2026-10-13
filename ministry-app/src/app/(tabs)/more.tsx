@@ -41,6 +41,7 @@ export default function More() {
       {Platform.OS !== 'web' && <ListRow icon="notifications-outline" title="Notifications" subtitle="Daily quote & announcements" onPress={() => router.push('/notifications')} />}
       <ListRow icon="calendar-outline" title="Announcements" subtitle="Upcoming programmes & flyers" onPress={() => router.push('/announcements')} />
       {Platform.OS !== 'web' && <ListRow icon="star-outline" title="Rate the app" subtitle="Leave a review on the store" onPress={rateApp} />}
+      <ListRow icon="color-palette-outline" title="Appearance" subtitle="Green or blue, light or dark" onPress={() => router.push('/appearance')} />
       <ListRow icon="share-social-outline" title="Share App" subtitle={`Invite others to ${ministry.name}`} onPress={shareApp} />
 
       <SectionHeader title="Legal" />

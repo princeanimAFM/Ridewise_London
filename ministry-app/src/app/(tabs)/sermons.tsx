@@ -31,7 +31,7 @@ export default function Sermons() {
       <PhotoHero source={ministry.photos.sermons} height={250} position="top" style={styles.hero}>
         <Text style={[styles.kicker, { color: t.gold }]}>{ministry.podcast.title.toUpperCase()}</Text>
         <Text style={styles.heroTitle}>Sermons & Teachings</Text>
-        <Text style={styles.heroSub}>{episodes.length ? `${episodes.length} messages to play in the app` : '500+ audio messages'}</Text>
+        <Text style={[styles.heroSub, { color: t.onPrimaryMuted }]}>{episodes.length ? `${episodes.length} messages to play in the app` : '500+ audio messages'}</Text>
       </PhotoHero>
       <Button label="Watch live services" icon="radio-outline" variant="outline" onPress={() => router.push('/live')} style={{ marginBottom: space.md }} />
       {episodes.length > 0 && (
@@ -104,7 +104,7 @@ const styles = StyleSheet.create({
   hero: { borderRadius: radius.lg, marginBottom: space.md },
   kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2 },
   heroTitle: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', marginTop: 2 },
-  heroSub: { color: '#DCE8DC', marginTop: 4 },
+  heroSub: { marginTop: 4 },
   search: {
     flexDirection: 'row',
     alignItems: 'center',

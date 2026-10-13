@@ -20,7 +20,7 @@ export function MiniPlayer() {
           <Text numberOfLines={1} style={styles.title}>
             {episode.title}
           </Text>
-          <Text style={styles.sub}>{buffering ? 'Loading…' : playing ? 'Now playing' : 'Paused'}</Text>
+          <Text style={[styles.sub, { color: t.onPrimaryMuted }]}>{buffering ? 'Loading…' : playing ? 'Now playing' : 'Paused'}</Text>
         </View>
         <Pressable onPress={toggle} hitSlop={10} accessibilityLabel={playing ? 'Pause' : 'Play'}>
           <Ionicons name={playing ? 'pause-circle' : 'play-circle'} size={40} color={t.gold} />
@@ -39,5 +39,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm },
   art: { width: 44, height: 44, borderRadius: 6 },
   title: { color: '#FFFFFF', fontWeight: '700' },
-  sub: { color: '#DCE8DC', fontSize: 12, marginTop: 2 },
+  sub: { fontSize: 12, marginTop: 2 },
 });

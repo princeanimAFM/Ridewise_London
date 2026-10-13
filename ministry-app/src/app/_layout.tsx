@@ -52,6 +52,7 @@ export default function RootLayout() {
         <Stack.Screen name="handbook" options={{ title: 'The AFM Handbook' }} />
         <Stack.Screen name="assistant" options={{ title: 'AFM Assistant' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy Policy' }} />
+        <Stack.Screen name="appearance" options={{ title: 'Appearance' }} />
         <Stack.Screen name="account/index" options={{ title: 'My Account' }} />
         <Stack.Screen name="account/sign-up" options={{ title: 'Create Account' }} />
         <Stack.Screen name="account/forgot" options={{ title: 'Password' }} />

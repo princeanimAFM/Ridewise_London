@@ -47,7 +47,7 @@ export default function Handbook() {
           <View style={[styles.cover, { backgroundColor: t.primary }]}>
             <Text style={[styles.kicker, { color: t.gold }]}>{handbook.subtitle.toUpperCase()}</Text>
             <Text style={styles.coverTitle}>{handbook.title}</Text>
-            <Text style={styles.motto}>{handbook.motto}</Text>
+            <Text style={[styles.motto, { color: t.onPrimaryMuted }]}>{handbook.motto}</Text>
           </View>
 
           <View style={styles.toc}>
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   cover: { borderRadius: radius.lg, padding: space.lg, alignItems: 'center', gap: space.xs },
   kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 1.5 },
   coverTitle: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 28, fontWeight: '700', textAlign: 'center' },
-  motto: { color: '#DCE8DC', fontStyle: 'italic', textAlign: 'center' },
+  motto: { fontStyle: 'italic', textAlign: 'center' },
   toc: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md },
   missionLink: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.md, borderRadius: radius.md, marginTop: space.md },
   h2: { fontFamily: fonts.serif, fontSize: 22, fontWeight: '700', marginTop: space.xl, marginBottom: space.sm },

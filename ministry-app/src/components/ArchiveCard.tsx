@@ -17,7 +17,7 @@ export function ArchiveCard() {
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+        <Text style={[styles.subtitle, { color: t.onPrimaryMuted }]}>{subtitle}</Text>
       </View>
       <Ionicons name="play-circle" size={36} color={t.gold} />
     </Card>
@@ -28,5 +28,5 @@ const styles = StyleSheet.create({
   card: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md },
   icon: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   title: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 19, fontWeight: '700' },
-  subtitle: { color: '#DCE8DC', marginTop: 4 },
+  subtitle: { marginTop: 4 },
 });

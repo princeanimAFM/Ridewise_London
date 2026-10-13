@@ -23,7 +23,7 @@ export default function Quotes() {
       <PhotoHero source={ministry.photos.quotes} height={260} position="top" style={styles.hero}>
         <Text style={[styles.kicker, { color: t.gold }]}>WORDS OF WISDOM</Text>
         <Text style={styles.title}>Quotes by AFM</Text>
-        <Text style={styles.sub}>{ministry.quotes.length} quotes · tap Share to pass one on</Text>
+        <Text style={[styles.sub, { color: t.onPrimaryMuted }]}>{ministry.quotes.length} quotes · tap Share to pass one on</Text>
       </PhotoHero>
       {!query && <QuoteCard quote={today} featured />}
       <View style={[styles.search, { backgroundColor: t.surface, borderColor: t.border }]}>
@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
   hero: { borderRadius: radius.lg, marginBottom: space.md },
   kicker: { fontSize: 12, fontWeight: '700', letterSpacing: 2 },
   title: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', marginTop: 2 },
-  sub: { color: '#DCE8DC', marginTop: 4 },
+  sub: { marginTop: 4 },
   search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingHorizontal: space.md, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
   input: { flex: 1, paddingVertical: 12, fontSize: 16 },
 });

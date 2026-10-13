@@ -78,14 +78,14 @@ export default function Store() {
               <Ionicons name="sparkles" size={34} color={t.gold} />
               <Text style={[styles.soonKicker, { color: t.gold }]}>COMING SOON</Text>
               <Text style={styles.soonTitle}>{ministry.fragrances.brandName}</Text>
-              <Text style={styles.soonText}>A first look at the {ministry.fragrances.collectionName} collection.</Text>
+              <Text style={[styles.soonText, { color: t.onPrimaryMuted }]}>A first look at the {ministry.fragrances.collectionName} collection.</Text>
               {ministry.fragrances.previewPhotos.length > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.peek} contentContainerStyle={{ gap: space.sm, paddingHorizontal: 2 }}>
                   {ministry.fragrances.previewPhotos.map((p, i) => (
                     <View key={i} style={{ width: 200 }}>
                       <Artwork uri={p.image} icon="sparkles" style={styles.peekPhoto} />
                       <Text style={styles.peekName}>{p.name}</Text>
-                      <Text style={styles.peekSub}>{ministry.fragrances.collectionName}</Text>
+                      <Text style={[styles.peekSub, { color: t.onPrimaryMuted }]}>{ministry.fragrances.collectionName}</Text>
                     </View>
                   ))}
                 </ScrollView>
@@ -116,9 +116,9 @@ const styles = StyleSheet.create({
   soonTitle: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', textAlign: 'center' },
   peek: { alignSelf: 'stretch', marginTop: space.md },
   peekPhoto: { width: 200, height: 250, borderRadius: radius.md },
-  peekSub: { color: '#DCE8DC', fontSize: 12, textAlign: 'center', marginTop: 2 },
+  peekSub: { fontSize: 12, textAlign: 'center', marginTop: 2 },
   peekName: { color: '#FFFFFF', fontWeight: '700', textAlign: 'center', marginTop: 6 },
-  soonText: { color: '#DCE8DC', textAlign: 'center', marginTop: space.xs },
+  soonText: { textAlign: 'center', marginTop: space.xs },
   tabs: { flexDirection: 'row', gap: space.sm, marginBottom: space.md },
   grid: { flexDirection: 'row', flexWrap: 'wrap', gap: space.md },
   tile: { flexBasis: '46%', flexGrow: 1, maxWidth: '48.5%' },

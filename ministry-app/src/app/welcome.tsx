@@ -9,7 +9,7 @@ import { useContent } from '@/lib/liveContent';
 import { friendlyError } from '@/lib/supabase';
 import { markWelcomeDone } from '@/lib/welcome';
 import { Button } from '@/components/ui';
-import { fonts, radius, space, useTheme } from '@/theme';
+import { fonts, radius, shade, space, useTheme } from '@/theme';
 
 /** Shown the first time the app opens: sign in, create an account, or continue as a guest. */
 export default function Welcome() {
@@ -50,9 +50,9 @@ export default function Welcome() {
   const logo = typeof ministry.logo === 'string' ? { uri: ministry.logo } : ministry.logo;
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#0A1C12' }}>
+    <View style={{ flex: 1, backgroundColor: shade(t, 1) }}>
       <Image source={src as never} style={StyleSheet.absoluteFill} contentFit="cover" contentPosition="top" />
-      <LinearGradient colors={['rgba(10,28,18,0.05)', 'rgba(10,28,18,0.55)', 'rgba(10,28,18,0.97)']} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
+      <LinearGradient colors={[shade(t, 0.05), shade(t, 0.55), shade(t, 0.97)]} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space.xl, paddingBottom: insets.bottom + space.lg }]}>
         <View style={{ flex: 1 }} />
         <View style={styles.inner}>
@@ -64,7 +64,7 @@ export default function Welcome() {
           </View>
           <Text style={[styles.kicker, { color: t.gold }]}>WELCOME TO</Text>
           <Text style={styles.title}>{ministry.name}</Text>
-          <Text style={styles.sub}>
+          <Text style={[styles.sub, { color: t.onPrimaryMuted }]}>
             Sign in to get announcements, the newsletter and a personal welcome from the AFM family.
           </Text>
 
@@ -73,7 +73,7 @@ export default function Welcome() {
           {ministry.backend.googleSignIn && (
             <Button label={busy ? 'Opening Google…' : 'Continue with Google'} icon="logo-google" variant="gold" onPress={google} style={styles.button} />
           )}
-          <Button label="Sign in with email" icon="mail-outline" onPress={() => router.push('/account')} style={[styles.button, styles.light]} />
+          <Button label="Sign in with email" icon="mail-outline" onPress={() => router.push('/account')} style={[styles.button, { backgroundColor: t.primary, borderColor: t.primary }]} />
           <Button label="Create an account" icon="person-add-outline" variant="outline" color="#FFFFFF" onPress={() => router.push('/account/sign-up')} style={[styles.button, styles.outline]} />
 
           <Pressable onPress={guest} style={styles.guest} accessibilityRole="button" hitSlop={8}>
@@ -94,10 +94,9 @@ const styles = StyleSheet.create({
   pillText: { fontSize: 11, fontWeight: '700', letterSpacing: 1.5 },
   kicker: { fontSize: 13, fontWeight: '700', letterSpacing: 2 },
   title: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 38, fontWeight: '700', marginTop: 2 },
-  sub: { color: '#DCE8DC', fontSize: 16, lineHeight: 23, marginTop: space.sm, marginBottom: space.lg },
+  sub: { fontSize: 16, lineHeight: 23, marginTop: space.sm, marginBottom: space.lg },
   error: { color: '#FFB4AB', marginBottom: space.sm },
   button: { marginBottom: space.sm, borderRadius: radius.md, paddingVertical: 14 },
-  light: { backgroundColor: '#2D6A3E', borderColor: '#2D6A3E' },
   outline: { borderColor: 'rgba(255,255,255,0.6)' },
   guest: { alignSelf: 'center', paddingVertical: space.md },
   guestText: { color: '#FFFFFF', fontWeight: '600', textDecorationLine: 'underline' },
