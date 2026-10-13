@@ -66,7 +66,17 @@
           "icon": "./assets/notification-icon.png",
           "color": "#2D6A3E"
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
+      "expo-asset"
     ],
     "description": "The official app of Prophet Micah Felix Azanduna (D.D) and the AFM Family Network.",
     "extra": {
