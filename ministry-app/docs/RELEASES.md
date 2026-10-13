@@ -3,10 +3,12 @@
 ## Current builds (with automatic over-the-air updates)
 
 These builds include `expo-updates`, so screen and content changes published with
-`eas update` reach installed apps without a reinstall. Built from commit `acd3095`.
+`eas update` reach installed apps without a reinstall. Version 8 builds are from commit `96aed90`; version 7 from `acd3095`.
 
 | Use | Build | File |
 |---|---|---|
+| **Google Play, version code 8** (R8 code shrinking, SDK 57 patches; hold for production launch) | [a4ee46e3](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/a4ee46e3-142c-4d13-a4ea-20297af9ae0b) | [app bundle (.aab)](https://expo.dev/artifacts/eas/5dwPiJyfaeozfQaxELxJlffoZy97mGNJKpDLKTWguY8.aab) |
+| Test APK for version 8 (same code, preview channel) | [c9d3368a](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/c9d3368a-8e1e-411d-a763-cb4daa40309f) | [APK](https://expo.dev/artifacts/eas/1i1V_GzMahNKCRNn8a_MwtbjWCc51cIU3TAwJACXBw0.apk) |
 | **Google Play, version code 7** (Firebase, announcement notifications) | [5973bbd9](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/5973bbd9-770e-4fba-8ce6-5ee1ffacd0ee) | [app bundle (.aab)](https://expo.dev/artifacts/eas/Qa-dAAq4QDMRJ1qataAgmcqWMTfC2l5Z5Ve1fHuf5cE.aab) |
 | Google Play, version code 6 (in closed testing) | [609d0a24](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/609d0a24-ab8a-4263-830c-02660db81d1d) | [app bundle (.aab)](https://expo.dev/artifacts/eas/c0EbjtcnIBSkhetGwn5TotovG_3GRmcq8yft04F-vmY.aab) |
 | Testing on a phone | [a587ece8](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/a587ece8-6cde-4a0e-bc43-724d46022db2) | [APK](https://expo.dev/artifacts/eas/FlZMdhxYl3FlvIlUtSLsGAIY49J8O3R80rIwtYh0nyg.apk) |
