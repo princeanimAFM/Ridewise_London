@@ -8,6 +8,8 @@ export type Announcement = {
   sms_text: string | null;
   flyer_path: string | null;
   event_date: string | null;
+  /** "18:00:00", Ghana time (GMT). */
+  event_time: string | null;
   created_at: string;
   sent_at: string | null;
   sent_count: number;

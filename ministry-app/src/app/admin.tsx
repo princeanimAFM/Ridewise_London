@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { flyerUrl, friendlyError, supabase } from '@/lib/supabase';
 import type { Announcement } from '@/lib/announcements';
 import { formatDate } from '@/lib/links';
+import { parseClock } from '@/lib/serviceTime';
 import { BackendComingSoon } from '@/components/ComingSoon';
 import { Field, Notice, Toggle } from '@/components/form';
 import { Artwork, Body, Button, Screen, SectionHeader, Title } from '@/components/ui';
@@ -26,6 +27,7 @@ export default function Admin() {
   const [flyerPath, setFlyerPath] = useState<string | null>(null);
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
+  const [time, setTime] = useState('');
   const [body, setBody] = useState('');
   const [smsText, setSmsText] = useState('');
   const [sendEmail, setSendEmail] = useState(true);
@@ -93,7 +95,7 @@ export default function Admin() {
   const aiDraft = () =>
     run('ai', async () => {
       const { data, error } = await supabase!.functions.invoke('draft-announcement', {
-        body: { title, notes: body, event_date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined, flyer_path: flyerPath ?? undefined },
+        body: { title, notes: body, event_date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : undefined, event_time: eventTime() ?? undefined, flyer_path: flyerPath ?? undefined },
       });
       if (error) throw new Error((await errorText(error)) || 'AI writing failed.');
       if (data?.error) throw new Error(data.error);
@@ -103,17 +105,25 @@ export default function Admin() {
       setMessage('Draft ready. Read it through and edit anything before sending.');
     });
 
+  /** The time box as "18:00", or null when empty or unreadable. */
+  const eventTime = () => {
+    const c = time.trim() ? parseClock(time) : null;
+    return c ? `${String(c.hour).padStart(2, '0')}:${String(c.minute).padStart(2, '0')}` : null;
+  };
+
   const validate = () => {
     if (!title.trim()) throw new Error('Add a title.');
     if (!body.trim()) throw new Error('Add the message (or tap "Write it with AI").');
     if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error('Write the date as YYYY-MM-DD, e.g. 2026-11-20.');
+    if (time.trim() && !eventTime()) throw new Error('Write the time with AM or PM, e.g. 6:00 PM.');
+    if (time.trim() && !date) throw new Error('Add the date as well as the time.');
     if (!sendEmail && !sendSms && !sendPush) throw new Error('Choose at least one way to send: email, text or app notification.');
   };
 
   const insert = async (published: boolean) => {
     const { data, error } = await supabase!
       .from('announcements')
-      .insert({ title: title.trim(), body: body.trim(), sms_text: smsText.trim() || null, flyer_path: flyerPath, event_date: date || null, send_email: sendEmail, send_sms: sendSms, send_push: sendPush, published })
+      .insert({ title: title.trim(), body: body.trim(), sms_text: smsText.trim() || null, flyer_path: flyerPath, event_date: date || null, event_time: eventTime(), send_email: sendEmail, send_sms: sendSms, send_push: sendPush, published })
       .select('id')
       .single();
     if (error) throw error;
@@ -151,6 +161,7 @@ export default function Admin() {
       setBody('');
       setSmsText('');
       setDate('');
+      setTime('');
       setFlyer(null);
       setFlyerPath(null);
       setConfirming(false);
@@ -203,6 +214,14 @@ export default function Admin() {
 
       <Field label="Title" value={title} onChangeText={setTitle} placeholder="e.g. The Great Gathering 2026" />
       <Field label="Date of the programme (optional)" value={date} onChangeText={setDate} placeholder="YYYY-MM-DD" keyboardType="numbers-and-punctuation" maxLength={10} />
+      <Field
+        label="Start time, Ghana time (optional)"
+        value={time}
+        onChangeText={setTime}
+        placeholder="e.g. 6:00 PM"
+        maxLength={10}
+        hint="Members outside Ghana see it in their own time. Emails list Ghana, UK and US times."
+      />
       <Field
         label="Message"
         value={body}

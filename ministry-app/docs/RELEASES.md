@@ -11,7 +11,11 @@ These builds include `expo-updates`, so screen and content changes published wit
 | Google Play, version code 6 (in closed testing) | [609d0a24](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/609d0a24-ab8a-4263-830c-02660db81d1d) | [app bundle (.aab)](https://expo.dev/artifacts/eas/c0EbjtcnIBSkhetGwn5TotovG_3GRmcq8yft04F-vmY.aab) |
 | Testing on a phone | [a587ece8](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/a587ece8-6cde-4a0e-bc43-724d46022db2) | [APK](https://expo.dev/artifacts/eas/FlZMdhxYl3FlvIlUtSLsGAIY49J8O3R80rIwtYh0nyg.apk) |
 
-Latest over-the-air update (production and preview channels, 13 October 2026): service
+Latest over-the-air update (production and preview channels, 13 October 2026): optional
+start time (Ghana time) on announcements, shown in each member's own time; emails list
+Ghana, UK and US times (migration `0007_announcement_time.sql`).
+
+Earlier on 13 October: service
 times labelled GMT, with each member's own local time underneath (commit `6348fef`; update
 groups `1b53af6e` production, `c2c9db0a` preview). Website redeployed the same day.
 

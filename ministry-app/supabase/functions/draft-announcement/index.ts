@@ -2,7 +2,7 @@
  * draft-announcement — AI writes the newsletter for an announcement from the
  * owner's notes and/or the uploaded flyer. Owner-only.
  *
- * POST { title?: string, notes?: string, event_date?: string, flyer_path?: string }
+ * POST { title?: string, notes?: string, event_date?: string, event_time?: string, flyer_path?: string }
  *   -> { title, body, sms_text }
  *
  * Secret: ANTHROPIC_API_KEY (optional ANTHROPIC_MODEL, default claude-opus-5).
@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
   if (!(await requireAdmin(req))) return json({ error: 'Only the owner account can use this.' }, 403);
   if (!Deno.env.get('ANTHROPIC_API_KEY')) return json({ error: 'AI writing is not set up yet (ANTHROPIC_API_KEY missing).' }, 400);
 
-  let input: { title?: string; notes?: string; event_date?: string; flyer_path?: string };
+  let input: { title?: string; notes?: string; event_date?: string; event_time?: string; flyer_path?: string };
   try {
     input = await req.json();
   } catch {
@@ -51,7 +51,7 @@ Write an announcement from the details below${input.flyer_path ? ' and the attac
 
 Details:
 Title: ${title || '(not given)'}
-Date: ${input.event_date ? formatEventDate(input.event_date) : '(not given)'}
+Date: ${input.event_date ? formatEventDate(input.event_date, input.event_time) : '(not given)'}${input.event_time ? '\n(Times are Ghana time, GMT. The email adds UK and US times automatically, so do not convert them.)' : ''}
 Notes: ${notes || '(none)'}`;
 
   const content: Anthropic.Beta.BetaContentBlockParam[] = [];

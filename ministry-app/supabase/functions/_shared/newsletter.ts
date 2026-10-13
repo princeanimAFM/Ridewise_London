@@ -21,6 +21,8 @@ export type Announcement = {
   body: string;
   sms_text?: string | null;
   event_date?: string | null;
+  /** "18:00:00", Ghana time (GMT). */
+  event_time?: string | null;
   flyer_url?: string | null;
 };
 
@@ -30,11 +32,35 @@ const esc = (s: string) =>
 /** Makes bare links in text clickable after escaping. */
 const linkify = (s: string) => s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" style="color:#2D6A3E;font-weight:600;">$1</a>');
 
-export function formatEventDate(iso?: string | null) {
+/** "Saturday 25 October 2026", plus ", 6:00 PM GMT" when a start time (Ghana time) is given. */
+export function formatEventDate(iso?: string | null, time?: string | null) {
   if (!iso) return '';
   const d = new Date(`${iso}T12:00:00Z`);
   if (Number.isNaN(d.getTime())) return '';
-  return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  const day = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return time ? `${day}, ${clockIn(new Date(`${iso}T${time.slice(0, 5)}:00Z`), 'UTC')} GMT` : day;
+}
+
+function clockIn(at: Date, timeZone: string) {
+  return at
+    .toLocaleTimeString('en-GB', { timeZone, hour: 'numeric', minute: '2-digit', hour12: true })
+    .replace(/\s?([ap])\.?m\.?/i, (_, x: string) => ` ${x.toUpperCase()}M`);
+}
+
+/** The start time around the AFM family, e.g. "Ghana 6:00 PM · UK 7:00 PM · New York 2:00 PM · Los Angeles 11:00 AM". */
+export function eventTimesAround(iso?: string | null, time?: string | null) {
+  if (!iso || !time) return '';
+  const at = new Date(`${iso}T${time.slice(0, 5)}:00Z`);
+  if (Number.isNaN(at.getTime())) return '';
+  const day = (tz: string) => at.toLocaleDateString('en-GB', { timeZone: tz, weekday: 'short' });
+  return [
+    ['Ghana', 'UTC'],
+    ['UK', 'Europe/London'],
+    ['New York', 'America/New_York'],
+    ['Los Angeles', 'America/Los_Angeles'],
+  ]
+    .map(([label, tz]) => `${label} ${day(tz) === day('UTC') ? '' : `${day(tz)} `}${clockIn(at, tz)}`)
+    .join(' · ');
 }
 
 function button(label: string, url: string, primary: boolean) {
@@ -51,7 +77,8 @@ export function renderEmail(opts: {
   unsubscribeUrl: string;
 }): { subject: string; html: string; text: string } {
   const { brand, announcement: a, firstName, headerImageUrl, unsubscribeUrl } = opts;
-  const date = formatEventDate(a.event_date);
+  const date = formatEventDate(a.event_date, a.event_time);
+  const around = eventTimesAround(a.event_date, a.event_time);
   const paragraphs = a.body
     .split(/\n\s*\n/)
     .map((p) => p.trim())
@@ -94,7 +121,8 @@ export function renderEmail(opts: {
   <tr><td style="padding:28px 24px 8px;">
     <p style="margin:0 0 16px;font-size:17px;color:#1C2320;">Dear ${esc(firstName)},</p>
     <h1 style="margin:0 0 6px;font-family:Georgia,'Times New Roman',serif;font-size:26px;line-height:1.25;color:#1C2320;">${esc(a.title)}</h1>
-    ${date ? `<p style="margin:0 0 16px;color:#9A7616;font-weight:700;font-size:14px;letter-spacing:.5px;">${esc(date.toUpperCase())}</p>` : ''}
+    ${date ? `<p style="margin:0 0 ${around ? '4px' : '16px'};color:#9A7616;font-weight:700;font-size:14px;letter-spacing:.5px;">${esc(date.toUpperCase())}</p>` : ''}
+    ${around ? `<p style="margin:0 0 16px;color:#5E6B62;font-size:13px;line-height:1.5;">${esc(around)}</p>` : ''}
   </td></tr>
   ${a.flyer_url ? `<tr><td style="padding:4px 24px 16px;"><img src="${esc(a.flyer_url)}" width="552" alt="${esc(a.title)} flyer" style="display:block;width:100%;height:auto;border-radius:10px;border:0;"></td></tr>` : ''}
   <tr><td style="padding:0 24px 8px;">${paragraphs}
@@ -122,6 +150,7 @@ export function renderEmail(opts: {
     `Dear ${firstName},`,
     '',
     a.title + (date ? ` — ${date}` : ''),
+    ...(around ? [around] : []),
     '',
     a.body,
     '',
@@ -141,7 +170,7 @@ export function renderEmail(opts: {
 
 export function renderSms(opts: { brand: Brand; announcement: Announcement; firstName: string; unsubscribeUrl: string }) {
   const { brand, announcement: a, firstName, unsubscribeUrl } = opts;
-  const date = formatEventDate(a.event_date);
+  const date = formatEventDate(a.event_date, a.event_time);
   const main = (a.sms_text && a.sms_text.trim()) || `${a.title}${date ? `, ${date}` : ''}.`;
   const link = a.flyer_url || brand.appUrl || brand.sermonsUrl;
   return `Hi ${firstName}, ${main} ${link ? `Details: ${link} ` : ''}- ${brand.name}. Stop: ${unsubscribeUrl}`;
