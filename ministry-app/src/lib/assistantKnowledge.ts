@@ -114,7 +114,7 @@ export function buildKnowledge(): string {
     `Email: ${m.contact.email}`,
     m.contact.whatsapp ? `WhatsApp: +${m.contact.whatsapp}` : 'WhatsApp: not listed yet.',
     m.about.serviceTimes.length
-      ? `Service times: ${m.about.serviceTimes.map((s) => `${s.day} ${s.detail}`).join('; ')}`
+      ? `Service times (Ghana time, which is GMT all year; the app also shows each member their own local time): ${m.about.serviceTimes.map((s) => `${s.day} ${s.detail}`).join('; ')}`
       : 'Service times and church address: not listed in the app yet.',
   );
 

@@ -6,6 +6,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { Body, Button, Card, Screen, SectionHeader } from '@/components/ui';
+import { ServiceTimeRows } from '@/components/ServiceTimeRows';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 export default function Live() {
@@ -63,13 +64,7 @@ export default function Live() {
           <>
             <SectionHeader title="Service times" />
             <Card style={{ padding: space.md }}>
-              {ministry.about.serviceTimes.map((s) => (
-                <View key={s.day} style={styles.time}>
-                  <Ionicons name="time-outline" size={18} color={t.accent} />
-                  <Text style={{ color: t.text, fontWeight: '700', width: 100 }}>{s.day}</Text>
-                  <Text style={{ color: t.textMuted, flex: 1 }}>{s.detail}</Text>
-                </View>
-              ))}
+              <ServiceTimeRows times={ministry.about.serviceTimes} />
             </Card>
           </>
         )}
@@ -92,5 +87,4 @@ const styles = StyleSheet.create({
   title: { fontFamily: fonts.serif, fontSize: 24, fontWeight: '700', marginTop: 2 },
   buttons: { flexDirection: 'row', gap: space.sm, marginTop: space.md },
   flex: { flex: 1 },
-  time: { flexDirection: 'row', alignItems: 'center', gap: space.sm, paddingVertical: 6 },
 });

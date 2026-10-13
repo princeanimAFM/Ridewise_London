@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { ministry } from '@/content/ministry';
 import { Body, Card, ListRow, Screen, SectionHeader } from '@/components/ui';
 import { PhotoHero } from '@/components/PhotoHero';
+import { ServiceTimeRows } from '@/components/ServiceTimeRows';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 const paragraphs = (text: string) => text.split(/\n\s*\n/).map((p) => p.trim());
@@ -46,13 +47,7 @@ export default function About() {
         <>
           <SectionHeader title="Service Times" />
           <Card style={{ padding: space.md }}>
-            {about.serviceTimes.map((s) => (
-              <View key={s.day} style={styles.listRow}>
-                <Ionicons name="time-outline" size={18} color={t.accent} />
-                <Text style={{ color: t.text, fontWeight: '700', width: 100 }}>{s.day}</Text>
-                <Text style={{ color: t.textMuted, flex: 1 }}>{s.detail}</Text>
-              </View>
-            ))}
+            <ServiceTimeRows times={about.serviceTimes} />
             {!!about.address && (
               <View style={styles.listRow}>
                 <Ionicons name="location-outline" size={18} color={t.accent} />

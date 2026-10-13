@@ -159,7 +159,7 @@ export const sections: Section[] = [
     subtitleField: 'detail',
     fields: [
       { key: 'day', label: 'Day', required: true, placeholder: 'e.g. Sunday' },
-      { key: 'detail', label: 'Service and time', required: true, placeholder: 'e.g. Worship Service · 10:00 AM GMT' },
+      { key: 'detail', label: 'Service and time', required: true, placeholder: 'e.g. Worship Service · 10:00 AM GMT', hint: 'Write the Ghana time with AM or PM. Members outside Ghana also see it in their own time.' },
     ],
   },
   {
