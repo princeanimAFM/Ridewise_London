@@ -13,7 +13,10 @@ These builds include `expo-updates`, so screen and content changes published wit
 | Google Play, version code 6 (in closed testing) | [609d0a24](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/609d0a24-ab8a-4263-830c-02660db81d1d) | [app bundle (.aab)](https://expo.dev/artifacts/eas/c0EbjtcnIBSkhetGwn5TotovG_3GRmcq8yft04F-vmY.aab) |
 | Testing on a phone | [a587ece8](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/a587ece8-6cde-4a0e-bc43-724d46022db2) | [APK](https://expo.dev/artifacts/eas/FlZMdhxYl3FlvIlUtSLsGAIY49J8O3R80rIwtYh0nyg.apk) |
 
-Latest over-the-air update (production and preview channels, 13 October 2026): More →
+**Live on Google Play since 17 October 2026** (version 8): https://play.google.com/store/apps/details?id=com.afm.hub
+The website button and QR code point there. Over-the-air update the same day set `playStoreUrl` (update groups `ee80e959` production, `18ef5cb0` preview).
+
+Earlier (13 October): More →
 Appearance, with AFM Green (default) or Church Blue & White, and Automatic, Light or Dark
 (commit `e6d9377`; update groups `6d00ea50` production, `8d71a48f` preview).
 
