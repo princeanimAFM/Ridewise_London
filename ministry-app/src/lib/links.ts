@@ -41,7 +41,9 @@ export async function shareText(message: string) {
 }
 
 export function shareApp() {
-  const link = ministry.appShareUrl ? `\n${ministry.appShareUrl}` : '';
+  const link =
+    (ministry.playStoreUrl ? `\nGet it on Google Play: ${ministry.playStoreUrl}` : '') +
+    (ministry.appShareUrl ? `\n${ministry.appShareUrl}` : '');
   return shareText(`Check out ${ministry.name} — sermons, quotes and books by ${ministry.minister}.${link}`);
 }
 

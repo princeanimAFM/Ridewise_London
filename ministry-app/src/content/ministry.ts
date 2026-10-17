@@ -118,7 +118,7 @@ export const ministry = {
   // Privacy policy page on the website (needed for the App Store and Google Play listings)
   privacyPolicyUrl: 'https://theafmchurch.org/privacy.html',
   // Fill in once the app is live on Google Play: shows "Get it on Google Play" on the website.
-  playStoreUrl: '', // 'https://play.google.com/store/apps/details?id=com.afm.hub'
+  playStoreUrl: 'https://play.google.com/store/apps/details?id=com.afm.hub',
 
   about: {
     headline: 'About the Ministry',
