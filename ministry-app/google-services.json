@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "540482365105",
+    "project_id": "the-afm-hub",
+    "storage_bucket": "the-afm-hub.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:540482365105:android:546ad785cd5008d93da490",
+        "android_client_info": {
+          "package_name": "com.afm.hub"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6bIOXC6W_odmWjV0Tji0Im3uLFzZxi30"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
