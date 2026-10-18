@@ -42,7 +42,7 @@ export default function BibleVersions() {
     <Screen>
       <Body muted>
         {canKeepOffline
-          ? `Download the versions you want. They stay on your phone, so you can read without internet. Each is about ${DOWNLOAD_SIZE.toLowerCase()}.${downloaded ? ` ${downloaded} downloaded.` : ''}`
+          ? `Download the versions you want. They stay on your phone, so you can read without internet. Each is a ${DOWNLOAD_SIZE}.${downloaded ? ` ${downloaded} downloaded.` : ''}`
           : 'Choose a version to read. To keep Bibles for offline reading, use the app on your phone.'}
       </Body>
 
