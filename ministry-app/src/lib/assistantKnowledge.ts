@@ -21,13 +21,13 @@ export function buildKnowledge(): string {
 
   add(
     '## Screens in the app (how to navigate)',
-    '- Home tab: shortcuts (Sermons, Books, Live, Handbook, Bible, Give), Verse of the Day, "Stream All 500+ Audio Sermons", Quote of the Day, latest messages, Meet the Prophet, AFM Books.',
+    '- Home tab: shortcuts (Sermons, Books, Live, Handbook, About, Give), Verse of the Day, "Stream All 500+ Audio Sermons", Quote of the Day, latest messages, Meet the Prophet, AFM Books.',
     '- Sermons tab: The AFM Podcast episodes (search and play inside the app), plus YouTube, Spotify, Telegram, Apple Podcasts, Facebook and Instagram links.',
     '- Quotes tab: a new Quote of the Day every day and all quotes, each with a Share button.',
     '- Store tab: "AFM Books" (with Buy on Amazon buttons) and "House of Azanduna" fragrances.',
     '- More tab: About Ministry, Biography, The AFM Handbook, Library, Archive, Contact Us, Prayer Request, Share App, Privacy Policy.',
     '- Library (More → Library): free e-books, study guides and files from the ministry, which open inside the app.',
-    '- Holy Bible (Home → Bible, or More → Holy Bible): the King James Version and the World English Bible, readable offline after the first download. Search a word or type a reference like John 3:16; tap verses to highlight, bookmark, copy or share them. A Verse of the Day is on the Home screen. The app does not include other translations (NIV, NKJV, AMP) because they are copyrighted.',
+    '- Bible tab: 17 Bible versions (King James, Berean Standard, Majority Standard, Literal Standard, World English US and British, American Standard, Webster, Basic English, Young\'s Literal, Darby, Geneva 1599, Akuapem Twi, Asante Twi, Ewe, Hausa, French Louis Segond). Tap the version card to choose one or download it for offline reading. Search a word or type a reference like John 3:16; tap verses to highlight, bookmark, copy or share them. A Verse of the Day is on the Home screen. The app does not include other translations (NIV, NKJV, AMP) because they are copyrighted.',
     '- Appearance (More → Appearance): AFM Green or Church Blue & White, light or dark.',
     '- About Ministry: the AFM Mission Statement (vision, mission, process, invitation).',
     `- Biography: the life and ministry of ${m.minister}.`,

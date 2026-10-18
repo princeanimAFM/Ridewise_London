@@ -38,7 +38,7 @@ export default function Home() {
     { icon: 'book-outline', label: 'Books', onPress: () => router.push({ pathname: '/store', params: { tab: 'books' } }) },
     { icon: 'radio-outline', label: 'Live', onPress: () => router.push('/live') },
     { icon: 'library-outline', label: 'Handbook', onPress: () => router.push('/handbook') },
-    { icon: 'bookmarks-outline', label: 'Bible', onPress: () => router.push('/bible') },
+    { icon: 'information-circle-outline', label: 'About', onPress: () => router.push('/about') },
     { icon: 'gift-outline', label: 'Give', onPress: () => router.push('/give') },
   ];
 
