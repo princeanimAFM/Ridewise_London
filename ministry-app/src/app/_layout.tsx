@@ -53,6 +53,11 @@ export default function RootLayout() {
         <Stack.Screen name="assistant" options={{ title: 'AFM Assistant' }} />
         <Stack.Screen name="privacy" options={{ title: 'Privacy Policy' }} />
         <Stack.Screen name="appearance" options={{ title: 'Appearance' }} />
+        <Stack.Screen name="bible/index" options={{ title: 'Holy Bible' }} />
+        <Stack.Screen name="bible/[book]" options={{ title: 'Bible' }} />
+        <Stack.Screen name="bible/read" options={{ title: 'Bible' }} />
+        <Stack.Screen name="bible/search" options={{ title: 'Search the Bible' }} />
+        <Stack.Screen name="bible/saved" options={{ title: 'Highlights & Bookmarks' }} />
         <Stack.Screen name="account/index" options={{ title: 'My Account' }} />
         <Stack.Screen name="account/sign-up" options={{ title: 'Create Account' }} />
         <Stack.Screen name="account/forgot" options={{ title: 'Password' }} />

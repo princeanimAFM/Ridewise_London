@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useContent } from '@/lib/liveContent';
 import { quoteOfTheDay, sermonsByDate } from '@/lib/content';
+import { verseOfTheDay } from '@/lib/bible';
 import { ArchiveCard } from '@/components/ArchiveCard';
 import { PlatformGrid } from '@/components/PlatformGrid';
 import { QuoteCard } from '@/components/QuoteCard';
@@ -30,13 +31,14 @@ export default function Home() {
   const latest = sermonsByDate[0];
   const { episodes } = useEpisodes();
   const { items: announcements } = useAnnouncements(2);
+  const votd = verseOfTheDay();
 
   const shortcuts: Shortcut[] = [
     { icon: 'play-circle-outline', label: 'Sermons', onPress: () => router.push('/sermons') },
     { icon: 'book-outline', label: 'Books', onPress: () => router.push({ pathname: '/store', params: { tab: 'books' } }) },
     { icon: 'radio-outline', label: 'Live', onPress: () => router.push('/live') },
     { icon: 'library-outline', label: 'Handbook', onPress: () => router.push('/handbook') },
-    { icon: 'information-circle-outline', label: 'About', onPress: () => router.push('/about') },
+    { icon: 'bookmarks-outline', label: 'Bible', onPress: () => router.push('/bible') },
     { icon: 'gift-outline', label: 'Give', onPress: () => router.push('/give') },
   ];
 
@@ -83,6 +85,18 @@ export default function Home() {
             </Pressable>
           ))}
         </View>
+
+        <Pressable
+          onPress={() => router.push({ pathname: '/bible/read', params: { book: votd.book, chapter: votd.chapter, verse: votd.verse } })}
+          style={({ pressed }) => [styles.votd, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.85 }]}
+        >
+          <View style={styles.votdHead}>
+            <Ionicons name="book" size={16} color={t.accent} />
+            <Text style={[styles.votdKicker, { color: t.accent }]}>VERSE OF THE DAY</Text>
+          </View>
+          <Text style={[styles.votdText, { color: t.text }]}>“{votd.text}”</Text>
+          <Text style={{ color: t.textMuted, marginTop: space.sm, fontWeight: '600' }}>{votd.ref} · Open the Bible ›</Text>
+        </Pressable>
 
         {Platform.OS === 'web' && !!ministry.playStoreUrl && (
           <Pressable
@@ -230,6 +244,10 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
+  votd: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: space.md, marginTop: space.md },
+  votdHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  votdKicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
+  votdText: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 26, marginTop: space.sm },
   avatarButton: { position: 'absolute', right: 16, zIndex: 2 },
   avatar: { width: 42, height: 42, borderRadius: 21, borderWidth: 2, borderColor: '#FFFFFF' },
   avatarEmpty: { alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.35)' },

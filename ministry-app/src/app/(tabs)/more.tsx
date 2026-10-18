@@ -26,6 +26,7 @@ export default function More() {
       <ListRow icon="chatbubble-ellipses-outline" title={ministry.assistant.name} subtitle="Ask a question or find your way around" onPress={() => router.push('/assistant')} />
 
       <SectionHeader title="Ministry" />
+      <ListRow icon="bookmarks-outline" title="Holy Bible" subtitle="KJV & World English Bible, works offline" onPress={() => router.push('/bible')} />
       <ListRow icon="people-outline" title="About Ministry" subtitle="The AFM Mission Statement" onPress={() => router.push('/about')} />
       <ListRow icon="person-outline" title="Biography" subtitle={ministry.minister} onPress={() => router.push('/biography')} />
       <ListRow icon="library-outline" title="The AFM Handbook" subtitle="FAQs, anchor scripture, slogans & code of conduct" onPress={() => router.push('/handbook')} />
