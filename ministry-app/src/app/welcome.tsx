@@ -10,6 +10,7 @@ import { friendlyError } from '@/lib/supabase';
 import { markWelcomeDone } from '@/lib/welcome';
 import { Button } from '@/components/ui';
 import { fonts, radius, shade, space, useTheme } from '@/theme';
+import { useHomePhoto } from '@/lib/homePhoto';
 
 /** Shown the first time the app opens: sign in, create an account, or continue as a guest. */
 export default function Welcome() {
@@ -46,7 +47,8 @@ export default function Welcome() {
     else router.replace('/');
   };
 
-  const src = typeof ministry.photos.home === 'string' ? { uri: ministry.photos.home } : ministry.photos.home;
+  const homePhoto = useHomePhoto();
+  const src = typeof homePhoto === 'string' ? { uri: homePhoto } : homePhoto;
   const logo = typeof ministry.logo === 'string' ? { uri: ministry.logo } : ministry.logo;
 
   return (

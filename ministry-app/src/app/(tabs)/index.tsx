@@ -20,12 +20,14 @@ import { NotificationInvite } from '@/components/NotificationInvite';
 import { useAuth } from '@/lib/auth';
 import { Artwork, IconName, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
+import { useHomePhoto } from '@/lib/homePhoto';
 
 type Shortcut = { icon: IconName; label: string; onPress: () => void };
 
 export default function Home() {
   const ministry = useContent();
   const t = useTheme();
+  const homePhoto = useHomePhoto();
   const insets = useSafeAreaInsets();
   const { session, profile } = useAuth();
   const latest = sermonsByDate[0];
@@ -44,7 +46,7 @@ export default function Home() {
 
   return (
     <Screen padded={false}>
-      <PhotoHero source={ministry.photos.home} height={430 + insets.top} position="top">
+      <PhotoHero source={homePhoto} height={430 + insets.top} position="top">
         {session && (
           <Pressable onPress={() => router.push('/account')} style={[styles.avatarButton, { top: insets.top + 12 }]} accessibilityRole="button" accessibilityLabel="My account">
             {profile?.avatar_url ? (

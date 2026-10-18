@@ -9,9 +9,11 @@ import { PhotoHero } from '@/components/PhotoHero';
 import { Body, Button, Screen } from '@/components/ui';
 import { Text, StyleSheet } from 'react-native';
 import { fonts, radius, space, useTheme } from '@/theme';
+import { useHomePhoto } from '@/lib/homePhoto';
 
 export default function Subscribe() {
   const t = useTheme();
+  const homePhoto = useHomePhoto();
   const { session, profile } = useAuth();
   const [first, setFirst] = useState('');
   const [email, setEmail] = useState('');
@@ -70,7 +72,7 @@ export default function Subscribe() {
 
   return (
     <Screen>
-      <PhotoHero source={ministry.photos.home} height={220} position="top" style={styles.hero}>
+      <PhotoHero source={homePhoto} height={220} position="top" style={styles.hero}>
         <Text style={[styles.kicker, { color: t.gold }]}>STAY CONNECTED</Text>
         <Text style={styles.title}>The AFM Newsletter</Text>
         <Text style={[styles.sub, { color: t.onPrimaryMuted }]}>Announcements, flyers and upcoming programmes</Text>
