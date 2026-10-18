@@ -17,6 +17,8 @@ These builds include `expo-updates`, so screen and content changes published wit
 
 **Released 18 October 2026 (later the same day): Bible reader fixes.** Bottom bars now sit above Android's navigation buttons (they were hidden under them), labelled Bookmark · Note · Copy · Share actions, notes on verses (also listed under Highlights & Notes), and a "Next: <chapter>" button at the end of each chapter (update groups `8d20ebab` production, `5ff4342d` preview; first Bible release was `cf9b7404` production, `e4246f35` preview).
 
+**Released 18 October 2026: blue welcome photo.** With Church Blue & White, the Home, welcome and newsletter photo shows a blue studio backdrop (update groups `2db0884f` production, `e9037025` preview).
+
 **Still for version 9:** update to the newest Expo SDK and React Native (clears Play's edge-to-edge warning), then a test APK before the Play release.
 
 **Live on Google Play since 17 October 2026** (version 8): https://play.google.com/store/apps/details?id=com.afm.hub
