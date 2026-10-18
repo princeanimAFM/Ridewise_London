@@ -170,7 +170,7 @@ export default function Home() {
           </Pressable>
         )}
 
-        <View style={{ height: space.md }} />
+        <SectionHeader title="Quote of the Day" action="See all" onAction={() => router.push('/quotes')} />
         <QuoteCard quote={quoteOfTheDay()} featured />
 
         {episodes.length > 0 && (

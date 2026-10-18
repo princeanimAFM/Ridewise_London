@@ -33,6 +33,7 @@ export default function More() {
       <ListRow icon="archive-outline" title="Archive" subtitle="Podcast, YouTube & Telegram" onPress={() => router.push('/archive')} />
 
       <SectionHeader title="Get Involved" />
+      <ListRow icon="chatbubble-ellipses-outline" title="Quotes" subtitle="Quote of the Day and all AFM quotes" onPress={() => router.push('/quotes')} />
       <ListRow icon="chatbox-ellipses-outline" title="Contact Us" subtitle="Social media, email & WhatsApp" onPress={() => router.push('/connect')} />
       <ListRow icon="hand-left-outline" title="Prayer Request" subtitle="We would love to pray with you" onPress={() => router.push('/prayer')} />
       <ListRow icon="radio-outline" title="Live Services" subtitle="Watch services streaming on YouTube" onPress={() => router.push('/live')} />

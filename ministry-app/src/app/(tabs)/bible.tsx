@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BOOKS, NEW_TESTAMENT_START } from '@/content/bible';
 import { bookName, parseReference, reference, TRANSLATIONS, useBible, useBiblePrefs, useDownloads, useMarks, verseOfTheDay } from '@/lib/bible';
+import { applyPrefs, getPrefs, permissionStatus, supported } from '@/lib/notifications';
 import { Card, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -15,6 +16,16 @@ export default function BibleHome() {
   useBible(prefs.translation); // loads the version so book names show in its language
   useDownloads();
   const [query, setQuery] = useState('');
+  // Offer the daily verse notification on phones where it is not on yet.
+  const [verseReminder, setVerseReminder] = useState<'hidden' | 'offer' | 'on'>('hidden');
+  useEffect(() => {
+    if (!supported) return;
+    Promise.all([getPrefs(), permissionStatus()]).then(([p, status]) => setVerseReminder(p.dailyVerse && status === 'granted' ? 'hidden' : 'offer'));
+  }, []);
+  const remindMe = async () => {
+    const { granted } = await applyPrefs({ ...(await getPrefs()), prompted: true, dailyVerse: true });
+    setVerseReminder(granted ? 'on' : 'offer');
+  };
   const votd = verseOfTheDay();
   const saved = Object.keys(marks).length;
 
@@ -90,6 +101,14 @@ export default function BibleHome() {
         <Text style={styles.votdText}>“{votd.text}”</Text>
         <Text style={[styles.votdRef, { color: t.onPrimaryMuted }]}>{votd.ref} · KJV</Text>
       </Pressable>
+      {verseReminder !== 'hidden' && (
+        <Pressable onPress={remindMe} disabled={verseReminder === 'on'} style={styles.remind} hitSlop={6}>
+          <Ionicons name={verseReminder === 'on' ? 'checkmark-circle' : 'notifications-outline'} size={18} color={t.accent} />
+          <Text style={{ color: t.accent, fontWeight: '700' }}>
+            {verseReminder === 'on' ? 'Done: you will get the Verse of the Day every morning' : 'Send me the Verse of the Day every morning'}
+          </Text>
+        </Pressable>
+      )}
 
       {saved > 0 && (
         <Card onPress={() => router.push('/bible/saved')} style={styles.continue}>
@@ -117,6 +136,7 @@ const styles = StyleSheet.create({
   kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
   votdText: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 18, lineHeight: 27, marginTop: space.sm },
   votdRef: { marginTop: space.sm, fontWeight: '600' },
+  remind: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -space.sm, marginBottom: space.md, paddingHorizontal: 4 },
   books: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   book: { width: '48.5%', paddingVertical: 12, paddingHorizontal: space.md, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth },
 });

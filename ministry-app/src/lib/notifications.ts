@@ -4,10 +4,12 @@ import Constants from 'expo-constants';
 import * as Notifications from 'expo-notifications';
 import { liveMinistry as ministry } from './liveContent';
 import { supabase } from './supabase';
+import { verseOfTheDay } from './bible';
 
 /**
  * Notifications:
  *  - Daily AFM quote: scheduled on the phone (no server), a different quote each day.
+ *  - Daily Bible verse: the Verse of the Day, also scheduled on the phone, a minute after the quote.
  *  - Announcements & updates: push notifications sent when the owner publishes
  *    (the phone registers its push address with the backend).
  */
@@ -15,12 +17,13 @@ import { supabase } from './supabase';
 export type NotificationPrefs = {
   prompted: boolean; // has the invitation card been answered?
   dailyQuote: boolean;
-  hour: number; // 0-23, local time for the daily quote
+  dailyVerse: boolean;
+  hour: number; // 0-23, local time for the daily quote and verse
   announcements: boolean;
 };
 
 const KEY = 'afm.notifications';
-const DEFAULTS: NotificationPrefs = { prompted: false, dailyQuote: true, hour: 7, announcements: true };
+const DEFAULTS: NotificationPrefs = { prompted: false, dailyQuote: true, dailyVerse: true, hour: 7, announcements: true };
 const DAYS_AHEAD = 30;
 export const supported = Platform.OS !== 'web';
 
@@ -91,6 +94,35 @@ export async function scheduleDailyQuotes(hour: number) {
   }
 }
 
+/** Schedules the next 30 days of the Verse of the Day (same verse as the app shows that day). */
+export async function scheduleDailyVerses(hour: number) {
+  if (!supported) return;
+  await cancelDailyVerses();
+  const now = new Date();
+  for (let d = 0; d < DAYS_AHEAD; d++) {
+    const when = new Date(now.getFullYear(), now.getMonth(), now.getDate() + d, hour, 1, 0);
+    if (when.getTime() <= now.getTime() + 60_000) continue;
+    const v = verseOfTheDay(when);
+    await Notifications.scheduleNotificationAsync({
+      identifier: `daily-verse-${d}`,
+      content: {
+        title: `Verse of the Day · ${v.ref}`,
+        body: v.text,
+        data: { url: `/bible/read?book=${v.book}&chapter=${v.chapter}&verse=${v.verse}`, kind: 'daily-verse' },
+      },
+      trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: when, channelId: 'default' },
+    });
+  }
+}
+
+export async function cancelDailyVerses() {
+  if (!supported) return;
+  const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+  await Promise.all(
+    scheduled.filter((n) => n.identifier.startsWith('daily-verse-')).map((n) => Notifications.cancelScheduledNotificationAsync(n.identifier)),
+  );
+}
+
 export async function cancelDailyQuotes() {
   if (!supported) return;
   const scheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -115,10 +147,12 @@ async function registerPush(enabled: boolean) {
 /** Applies preferences: permission, daily quote schedule and push registration. */
 export async function applyPrefs(p: NotificationPrefs): Promise<{ granted: boolean }> {
   await savePrefs(p);
-  const wantsAny = p.dailyQuote || p.announcements;
+  const wantsAny = p.dailyQuote || p.dailyVerse || p.announcements;
   const granted = wantsAny ? await requestPermission() : (await permissionStatus()) === 'granted';
   if (granted && p.dailyQuote) await scheduleDailyQuotes(p.hour);
   else await cancelDailyQuotes();
+  if (granted && p.dailyVerse) await scheduleDailyVerses(p.hour);
+  else await cancelDailyVerses();
   if (granted) await registerPush(p.announcements);
   return { granted };
 }
@@ -130,6 +164,7 @@ export async function refreshNotifications() {
   if (!p.prompted || (await permissionStatus()) !== 'granted') return;
   await ensureChannel();
   if (p.dailyQuote) await scheduleDailyQuotes(p.hour);
+  if (p.dailyVerse) await scheduleDailyVerses(p.hour);
   await registerPush(p.announcements);
 }
 

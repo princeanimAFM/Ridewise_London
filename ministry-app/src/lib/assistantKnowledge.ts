@@ -23,7 +23,7 @@ export function buildKnowledge(): string {
     '## Screens in the app (how to navigate)',
     '- Home tab: shortcuts (Sermons, Books, Live, Handbook, About, Give), Verse of the Day, "Stream All 500+ Audio Sermons", Quote of the Day, latest messages, Meet the Prophet, AFM Books.',
     '- Sermons tab: The AFM Podcast episodes (search and play inside the app), plus YouTube, Spotify, Telegram, Apple Podcasts, Facebook and Instagram links.',
-    '- Quotes tab: a new Quote of the Day every day and all quotes, each with a Share button.',
+    '- Quotes (Home → Quote of the Day → See all, or More → Quotes): a new Quote of the Day every day and all quotes, each with a Share button.',
     '- Store tab: "AFM Books" (with Buy on Amazon buttons) and "House of Azanduna" fragrances.',
     '- More tab: About Ministry, Biography, The AFM Handbook, Library, Archive, Contact Us, Prayer Request, Share App, Privacy Policy.',
     '- Library (More → Library): free e-books, study guides and files from the ministry, which open inside the app.',

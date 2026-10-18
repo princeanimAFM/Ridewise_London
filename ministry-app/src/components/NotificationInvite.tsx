@@ -19,7 +19,7 @@ export function NotificationInvite() {
 
   const accept = async () => {
     setBusy(true);
-    await applyPrefs({ ...(await getPrefs()), prompted: true, dailyQuote: true, announcements: true });
+    await applyPrefs({ ...(await getPrefs()), prompted: true, dailyQuote: true, dailyVerse: true, announcements: true });
     setBusy(false);
     setVisible(false);
   };
@@ -36,7 +36,7 @@ export function NotificationInvite() {
       <Text style={[styles.title, { color: t.text }]}>Stay blessed every day</Text>
       <Text style={{ color: t.textMuted, lineHeight: 21, textAlign: 'center' }}>Allow notifications to receive:</Text>
       <View style={styles.list}>
-        {['A daily AFM quote each morning', 'Ministry announcements & upcoming programmes', 'New updates in the app'].map((line) => (
+        {['A daily AFM quote and Bible verse each morning', 'Ministry announcements & upcoming programmes', 'New updates in the app'].map((line) => (
           <View key={line} style={styles.item}>
             <Ionicons name="checkmark-circle" size={18} color={t.accent} />
             <Text style={{ color: t.text, flex: 1 }}>{line}</Text>

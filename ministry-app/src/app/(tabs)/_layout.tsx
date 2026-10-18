@@ -49,7 +49,6 @@ export default function TabsLayout() {
       <Tabs.Screen name="index" options={{ title: 'Home', headerShown: false, tabBarIcon: tab('home-outline') }} />
       <Tabs.Screen name="bible" options={{ title: 'Bible', headerTitle: 'Holy Bible', tabBarIcon: tab('book-outline') }} />
       <Tabs.Screen name="sermons" options={{ title: 'Sermons', tabBarIcon: tab('play-circle-outline') }} />
-      <Tabs.Screen name="quotes" options={{ title: 'Quotes', tabBarIcon: tab('chatbubble-ellipses-outline') }} />
       <Tabs.Screen name="store" options={{ title: 'Store', tabBarIcon: tab('bag-handle-outline') }} />
       <Tabs.Screen name="more" options={{ title: 'More', tabBarIcon: tab('menu-outline') }} />
     </Tabs>

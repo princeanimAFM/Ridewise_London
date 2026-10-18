@@ -35,7 +35,7 @@ export default function NotificationSettings() {
     setSaved('');
     const { granted } = await applyPrefs(next);
     setStatus(granted ? 'granted' : await permissionStatus());
-    setSaved(granted || (!next.dailyQuote && !next.announcements) ? 'Saved.' : '');
+    setSaved(granted || (!next.dailyQuote && !next.dailyVerse && !next.announcements) ? 'Saved.' : '');
   };
 
   return (
@@ -50,7 +50,8 @@ export default function NotificationSettings() {
       {!!saved && <Notice kind="success">{saved}</Notice>}
 
       <Toggle label="Daily AFM quote" hint="A new quote from Prophet Micah every day" value={prefs.dailyQuote} onValueChange={(v) => update({ dailyQuote: v })} />
-      {prefs.dailyQuote && (
+      <Toggle label="Daily Bible verse" hint="The Verse of the Day; tap it to read the chapter" value={prefs.dailyVerse} onValueChange={(v) => update({ dailyVerse: v })} />
+      {(prefs.dailyQuote || prefs.dailyVerse) && (
         <View style={{ marginBottom: space.md }}>
           <Text style={{ color: t.text, fontWeight: '600', marginBottom: space.sm }}>Time of day</Text>
           <View style={styles.hours}>
@@ -63,7 +64,7 @@ export default function NotificationSettings() {
       <Toggle label="Announcements & updates" hint="Upcoming programmes, flyers and ministry news" value={prefs.announcements} onValueChange={(v) => update({ announcements: v })} />
 
       <SectionHeader title="About" />
-      <Body muted>Daily quotes are scheduled on your phone. Announcements are sent by the ministry when there is news. We never send adverts.</Body>
+      <Body muted>The daily quote and verse are scheduled on your phone, at the time you choose. Announcements are sent by the ministry when there is news. We never send adverts.</Body>
     </Screen>
   );
 }
