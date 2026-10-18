@@ -7,7 +7,7 @@ EN = ["Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","
 # our id, eBible id, use local names
 T = [('kjv','eng-kjv2006',False),('bsb','engbsb',False),('web','engwebp',False),('webbe','engwebpb',False),('asv','eng-asv',False),
      ('bbe','engBBE',False),('ylt','engylt',False),('dby','engDBY',False),('gnv','enggnv',False),
-     ('lsv','englsv',False),('msb','engmsb',False),('rv','eng-rv',False),('webster','engwebster',False),('dra','engDRA',False),
+     ('lsv','englsv',False),('msb','engmsb',False),('webster','engwebster',False),
      ('twi','twi',True),('asante','twiasante',True),('ewe','ewe',True),('hau','hausa',True),('lsg','fraLSG',True)]
 ONLY = None
 import sys
@@ -31,7 +31,7 @@ for tid, eid, local in T:
         if not m: continue
         b, c, v, t = m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)
         t = t.replace('¶', '')
-        if tid in ('kjv', 'asv', 'ylt', 'dby', 'lsv', 'rv', 'webster'): t = t.replace('[', '').replace(']', '')
+        if tid in ('kjv', 'asv', 'ylt', 'dby', 'lsv', 'webster'): t = t.replace('[', '').replace(']', '')
         if tid in ('bbe', 'dby'): t = t.replace('*', '')
         t = re.sub(r'\s+', ' ', t).strip()
         if tid == 'lsv': t = re.sub(r'\s*\|\|\s*', '\n', t)
