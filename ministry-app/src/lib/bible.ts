@@ -12,7 +12,7 @@ import { BOOKS, DAILY_VERSES } from '@/content/bible';
  */
 
 export type TranslationId =
-  | 'kjv' | 'bsb' | 'web' | 'webbe' | 'asv' | 'bbe' | 'ylt' | 'dby' | 'gnv'
+  | 'kjv' | 'bsb' | 'msb' | 'lsv' | 'web' | 'webbe' | 'asv' | 'rv' | 'webster' | 'bbe' | 'ylt' | 'dby' | 'gnv' | 'dra'
   | 'twi' | 'asante' | 'ewe' | 'hau' | 'lsg';
 export type Translation = { short: string; name: string; language: string; group: 'English' | 'Ghanaian languages' | 'Other languages'; about: string; credit: string };
 
@@ -22,13 +22,18 @@ const BIBLICA = (title: string, years: string) => `${title} © ${years} Biblica,
 export const TRANSLATIONS: Record<TranslationId, Translation> = {
   kjv: { short: 'KJV', name: 'King James Version', language: 'English', group: 'English', about: 'The classic 1611 English Bible.', credit: PD },
   bsb: { short: 'BSB', name: 'Berean Standard Bible', language: 'English', group: 'English', about: 'Clear, modern English (2023).', credit: PD },
+  msb: { short: 'MSB', name: 'Majority Standard Bible', language: 'English', group: 'English', about: 'Modern English, sister to the BSB.', credit: PD },
+  lsv: { short: 'LSV', name: 'Literal Standard Version', language: 'English', group: 'English', about: 'Modern, word-for-word English (2020).', credit: 'Literal Standard Version © 2020 Covenant Press. Used under the Creative Commons Attribution-ShareAlike 4.0 licence (CC BY-SA 4.0), via eBible.org.' },
   web: { short: 'WEB', name: 'World English Bible', language: 'English', group: 'English', about: 'Modern English, American spelling.', credit: `${PD}. “World English Bible” is a trademark of eBible.org.` },
   webbe: { short: 'WEB-UK', name: 'World English Bible (British)', language: 'English', group: 'English', about: 'Modern English, British spelling.', credit: `${PD}. “World English Bible” is a trademark of eBible.org.` },
   asv: { short: 'ASV', name: 'American Standard Version', language: 'English', group: 'English', about: 'Formal revision of the KJV (1901).', credit: PD },
+  rv: { short: 'RV', name: 'Revised Version (1885)', language: 'English', group: 'English', about: 'The British revision of the KJV.', credit: PD },
+  webster: { short: 'WBS', name: 'Webster Bible (1833)', language: 'English', group: 'English', about: 'The KJV with updated wording.', credit: PD },
   bbe: { short: 'BBE', name: 'Bible in Basic English', language: 'English', group: 'English', about: 'Simple English, easy to read.', credit: PD },
   ylt: { short: 'YLT', name: "Young's Literal Translation", language: 'English', group: 'English', about: 'Word-for-word, for study.', credit: PD },
   dby: { short: 'DBY', name: 'Darby Translation', language: 'English', group: 'English', about: 'Literal translation (1890).', credit: PD },
   gnv: { short: 'GNV', name: 'Geneva Bible 1599', language: 'English', group: 'English', about: 'The Reformation Bible, original spelling.', credit: PD },
+  dra: { short: 'DRA', name: 'Douay-Rheims (1899)', language: 'English', group: 'English', about: 'The classic Catholic English Bible. Some Psalms are numbered differently.', credit: PD },
   twi: { short: 'TWI', name: 'Akuapem Twi (Nkwa Asɛm)', language: 'Akuapem Twi', group: 'Ghanaian languages', about: 'Twerɛ Kronkron no wɔ Akuapem Twi mu.', credit: BIBLICA('Akuapem Twi Nkwa Asɛm™', '1996, 2020') },
   asante: { short: 'ASANTE', name: 'Asante Twi (Nkwa Asɛm)', language: 'Asante Twi', group: 'Ghanaian languages', about: 'Twerɛ Kronkron no wɔ Asante Twi mu.', credit: BIBLICA('Asante Twi Nkwa Asɛm™', '1996, 2020') },
   ewe: { short: 'EWE', name: 'Eʋegbe (Agbenya La)', language: 'Ewe', group: 'Ghanaian languages', about: 'Biblia le Eʋegbe me.', credit: BIBLICA('Agbenya La™', '1988, 2006, 2020') },

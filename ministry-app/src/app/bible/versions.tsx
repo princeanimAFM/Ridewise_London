@@ -96,7 +96,7 @@ export default function BibleVersions() {
       ))}
 
       <Text style={{ color: t.textMuted, fontSize: 12, marginTop: space.lg, lineHeight: 18 }}>
-        All versions are public domain or openly licensed, from eBible.org. Twi, Ewe and Hausa: © Biblica, Inc., used under CC BY-SA 4.0.
+        All versions are public domain or openly licensed, from eBible.org. Twi, Ewe and Hausa © Biblica, Inc. and LSV © Covenant Press, used under CC BY-SA 4.0.
       </Text>
     </Screen>
   );

@@ -7,12 +7,17 @@ EN = ["Genesis","Exodus","Leviticus","Numbers","Deuteronomy","Joshua","Judges","
 # our id, eBible id, use local names
 T = [('kjv','eng-kjv2006',False),('bsb','engbsb',False),('web','engwebp',False),('webbe','engwebpb',False),('asv','eng-asv',False),
      ('bbe','engBBE',False),('ylt','engylt',False),('dby','engDBY',False),('gnv','enggnv',False),
+     ('lsv','englsv',False),('msb','engmsb',False),('rv','eng-rv',False),('webster','engwebster',False),('dra','engDRA',False),
      ('twi','twi',True),('asante','twiasante',True),('ewe','ewe',True),('hau','hausa',True),('lsg','fraLSG',True)]
+ONLY = None
+import sys
+if len(sys.argv) > 1: ONLY = set(sys.argv[1:])
 import subprocess
 def get(url):
     return subprocess.run(['curl','-sSfL',url],capture_output=True,check=True).stdout
 report={}
 for tid, eid, local in T:
+    if ONLY and tid not in ONLY: continue
     vpl = zipfile.ZipFile(io.BytesIO(get(f'https://ebible.org/Scriptures/{eid}_vpl.zip')))
     txt = [n for n in vpl.namelist() if n.endswith('_vpl.txt')][0]
     names = {}
@@ -26,11 +31,14 @@ for tid, eid, local in T:
         if not m: continue
         b, c, v, t = m.group(1), int(m.group(2)), int(m.group(3)), m.group(4)
         t = t.replace('¶', '')
-        if tid in ('kjv', 'asv', 'ylt', 'dby'): t = t.replace('[', '').replace(']', '')
+        if tid in ('kjv', 'asv', 'ylt', 'dby', 'lsv', 'rv', 'webster'): t = t.replace('[', '').replace(']', '')
         if tid in ('bbe', 'dby'): t = t.replace('*', '')
         t = re.sub(r'\s+', ' ', t).strip()
+        if tid == 'lsv': t = re.sub(r'\s*\|\|\s*', '\n', t)
         if b not in books: books[b] = {}; order.append(b)
         books[b].setdefault(c, {})[v] = t
+    CANON = 'GEN EXO LEV NUM DEU JOS JDG RUT 1SA 2SA 1KI 2KI 1CH 2CH EZR NEH EST JOB PSA PRO ECC SOL ISA JER LAM EZE DAN HOS JOE AMO OBA JON MIC NAH HAB ZEP HAG ZEC MAL MAT MAR LUK JOH ACT ROM 1CO 2CO GAL EPH PHI COL 1TH 2TH 1TI 2TI TIT PHM HEB JAM 1PE 2PE 1JO 2JO 3JO JUD REV'.split()
+    if len(order) > 66: order = [b for b in order if b in CANON]
     assert len(order) == 66, (tid, len(order), order[:5])
     data = []
     for i, b in enumerate(order):
