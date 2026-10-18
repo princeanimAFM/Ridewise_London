@@ -15,6 +15,8 @@ These builds include `expo-updates`, so screen and content changes published wit
 
 **Released 18 October 2026: the Holy Bible** (over-the-air to version 7 and 8 builds, and the web app). Bible tab with 17 versions (KJV, BSB, MSB, LSV, WEB, WEB British, ASV, Webster, BBE, YLT, Darby, Geneva 1599, Akuapem Twi, Asante Twi, Ewe, Hausa, Louis Segond), download for offline reading, search, highlights, bookmarks, Verse of the Day on Home and the Bible tab, and a daily Bible verse notification (on by default with the daily quote, a minute after it). Tabs are now Home · Bible · Sermons · Store · More; Quotes moved to More and a See all link on Home. Text is hosted at theafmchurch.org/bible (afm-church repo `bible/`, built with `scripts/build-bible.py`).
 
+**Released 18 October 2026 (later the same day): Bible reader fixes.** Bottom bars now sit above Android's navigation buttons (they were hidden under them), labelled Bookmark · Note · Copy · Share actions, notes on verses (also listed under Highlights & Notes), and a "Next: <chapter>" button at the end of each chapter (update groups `8d20ebab` production, `5ff4342d` preview; first Bible release was `cf9b7404` production, `e4246f35` preview).
+
 **Still for version 9:** update to the newest Expo SDK and React Native (clears Play's edge-to-edge warning), then a test APK before the Play release.
 
 **Live on Google Play since 17 October 2026** (version 8): https://play.google.com/store/apps/details?id=com.afm.hub
