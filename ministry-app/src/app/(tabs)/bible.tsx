@@ -113,7 +113,7 @@ export default function BibleHome() {
       {saved > 0 && (
         <Card onPress={() => router.push('/bible/saved')} style={styles.continue}>
           <Ionicons name="color-wand-outline" size={22} color={t.accent} />
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16, flex: 1 }}>My highlights & bookmarks</Text>
+          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16, flex: 1 }}>My highlights, bookmarks & notes</Text>
           <Text style={{ color: t.textMuted }}>{saved}</Text>
           <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
         </Card>

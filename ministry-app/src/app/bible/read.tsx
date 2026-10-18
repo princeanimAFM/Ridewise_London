@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import * as Clipboard from 'expo-clipboard';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -26,7 +27,7 @@ const isDarkColour = (hex: string) => {
   return ((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114 < 128;
 };
 
-/** One chapter. Tap verses to highlight, bookmark, copy or share them. */
+/** One chapter. Tap verses to highlight, bookmark, add a note, copy or share them. */
 export default function Reader() {
   const t = useTheme();
   const ministry = useContent();
@@ -43,6 +44,10 @@ export default function Reader() {
 
   const [selected, setSelected] = useState<number[]>([]);
   const [showSize, setShowSize] = useState(false);
+  const [copied, setCopied] = useState(false);
+  // The note being written: on verse `verse`, covering up to `to` when several verses are selected.
+  const [note, setNote] = useState<{ verse: number; to?: number; text: string } | null>(null);
+  const insets = useSafeAreaInsets();
   const scroll = useRef<ScrollView>(null);
   const positions = useRef<Record<number, number>>({});
   const scrolled = useRef(false);
@@ -80,6 +85,27 @@ export default function Reader() {
     updateMarks(keys, { colour });
     setSelected([]);
   };
+  const copy = async () => {
+    await Clipboard.setStringAsync(selectionText);
+    setSelected([]);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1800);
+  };
+  const editNote = (verse: number, to?: number) => {
+    const existing = marks[verseKey(book, chapter, verse)];
+    setNote({ verse, to: to ?? existing?.noteTo, text: existing?.note ?? '' });
+  };
+  const noteFromSelection = () => {
+    const sorted = [...selected].sort((a, b) => a - b);
+    const last = sorted[sorted.length - 1];
+    editNote(sorted[0], last > sorted[0] ? last : undefined);
+    setSelected([]);
+  };
+  const saveNote = (text: string | null) => {
+    if (note) updateMarks([verseKey(book, chapter, note.verse)], { note: text, noteTo: note.to });
+    setNote(null);
+  };
+  const noteRef = (verse: number, to?: number) => reference(book, chapter, to ? Array.from({ length: to - verse + 1 }, (_, i) => verse + i) : [verse]);
 
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
@@ -153,9 +179,29 @@ export default function Reader() {
                   {text}
                   {mark?.bookmark ? <Text style={{ color: t.accent }}>  ★</Text> : null}
                 </Text>
+                {!!mark?.note && (
+                  <Pressable
+                    onPress={() => editNote(v)}
+                    accessibilityLabel={`Your note on ${noteRef(v, mark.noteTo)}`}
+                    style={[styles.noteChip, { backgroundColor: t.surfaceAlt, borderColor: t.border }]}
+                  >
+                    <Ionicons name="document-text-outline" size={16} color={t.accent} />
+                    <Text style={{ color: t.text, flex: 1, fontSize: 14, lineHeight: 20 }} numberOfLines={3}>
+                      {mark.note}
+                    </Text>
+                  </Pressable>
+                )}
               </Pressable>
             );
           })}
+          {!!verses.length && next && (
+            <Button
+              label={`Next: ${reference(next[0], next[1])}`}
+              icon="arrow-forward"
+              onPress={() => open(next[0], next[1])}
+              style={{ marginTop: space.xl }}
+            />
+          )}
           {!!verses.length && (
             <Text style={{ color: t.textMuted, fontSize: 12, marginTop: space.lg, textAlign: 'center' }}>
               {TRANSLATIONS[prefs.translation].name}. {TRANSLATIONS[prefs.translation].credit}
@@ -165,7 +211,7 @@ export default function Reader() {
       </ScrollView>
 
       {selected.length > 0 ? (
-        <View style={[styles.bar, { backgroundColor: t.surface, borderColor: t.border }]}>
+        <View style={[styles.bar, { backgroundColor: t.surface, borderColor: t.border, paddingBottom: space.md + insets.bottom }]}>
           <View style={styles.barRow}>
             <Text style={{ color: t.text, fontWeight: '700', flex: 1 }} numberOfLines={1}>
               {reference(book, chapter, selected)}
@@ -181,20 +227,23 @@ export default function Reader() {
             <Pressable onPress={() => highlight(null)} accessibilityLabel="Remove highlight" style={[styles.swatch, styles.clear, { borderColor: t.border }]}>
               <Ionicons name="close" size={16} color={t.textMuted} />
             </Pressable>
-            <View style={{ flex: 1 }} />
-            <Pressable onPress={() => { updateMarks(keys, { bookmark: !allBookmarked }); setSelected([]); }} hitSlop={6} style={styles.action}>
-              <Ionicons name={allBookmarked ? 'bookmark' : 'bookmark-outline'} size={22} color={t.accent} />
-            </Pressable>
-            <Pressable onPress={async () => { await Clipboard.setStringAsync(selectionText); setSelected([]); }} hitSlop={6} style={styles.action}>
-              <Ionicons name="copy-outline" size={22} color={t.accent} />
-            </Pressable>
-            <Pressable onPress={() => shareText(`${selectionText}\n\nShared from ${ministry.name}`)} hitSlop={6} style={styles.action}>
-              <Ionicons name="share-social-outline" size={22} color={t.accent} />
-            </Pressable>
+          </View>
+          <View style={styles.actions}>
+            {[
+              { label: allBookmarked ? 'Unmark' : 'Bookmark', icon: allBookmarked ? 'bookmark' : 'bookmark-outline', onPress: () => { updateMarks(keys, { bookmark: !allBookmarked }); setSelected([]); } },
+              { label: 'Note', icon: 'create-outline', onPress: noteFromSelection },
+              { label: 'Copy', icon: 'copy-outline', onPress: copy },
+              { label: 'Share', icon: 'share-social-outline', onPress: () => shareText(`${selectionText}\n\nShared from ${ministry.name}`) },
+            ].map((a) => (
+              <Pressable key={a.label} onPress={a.onPress} accessibilityRole="button" style={({ pressed }) => [styles.action, { borderColor: t.border }, pressed && { opacity: 0.7 }]}>
+                <Ionicons name={a.icon as 'copy-outline'} size={22} color={t.accent} />
+                <Text style={{ color: t.text, fontSize: 12, fontWeight: '600' }}>{a.label}</Text>
+              </Pressable>
+            ))}
           </View>
         </View>
       ) : (
-        <View style={[styles.nav, { backgroundColor: t.surface, borderColor: t.border }]}>
+        <View style={[styles.nav, { backgroundColor: t.surface, borderColor: t.border, paddingBottom: 12 + insets.bottom }]}>
           <Pressable disabled={!prev} onPress={() => prev && open(prev[0], prev[1])} style={[styles.navBtn, !prev && { opacity: 0.3 }]}>
             <Ionicons name="chevron-back" size={20} color={t.accent} />
             <Text style={{ color: t.text, fontWeight: '600' }} numberOfLines={1}>{prev ? reference(prev[0], prev[1]) : ''}</Text>
@@ -208,6 +257,39 @@ export default function Reader() {
           </Pressable>
         </View>
       )}
+
+      {copied && (
+        <View pointerEvents="none" style={[styles.toast, { bottom: 72 + insets.bottom }]}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copied</Text>
+        </View>
+      )}
+
+      <Modal visible={!!note} transparent animationType="fade" onRequestClose={() => setNote(null)}>
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.backdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setNote(null)} accessibilityLabel="Close note" />
+          {note && (
+            <View style={[styles.sheet, { backgroundColor: t.surface, paddingBottom: space.md + insets.bottom }]}>
+              <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Note on {noteRef(note.verse, note.to)}</Text>
+              <TextInput
+                value={note.text}
+                onChangeText={(text) => setNote({ ...note, text })}
+                placeholder="Write what this verse means to you, a sermon point, a prayer…"
+                placeholderTextColor={t.textMuted}
+                multiline
+                autoFocus
+                textAlignVertical="top"
+                style={[styles.noteInput, { color: t.text, borderColor: t.border, backgroundColor: t.background }]}
+              />
+              <View style={styles.sheetButtons}>
+                {!!marks[verseKey(book, chapter, note.verse)]?.note && (
+                  <Button label="Delete" icon="trash-outline" variant="outline" onPress={() => saveNote(null)} style={{ flex: 1 }} />
+                )}
+                <Button label="Save note" icon="checkmark" onPress={() => saveNote(note.text)} style={{ flex: 1 }} />
+              </View>
+            </View>
+          )}
+        </KeyboardAvoidingView>
+      </Modal>
     </View>
   );
 }
@@ -228,7 +310,14 @@ const styles = StyleSheet.create({
   barRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
   swatch: { width: 30, height: 30, borderRadius: 15 },
   clear: { borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  action: { paddingHorizontal: 6 },
+  actions: { flexDirection: 'row', gap: space.sm },
+  action: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 6, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md },
+  noteChip: { flexDirection: 'row', gap: space.sm, alignItems: 'flex-start', borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.sm, padding: space.sm, marginTop: 4, marginBottom: 6 },
+  toast: { position: 'absolute', alignSelf: 'center', backgroundColor: 'rgba(20,20,20,0.88)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 18 },
+  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
+  sheet: { padding: space.md, gap: space.md, borderTopLeftRadius: radius.lg, borderTopRightRadius: radius.lg },
+  noteInput: { minHeight: 140, maxHeight: 260, borderWidth: 1, borderRadius: radius.md, padding: space.md, fontSize: 16, lineHeight: 22 },
+  sheetButtons: { flexDirection: 'row', gap: space.sm },
   nav: { flexDirection: 'row', alignItems: 'center', gap: space.md, paddingHorizontal: space.md, paddingVertical: 12, borderTopWidth: StyleSheet.hairlineWidth },
   navBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 4 },
 });

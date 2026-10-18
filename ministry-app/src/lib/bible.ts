@@ -171,8 +171,11 @@ const PREFS_KEY = 'afm-bible-prefs';
 const MARKS_KEY = 'afm-bible-marks';
 let prefs: Prefs = { translation: 'kjv', size: 18 };
 
-/** A highlight colour name, a bookmark, or both, keyed by "book.chapter.verse" (same in every translation). */
-export type Mark = { colour?: HighlightColour; bookmark?: boolean; at: number };
+/**
+ * A highlight colour name, a bookmark and/or a note, keyed by "book.chapter.verse" (same in every
+ * translation). A note on several verses is kept on the first, with `noteTo` the last verse.
+ */
+export type Mark = { colour?: HighlightColour; bookmark?: boolean; note?: string; noteTo?: number; at: number };
 export type HighlightColour = 'yellow' | 'green' | 'blue' | 'pink';
 export const HIGHLIGHTS: Record<HighlightColour, { light: string; dark: string }> = {
   yellow: { light: '#FFF1A8', dark: '#5C5016' },
@@ -215,13 +218,20 @@ export function useMarks(): Record<string, Mark> {
 }
 
 /** Applies a change to several verses at once. undefined removes that part of the mark. */
-export function updateMarks(keys: string[], change: { colour?: HighlightColour | null; bookmark?: boolean }) {
+export function updateMarks(
+  keys: string[],
+  change: { colour?: HighlightColour | null; bookmark?: boolean; note?: string | null; noteTo?: number },
+) {
   const next = { ...marks };
   for (const k of keys) {
     const m: Mark = { ...next[k], at: Date.now() };
     if (change.colour !== undefined) m.colour = change.colour ?? undefined;
     if (change.bookmark !== undefined) m.bookmark = change.bookmark || undefined;
-    if (!m.colour && !m.bookmark) delete next[k];
+    if (change.note !== undefined) {
+      m.note = change.note?.trim() || undefined;
+      m.noteTo = m.note ? change.noteTo : undefined;
+    }
+    if (!m.colour && !m.bookmark && !m.note) delete next[k];
     else next[k] = m;
   }
   marks = next;
