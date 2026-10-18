@@ -15,7 +15,6 @@ import {
   useMarks,
   verseKey,
   type HighlightColour,
-  type TranslationId,
 } from '@/lib/bible';
 import { shareText } from '@/lib/links';
 import { useContent } from '@/lib/liveContent';
@@ -91,9 +90,9 @@ export default function Reader() {
             <View style={styles.headerButtons}>
               <Pressable
                 hitSlop={8}
-                onPress={() => setBiblePrefs({ translation: (prefs.translation === 'kjv' ? 'web' : 'kjv') as TranslationId })}
+                onPress={() => router.push('/bible/versions')}
                 style={styles.headerChip}
-                accessibilityLabel="Switch translation"
+                accessibilityLabel="Change Bible version"
               >
                 <Text style={styles.headerChipText}>{TRANSLATIONS[prefs.translation].short}</Text>
               </Pressable>
@@ -159,7 +158,7 @@ export default function Reader() {
           })}
           {!!verses.length && (
             <Text style={{ color: t.textMuted, fontSize: 12, marginTop: space.lg, textAlign: 'center' }}>
-              {TRANSLATIONS[prefs.translation].name} · public domain
+              {TRANSLATIONS[prefs.translation].name}. {TRANSLATIONS[prefs.translation].credit}
             </Text>
           )}
         </View>

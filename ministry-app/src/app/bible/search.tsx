@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,14 +14,18 @@ export default function BibleSearch() {
   const [query, setQuery] = useState(params.q ?? '');
   const prefs = useBiblePrefs();
   const { data, error, loading, retry } = useBible(prefs.translation);
-  const result = useMemo(() => (data ? searchBible(data, query) : null), [data, query]);
+  // A reference like "John 3:16" or "Yohane 3:16" opens the verse instead of searching.
+  // Waits for the version to load so book names in its own language are known.
+  const ref = useMemo(() => (data ? parseReference(query) : null), [data, query]);
+  useEffect(() => {
+    if (ref) router.replace({ pathname: '/bible/read', params: { book: ref.book, chapter: ref.chapter, verse: ref.verse ?? '' } });
+  }, [ref]);
+  const result = useMemo(() => (data && !ref ? searchBible(data, query) : null), [data, query, ref]);
   const words = query.toLowerCase().split(/\s+/).filter((w) => w.length > 1);
 
   const submit = () => {
     const q = input.trim();
-    const ref = parseReference(q);
-    if (ref) router.push({ pathname: '/bible/read', params: { book: ref.book, chapter: ref.chapter, verse: ref.verse ?? '' } });
-    else setQuery(q);
+    setQuery(q);
   };
 
   // Bold the searched words inside each verse.

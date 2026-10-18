@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BOOKS, NEW_TESTAMENT_START } from '@/content/bible';
-import { parseReference, reference, setBiblePrefs, TRANSLATIONS, useBiblePrefs, useMarks, verseOfTheDay, type TranslationId } from '@/lib/bible';
-import { Card, Chip, Screen, SectionHeader } from '@/components/ui';
+import { bookName, parseReference, reference, TRANSLATIONS, useBible, useBiblePrefs, useDownloads, useMarks, verseOfTheDay } from '@/lib/bible';
+import { Card, Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 /** Bible home: translation, search, continue reading, verse of the day and the 66 books. */
@@ -12,6 +12,8 @@ export default function BibleHome() {
   const t = useTheme();
   const prefs = useBiblePrefs();
   const marks = useMarks();
+  useBible(prefs.translation); // loads the version so book names show in its language
+  useDownloads();
   const [query, setQuery] = useState('');
   const votd = verseOfTheDay();
   const saved = Object.keys(marks).length;
@@ -26,13 +28,13 @@ export default function BibleHome() {
 
   const bookGrid = (from: number, to: number) => (
     <View style={styles.books}>
-      {BOOKS.slice(from, to).map(([id, name], i) => (
+      {BOOKS.slice(from, to).map(([id], i) => (
         <Pressable
           key={id}
           onPress={() => router.push({ pathname: '/bible/[book]', params: { book: from + i } })}
           style={({ pressed }) => [styles.book, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.75 }]}
         >
-          <Text numberOfLines={1} style={{ color: t.text, fontWeight: '600' }}>{name}</Text>
+          <Text numberOfLines={1} style={{ color: t.text, fontWeight: '600' }}>{bookName(from + i)}</Text>
         </Pressable>
       ))}
     </View>
@@ -40,12 +42,16 @@ export default function BibleHome() {
 
   return (
     <Screen>
-      <View style={styles.row}>
-        {(Object.keys(TRANSLATIONS) as TranslationId[]).map((id) => (
-          <Chip key={id} label={TRANSLATIONS[id].short} active={prefs.translation === id} onPress={() => setBiblePrefs({ translation: id })} />
-        ))}
-        <Text style={{ color: t.textMuted, flex: 1 }} numberOfLines={1}>{TRANSLATIONS[prefs.translation].name}</Text>
-      </View>
+      <Card onPress={() => router.push('/bible/versions')} style={styles.continue}>
+        <View style={[styles.badge, { backgroundColor: t.primary }]}>
+          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 11 }} numberOfLines={1}>{TRANSLATIONS[prefs.translation].short}</Text>
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{TRANSLATIONS[prefs.translation].name}</Text>
+          <Text style={{ color: t.textMuted, fontSize: 13 }}>Change version · download for offline</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
+      </Card>
 
       <View style={[styles.search, { backgroundColor: t.surface, borderColor: t.border }]}>
         <Ionicons name="search" size={18} color={t.textMuted} />
@@ -103,7 +109,7 @@ export default function BibleHome() {
 }
 
 const styles = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, marginBottom: space.md },
+  badge: { minWidth: 48, height: 34, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
   search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, marginBottom: space.md },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 12 },
   continue: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, marginBottom: space.md },

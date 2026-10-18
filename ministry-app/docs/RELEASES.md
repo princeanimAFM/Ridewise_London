@@ -13,6 +13,8 @@ These builds include `expo-updates`, so screen and content changes published wit
 | Google Play, version code 6 (in closed testing) | [609d0a24](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/609d0a24-ab8a-4263-830c-02660db81d1d) | [app bundle (.aab)](https://expo.dev/artifacts/eas/c0EbjtcnIBSkhetGwn5TotovG_3GRmcq8yft04F-vmY.aab) |
 | Testing on a phone | [a587ece8](https://expo.dev/accounts/princeanim88s-team/projects/afm-hub/builds/a587ece8-6cde-4a0e-bc43-724d46022db2) | [APK](https://expo.dev/artifacts/eas/FlZMdhxYl3FlvIlUtSLsGAIY49J8O3R80rIwtYh0nyg.apk) |
 
+**Also on hold for version 9:** 14 Bible versions with download-for-offline (More → Holy Bible → Versions): KJV, BSB, WEB, WEB British, ASV, BBE, YLT, Darby, Geneva 1599, Akuapem Twi, Asante Twi, Ewe, Hausa, Louis Segond. **On release day:** run `scripts/build-bible.py` and upload the new files to the afm-church repo `bible/` (only kjv and web are there now), then publish.
+
 **On hold for version 9** (rolled back the same day, 18 October 2026: the Play Store link update was republished as groups `eba33d15` production, `2d699a61` preview, and the web app redeployed without it). The code stays on this branch: **Holy Bible**, KJV and World English Bible (text at theafmchurch.org/bible, kept on the phone after the first download), search, highlights, bookmarks and verse of the day (commit `a5596d5`; update groups `d6181166` production, `6e70610f` preview).
 
 **Live on Google Play since 17 October 2026** (version 8): https://play.google.com/store/apps/details?id=com.afm.hub
