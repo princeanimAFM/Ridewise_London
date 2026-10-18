@@ -95,7 +95,8 @@ async function fetchBible(id: TranslationId): Promise<BibleData> {
   }
   setDownload(id, 'downloading');
   try {
-    const res = await fetch(`${SOURCE}/${id}.json`);
+    // One quiet retry: a dropped connection on mobile data shouldn't show an error.
+    const res = await fetch(`${SOURCE}/${id}.json`).catch(() => fetch(`${SOURCE}/${id}.json`));
     if (!res.ok) throw new Error(`Download failed (${res.status})`);
     const text = await res.text();
     const data = JSON.parse(text) as BibleData;
