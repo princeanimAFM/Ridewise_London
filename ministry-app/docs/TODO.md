@@ -5,6 +5,11 @@ Ideas agreed with the owner, to build later. Nothing here is started or publishe
 ## Version 9 (Play Store), reminder set for 18 November 2026
 - Update to the newest Expo SDK and React Native (clears Play's edge-to-edge warning).
 - Test APK for the owner to try, then the Play Store bundle.
+- Remove the unused microphone permission (RECORD_AUDIO, added by expo-audio by default; the app only plays audio) so Play doesn't ask about it.
+- Google Play app quality requirements (memory use and code optimisation), deadline February 2027: check the version 9 build against them (R8 shrinking is already on since version 8).
+
+## Google Play account
+- Declare trader status in Play Console (Google requires it from November 2026, email of 29 October 2026). Owner to choose trader or non-trader.
 
 ## Daily devotional
 - "Today's Devotional" card on Home next to the Verse of the Day.
