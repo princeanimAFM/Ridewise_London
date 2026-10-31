@@ -16,7 +16,7 @@ export const privacy = {
   title: 'Privacy Policy',
   appName: 'The AFM HUB',
   publisher: 'The AFM Family Network (Alleluia Faith Mission)',
-  effectiveDate: '28 September 2026',
+  effectiveDate: '31 October 2026',
   contactEmail: 'theafmfamily@gmail.com',
 
   summary:
