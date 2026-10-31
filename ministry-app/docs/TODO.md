@@ -8,10 +8,6 @@ Ideas agreed with the owner, to build later. Nothing here is started or publishe
 - Remove the unused microphone permission (RECORD_AUDIO, added by expo-audio by default; the app only plays audio) so Play doesn't ask about it.
 - Google Play app quality requirements (memory use and code optimisation), deadline February 2027: check the version 9 build against them (R8 shrinking is already on since version 8).
 
-## Live service: "We're live", comments and prayer requests (built, waiting to publish)
-- Built on the branch, not published. Owner dashboard → Live service → "We're live: notify everyone" sends "🔴 Live now" to every phone; members comment and send private prayer requests on the Live screen while it's on.
-- To publish: apply migration `supabase/migrations/0008_live_service.sql`, deploy the `go-live` function and redeploy `telegram-webhook` (shared push code moved to `_shared/push.ts`), set the privacy policy's effectiveDate and rebuild `docs/privacy.html` (`node scripts/build-privacy-page.js`), then the over-the-air update and web deploy.
-
 ## Google Play account
 - Declare trader status in Play Console (Google requires it from November 2026, email of 29 October 2026). Owner to choose trader or non-trader.
 
