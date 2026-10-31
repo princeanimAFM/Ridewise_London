@@ -9,6 +9,7 @@ import type { Announcement } from '@/lib/announcements';
 import { formatDate } from '@/lib/links';
 import { parseClock } from '@/lib/serviceTime';
 import { BackendComingSoon } from '@/components/ComingSoon';
+import { LiveControl } from '@/components/LiveControl';
 import { Field, Notice, Toggle } from '@/components/form';
 import { Artwork, Body, Button, Screen, SectionHeader, Title } from '@/components/ui';
 import { radius, space, useTheme } from '@/theme';
@@ -193,6 +194,9 @@ export default function Admin() {
         <Button label="Subscribers" icon="people-circle-outline" variant="outline" onPress={() => router.push('/subscribers')} style={{ flex: 1 }} />
         <Button label="Admins" icon="people-outline" variant="outline" onPress={() => router.push('/admins')} style={{ flex: 1 }} />
       </View>
+
+      <SectionHeader title="Live service" />
+      <LiveControl />
 
       <SectionHeader title="New announcement" />
       {!!error && <Notice kind="error">{error}</Notice>}

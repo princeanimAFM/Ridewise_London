@@ -7,6 +7,8 @@ import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
 import { Body, Button, Card, Screen, SectionHeader } from '@/components/ui';
 import { ServiceTimeRows } from '@/components/ServiceTimeRows';
+import { LiveChat } from '@/components/LiveChat';
+import { useLiveSession } from '@/lib/liveService';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 export default function Live() {
@@ -19,6 +21,7 @@ export default function Live() {
   const t = useTheme();
   const [key, setKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const { session: live } = useLiveSession();
 
   return (
     <Screen padded={false}>
@@ -48,12 +51,16 @@ export default function Live() {
       <View style={{ padding: space.md }}>
         <View style={styles.titleRow}>
           <View style={styles.liveDot} />
-          <Text style={[styles.kicker, { color: '#C62828' }]}>LIVE SERVICES</Text>
+          <Text style={[styles.kicker, { color: '#C62828' }]}>{live ? 'LIVE NOW' : 'LIVE SERVICES'}</Text>
         </View>
-        <Text style={[styles.title, { color: t.text }]}>Worship with us live</Text>
-        <Body muted style={{ marginTop: space.xs }}>
-          When {ministry.minister} is ministering live, the service plays above. If nothing is live right now, you'll see the latest videos from the channel.
-        </Body>
+        <Text style={[styles.title, { color: t.text }]}>{live ? live.title : 'Worship with us live'}</Text>
+        {live ? (
+          <LiveChat session={live} />
+        ) : (
+          <Body muted style={{ marginTop: space.xs }}>
+            When {ministry.minister} is ministering live, the service plays above. If nothing is live right now, you'll see the latest videos from the channel. Comments and prayer requests open here during live services.
+          </Body>
+        )}
 
         <View style={styles.buttons}>
           <Button label="Refresh" icon="refresh" variant="outline" onPress={() => { setLoading(true); setKey((k) => k + 1); }} style={styles.flex} />

@@ -44,6 +44,7 @@ export const privacy = {
         'Newsletter subscription (optional): your first name, email address and/or mobile number, and whether you want announcements by email, text message or both.',
         'Profile photo (optional): if you choose to personalise your account, a photo you pick from your phone. It is stored with your account and shown to you in the app. Other members cannot see it; the ministry’s admins can if needed to help with your account. You can change or remove it at any time, and removing it deletes it.',
         'Prayer requests and emails: your name (optional), your email address, and the content of your message, when you send a prayer request or contact us by email.',
+        'Live service comments and prayer requests (optional, signed-in members only): what you write on the Live screen during a live service, with your first name and the time. Comments are shown to everyone watching. Prayer requests sent there are seen only by you and the ministry team.',
         'Questions to the AFM Assistant: the text of your questions and the recent messages in that chat, when a question needs the AI service to answer it.',
         'Notifications (optional): if you allow notifications, your phone’s push address (a random identifier from Apple or Google) so we can send announcements. The daily AFM quote is scheduled on your phone and sends us nothing.',
         'Launch notifications: your email address, if you email us to be told when a product such as the House of Azanduna collection launches.',
@@ -110,6 +111,7 @@ export const privacy = {
       heading: '8. How long we keep information',
       bullets: [
         'Prayer requests and emails: for as long as needed to pray with you and respond, and no longer than 24 months, unless you ask us to delete them sooner.',
+        'Live service comments: up to 90 days. Prayer requests sent during a live service: no longer than 24 months. You can ask us to delete either sooner, and deleting your account deletes them.',
         'AFM Assistant chats: we do not keep a history. The conversation is cleared from the app when you close the Assistant. Our service providers may keep request logs for a short period for security and abuse prevention, under their own policies.',
         'Launch-notification emails: until the launch notice is sent or you ask us to stop.',
         'Accounts: until you ask us to delete your account.',
