@@ -62,22 +62,20 @@ New visitors are due a first contact within 2 days of assignment; members unseen
 With the Supabase settings empty, both pages run in **demo mode** with sample people, kept in that browser only.
 Serve the folder (for example `python3 -m http.server`) and open `team.html`; switch "Viewing as" to see each role.
 
-## Going live
+## Live setup (done 1 November 2026)
 
-1. Create a free Supabase project (region: closest to Ghana, e.g. EU West / London). Free projects pause after
-   7 days with no use; weekly services keep it active.
-2. Run `supabase/schema.sql` in the SQL editor (safe to run again after changes).
-3. Add the pastor: `insert into staff (name, phone, email, role) values ('Prophet Micah Felix Azanduna D.D', '024xxxxxxx', 'pastor@example.com', 'pastor');`
-   (phone, email or both). Everyone else is added from the app (Home → Team & groups).
-4. Sign-in codes:
-   - **WhatsApp:** Supabase → Authentication → Sign In / Providers → Phone: turn it on and choose Twilio. In Twilio,
-     set up a WhatsApp sender (Twilio's sandbox works for testing; for everyone, Meta approves the church's WhatsApp
-     Business sender). Twilio and Meta charge a small fee per code sent.
-   - **Email (free):** Authentication → URL configuration: set Site URL to the address of `team.html`.
-     Email templates → Magic link: add `Your code: {{ .Token }}` so people can type the code.
-   - To offer only one of the two, set `signIn` in `assets/config.js`.
-5. Put the project URL and anon key in `assets/config.js`.
-6. Host the folder on any static host (GitHub Pages works) and make the QR code from the address of `index.html`.
+- **Address:** https://theafmchurch.org/welcome/ (visitor page; the QR code opens this) and
+  https://theafmchurch.org/welcome/team.html (team and members). Hosted with the church website
+  (afm-church repo, `welcome/` folder, GitHub Pages). To update, copy `index.html`, `team.html`,
+  `manifest.webmanifest` and `assets/` into that folder.
+- **Database:** the AFM HUB Supabase project, in its own schema `care` (`supabase/schema.sql`, safe to run again).
+  `care` is added to the API's exposed schemas. AFM HUB's own tables are untouched.
+- **Sign-in:** email code (sent from hello@theafmchurch.org) or Google. The magic-link email shows the code.
+  `https://theafmchurch.org/welcome/**` is in the allowed redirect list.
+  WhatsApp codes: set up Twilio's WhatsApp sender in Supabase (Authentication → Phone), then set
+  `signIn.whatsapp: true` in `assets/config.js`.
+- **First pastor:** hello@theafmchurch.org. Everyone else is invited from the app (Home → Team & groups).
+- **QR code:** `welcome/qr.svg` on the website; printable card in the release notes.
 
 ## Data protection
 

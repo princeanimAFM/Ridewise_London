@@ -27,6 +27,9 @@
         if (how === 'whatsapp') return sb.auth.signInWithOtp({ phone: to, options: { channel: 'whatsapp', shouldCreateUser: true } }).then(must);
         return sb.auth.signInWithOtp({ email: to, options: { shouldCreateUser: true, emailRedirectTo: location.href.split('#')[0].split('?')[0] } }).then(must);
       },
+      google: function () {
+        return sb.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: location.href.split('#')[0] } }).then(must);
+      },
       verify: function (how, to, code) {
         return (how === 'whatsapp' ? sb.auth.verifyOtp({ phone: to, token: code, type: 'sms' }) : sb.auth.verifyOtp({ email: to, token: code, type: 'email' })).then(must);
       },
@@ -79,7 +82,7 @@
       myAttendance: function (group) { return sb.rpc('my_attendance', { p_group: group }).then(must); },
       subscribe: function (cb) {
         var ch = sb.channel('care');
-        TABLES.concat(['groups', 'attendance', 'programs']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, cb); });
+        TABLES.concat(['groups', 'attendance', 'programs']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: C.supabaseSchema || 'public', table: t }, cb); });
         ch.subscribe();
       }
     };

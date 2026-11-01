@@ -2,11 +2,13 @@
    (Supabase → Project Settings → API). The anon key is meant to be public; the access rules in
    supabase/schema.sql are what protect the data. While these are empty the app runs in demo mode. */
 window.CARE_CONFIG = {
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  // The AFM HUB Supabase project; Church Care's tables live in their own "care" schema there.
+  supabaseUrl: 'https://huxvyimncwbeqnsugszm.supabase.co',
+  supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh1eHZ5aW1uY3diZXFuc3Vnc3ptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA0MjUxMTYsImV4cCI6MjEwNjAwMTExNn0.ggmws94tx8aHiicS2Qvh0TXShD540kEftitg8NAwF1Y',
+  supabaseSchema: 'care',
 
-  // How the team gets sign-in codes. WhatsApp needs Twilio set up in Supabase (see README).
-  signIn: { whatsapp: true, email: true },
+  // How the team signs in. WhatsApp codes need Twilio set up in Supabase (see README); turn on when ready.
+  signIn: { whatsapp: false, email: true, google: true },
 
   church: 'The AFM Church',
   churchFull: 'Alleluia Faith Mission Global Assembly',

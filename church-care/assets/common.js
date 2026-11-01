@@ -51,7 +51,8 @@
 
   if (Care.live && window.supabase) {
     Care.client = window.supabase.createClient(C.supabaseUrl, C.supabaseAnonKey, {
-      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+      auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storageKey: 'church-care-auth' },
+      db: { schema: C.supabaseSchema || 'public' }
     });
   }
 })();
