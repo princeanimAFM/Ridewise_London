@@ -35,7 +35,6 @@
     if (withLetter) {
       $('letter-sec').hidden = false;
       $('letter').innerHTML = letter(first);
-      if (!document.querySelector('#letter + .prayer')) $('letter').insertAdjacentHTML('afterend', prayerCard(first));
     }
   }
   $('p-to').options[0].textContent = '🔒 ' + C.pastor.replace(' D.D', '') + ' (the pastor) only';
@@ -114,7 +113,7 @@
       f.className = 'card top green';
       f.innerHTML = '<div class="kicker">Received</div><h2 class="title">We are standing with you in prayer</h2>' +
         '<p class="lead">Your request has reached ' + (o.to === 'pastor' ? 'our pastor' : 'your group leader') + '.' + (o.phone ? ' Someone may reach you on WhatsApp.' : '') + '</p>' +
-        prayerCard(first) + '<p class="meta" style="margin-top:12px">\u201CThe effectual fervent prayer of a righteous man availeth much.\u201D James 5:16</p>';
+        '<p class="meta" style="margin-top:12px">\u201CThe effectual fervent prayer of a righteous man availeth much.\u201D James 5:16</p>';
       document.querySelector('.chips').hidden = true;
       document.querySelector('#form details').hidden = true;
       showAfter(false);
