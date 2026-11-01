@@ -6,7 +6,7 @@
   function $(id) { return document.getElementById(id); }
 
   var S = {
-    me: null, tab: 'overview', vFilter: 'open', pFilter: 'open', groupId: null, day: Care.today(),
+    me: null, tab: 'overview', kind: null, attMap: {}, missDay: null, vFilter: 'open', pFilter: 'open', groupId: null, day: Care.today(),
     groups: C.groups, staff: [], visitors: [], notes: [], members: [], prayers: [], sheet: null, loaded: false
   };
 
@@ -24,6 +24,31 @@
   function groupName(id) { var g = group(id); return g ? g.name : ''; }
   function leaderOf(id) { var g = group(id); return g ? g.leader_name : ''; }
   function day(ts) { return ts ? String(ts).slice(0, 10) : ''; }
+  /* ---------- attendance helpers ---------- */
+  var KINDS = [['sunday', 'Sunday service'], ['friday', 'Friday Miracle'], ['online', 'Online prayer'], ['meeting', 'Group meeting']];
+  function kindName(k) { return (KINDS.filter(function (x) { return x[0] === k; })[0] || [k, k])[1]; }
+  function kindPhrase(k) { return { sunday: 'Sunday service', friday: 'Friday Miracle Service', online: 'online prayer', meeting: 'group meeting' }[k] || k; }
+  function defaultKind() { var d = new Date().getDay(); return d === 0 ? 'sunday' : d === 5 ? 'friday' : 'meeting'; }
+  function serviceDay(kind) { var t = Care.today(), d = new Date().getDay(); return kind === 'sunday' || kind === 'online' ? Care.addDays(t, -d) : kind === 'friday' ? Care.addDays(t, -((d + 2) % 7)) : t; }
+  function lastSundays(n) { var s0 = serviceDay('sunday'), out = []; for (var i = 0; i < n; i++) out.push(Care.addDays(s0, -7 * i)); return out; }
+  function attended(mid, day, kind) { return S.attMap[mid + '|' + day + '|' + kind]; }
+  function sundayStats(m) {
+    var joined = m.joined_at || day(m.created_at) || '2000-01-01';
+    var suns = lastSundays(8).filter(function (d) { return d >= joined; });
+    var came = suns.filter(function (d) { return attended(m.id, d, 'sunday'); }).length, row = 0;
+    for (var i = 0; i < suns.length; i++) { if (attended(m.id, suns[i], 'sunday')) break; row++; }
+    return { total: suns.length, came: came, missed: suns.length - came, row: row };
+  }
+  function statsText(m) {
+    var st = sundayStats(m);
+    if (!st.total) return 'New';
+    return 'Came ' + st.came + ' of the last ' + st.total + ' Sunday' + (st.total === 1 ? '' : 's') + (st.row >= 2 ? ' · <b style="color:var(--red)">missed ' + st.row + ' in a row</b>' : '');
+  }
+  function missedMsg(m, d) {
+    return 'Hello ' + Care.first(m.name) + ', this is ' + S.me.name + ' from ' + C.church + '. We missed you at church on ' +
+      Care.parse(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + '. We hope you and your family are well. Is there anything we can pray with you about? God bless you.';
+  }
+
   function weeksAway(m) { var ref = m.last_seen || m.joined_at || Care.today(); return Math.max(0, Math.floor(Care.daysBetween(ref, Care.today()) / 7)); }
   function isAway(m) { return weeksAway(m) >= C.awayWeeks; }
   function isOverdue(v) { return v.status === 'new' && v.due && v.due < Care.today(); }
@@ -70,6 +95,7 @@
       if (isMember()) return loadMember();
       Store.loadAll().then(function (d) {
         S.groups = d.groups; S.staff = d.staff; S.visitors = d.visitors; S.notes = d.visitor_notes; S.members = d.members; S.prayers = d.prayers;
+        S.attMap = {}; (d.attendance || []).forEach(function (a) { S.attMap[a.member_id + '|' + a.seen_on + '|' + a.kind] = a; });
         S.loaded = true;
         if (Store.mode === 'demo') demoRoles();
         render();
@@ -192,12 +218,12 @@
     if (role() === 'pa') {
       var t = [['overview', 'Home', '🏠']];
       if (can('visitors')) t.push(['visitors', 'Visitors', '👋']);
-      if (can('groups')) t.push(['groups', 'Groups', '👥'], ['away', 'Away', '💛']);
+      if (can('groups')) t.push(['groups', 'Groups', '👥'], ['away', 'Follow up', '💛']);
       if (canPrayer()) t.push(['prayer', 'Prayer', '🙏']);
       return t;
     }
-    if (isLeader()) return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋'], ['groups', 'My group', '👥'], ['away', 'Away', '💛'], ['prayer', 'Prayer', '🙏']];
-    return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋'], ['groups', 'Groups', '👥'], ['away', 'Away', '💛'], ['prayer', 'Prayer', '🙏']];
+    if (isLeader()) return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋'], ['groups', 'My group', '👥'], ['away', 'Follow up', '💛'], ['prayer', 'Prayer', '🙏']];
+    return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋'], ['groups', 'Groups', '👥'], ['away', 'Follow up', '💛'], ['prayer', 'Prayer', '🙏']];
   }
   function badge(t) {
     if (t === 'visitors') {
@@ -249,7 +275,11 @@
       tile(avg, 'Average time to first contact');
     if (can('visitors') || role() === 'welcome') h += tile(waiting.length, 'Waiting for a leader', waiting.length);
     if (isLeader()) { var nfy = vs.filter(function (v) { return v.status === 'new' && !v.seen_by_leader; }).length; h += tile(nfy, 'New visitors for you', nfy); }
-    if (can('groups') || isLeader()) { var away = ms.filter(isAway).length; h += tile(away, 'Away ' + C.awayWeeks + '+ weeks', away) + tile(ms.length, 'Members on the list'); }
+    if (can('groups') || isLeader()) {
+      var ls = lastSundays(1)[0], pool = ms.filter(function (m) { return (m.joined_at || '2000-01-01') <= ls; });
+      var away = ms.filter(isAway).length, came = pool.filter(function (m) { return attended(m.id, ls, 'sunday'); }).length;
+      h += tile(came + '<span style="font-size:.9rem;color:var(--ink-3)">/' + pool.length + '</span>', 'At church last Sunday') + tile(away, 'Away ' + C.awayWeeks + '+ weeks', away) + tile(ms.length, 'Members on the list');
+    }
     if (canPrayer() || isLeader()) h += tile(S.prayers.filter(function (p) { return p.status === 'open'; }).length, 'Open prayer requests');
     h += '</div>';
 
@@ -272,6 +302,18 @@
       h += '<h2 class="sec">Overdue follow-ups</h2>' + overdue.map(visitorCard).join('');
     }
     if (can('groups') || isLeader()) {
+      var suns4 = lastSundays(4).reverse(), gs4 = isLeader() ? [group(S.me.group_id)] : S.groups;
+      h += '<h2 class="sec">Sunday attendance</h2><div class="card scroll"><table class="table"><thead><tr><th>Group</th>' + suns4.map(function (x) { return '<th class="n">' + Care.fmt(x) + '</th>'; }).join('') + '</tr></thead><tbody>';
+      var tot = suns4.map(function () { return 0; }), all = suns4.map(function () { return 0; });
+      gs4.forEach(function (g) {
+        h += '<tr><td><b>' + esc(g.name) + '</b></td>' + suns4.map(function (x, i) {
+          var gm = S.members.filter(function (m) { return m.group_id === g.id && (m.joined_at || '2000-01-01') <= x; });
+          var c = gm.filter(function (m) { return attended(m.id, x, 'sunday'); }).length; tot[i] += c; all[i] += gm.length;
+          return '<td class="n">' + c + '<span class="meta">/' + gm.length + '</span></td>';
+        }).join('') + '</tr>';
+      });
+      if (gs4.length > 1) h += '<tr><td><b>All groups</b></td>' + suns4.map(function (x, i) { return '<td class="n"><b>' + tot[i] + '</b><span class="meta">/' + all[i] + '</span></td>'; }).join('') + '</tr>';
+      h += '</tbody></table></div>';
       var gs = isLeader() ? [group(S.me.group_id)] : S.groups;
       h += '<h2 class="sec">' + (isLeader() ? 'My group' : 'All groups') + '</h2><div class="card scroll"><table class="table"><thead><tr><th>Group</th><th class="n">Members</th><th class="n">Seen this week</th><th class="n">Away</th><th class="n">To contact</th><th class="n">Overdue</th></tr></thead><tbody>';
       gs.forEach(function (g) {
@@ -443,10 +485,10 @@
   /* ---------- members' own app ---------- */
   function loadMember() {
     var gs = S.me.groups || [{ group_id: S.me.group_id }];
-    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups()])).then(function (r) {
+    if (!S.groupId || !gs.some(function (g) { return g.group_id === S.groupId; })) S.groupId = gs[0].group_id;
+    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups(), Store.myAttendance(S.groupId)])).then(function (r) {
       S.mview = {}; gs.forEach(function (g, i) { S.mview[g.group_id] = r[i]; });
-      S.myPrayers = r[gs.length]; S.groups = r[gs.length + 1];
-      if (!S.mview[S.groupId]) S.groupId = gs[0].group_id;
+      S.myPrayers = r[gs.length]; S.groups = r[gs.length + 1]; S.myAtt = r[gs.length + 2];
       S.loaded = true;
       if (Store.mode === 'demo') demoRoles();
       render();
@@ -461,6 +503,7 @@
       '<div class="meta">Leader: <b>' + esc(g.leader_name || 'not set yet') + '</b></div>' +
       '<div class="actions">' + (v.leader_phone ? '<a class="btn sm wa" href="' + esc(Care.waLink(v.leader_phone, 'Hello ' + (g.leader_name || '') + ', this is ' + S.me.name + ' from ' + g.name + '.')) + '" target="_blank" rel="noopener">💬 Message my leader</a>' : '') +
       '<button class="btn sm blue" data-tab="prayer">🙏 Send a prayer request</button></div></div>';
+    h += checkinCard();
     var on = ppl.filter(function (p) { return p.on_app; }).length;
     h += '<h2 class="sec">Our group</h2><p class="meta" style="margin-top:-4px">' + ppl.length + ' members · ' + on + ' on the app</p>' +
       '<div class="card">' + ppl.map(function (p) {
@@ -470,6 +513,22 @@
       return '<div class="row" style="padding:4px 0"><b style="font-family:var(--serif);color:var(--navy-800);width:40px">' + esc(x.day) + '</b><div class="grow"><div class="name">' + esc(x.what) + '</div><div class="meta">' + esc(x.when) + ' GMT · ' + esc(x.where) + '</div></div></div>';
     }).join('') + '<div class="actions"><a class="btn sm blue" href="' + esc(C.links.playStore) + '" target="_blank" rel="noopener">📱 AFM HUB app</a><a class="btn sm alt" href="' + esc(C.links.website) + '" target="_blank" rel="noopener">⛪ Website</a></div></div>';
     return h;
+  }
+  function checkinCard() {
+    var t = Care.today(), dow = new Date().getDay(), opts = [];
+    for (var back = 0; back <= 2; back++) {
+      var d = Care.addDays(t, -back), w = (dow - back + 7) % 7, when = back === 0 ? 'today' : back === 1 ? 'yesterday' : Care.parse(d).toLocaleDateString('en-GB', { weekday: 'long' });
+      if (w === 0) { opts.push(['sunday', d, 'Sunday service, ' + when]); opts.push(['online', d, 'Online prayer, ' + when]); }
+      if (w === 5) opts.push(['friday', d, 'Friday Miracle Service, ' + when]);
+    }
+    opts.push(['meeting', t, 'Group meeting, today']);
+    var mine = {}; (S.myAtt || []).forEach(function (a) { mine[a.seen_on + '|' + a.kind] = a; });
+    var suns = lastSundays(8), came = suns.filter(function (d) { return mine[d + '|sunday']; }).length;
+    return '<div class="card top green"><div class="kicker">Were you in church?</div><p class="meta" style="margin:4px 0 8px">Tap to let your leader know you were there.</p>' +
+      '<div class="actions" style="margin:0">' + opts.map(function (o) {
+        var a = mine[o[1] + '|' + o[0]];
+        return '<button class="btn sm ' + (a ? 'on' : 'alt') + '" data-checkin="' + o[0] + '|' + o[1] + '|' + (a ? (a.by_self ? 'undo' : 'leader') : 'here') + '">' + (a ? '✓ ' : '') + esc(o[2]) + '</button>';
+      }).join('') + '</div><p class="meta" style="margin:8px 0 0">You came to <b>' + came + ' of the last 8</b> Sunday services.</p></div>';
   }
   function viewMemberPrayer() {
     var v = S.mview[S.groupId], g = v.group;
@@ -494,39 +553,42 @@
     if (!isLeader()) h += '<div class="chips">' + S.groups.map(function (x) { return '<button class="chip" data-g="' + x.id + '" aria-pressed="' + (x.id === gid) + '">' + esc(x.name) + '</button>'; }).join('') + '</div>';
     h += '<div class="card top gold">' + (g.tag ? '<div class="kicker">' + esc(g.tag) + '</div>' : '') + '<h3 style="font-size:1.4rem;color:var(--navy-800);margin-top:4px">' + esc(g.name) + '</h3><div class="meta">Leader: ' + esc(g.leader_name) + '</div></div>';
     var ms = S.members.filter(function (m) { return m.group_id === gid; });
-    var here = ms.filter(function (m) { return m.last_seen === S.day; }).length;
     h += inviteCard(gid);
-    h += '<div class="field"><label for="day">Service date</label><input type="date" id="day" value="' + S.day + '" max="' + Care.today() + '"></div>' +
-      '<p class="meta">' + here + ' of ' + ms.length + ' marked present on ' + Care.fmt(S.day) + '. Tap a name to edit.</p>';
-    if (!ms.length) return h + '<div class="card empty">No members yet. Tap “+ Add member”.</div>';
+    if (!S.kind) { S.kind = defaultKind(); S.day = serviceDay(S.kind); }
+    var here = ms.filter(function (m) { return attended(m.id, S.day, S.kind); }).length;
+    h += '<h2 class="sec">Attendance</h2><div class="chips">' + KINDS.map(function (k) { return '<button class="chip" data-kind="' + k[0] + '" aria-pressed="' + (S.kind === k[0]) + '">' + k[1] + '</button>'; }).join('') + '</div>' +
+      '<div class="field"><label for="day">Date of the ' + esc(kindPhrase(S.kind)) + '</label><input type="date" id="day" value="' + S.day + '" max="' + Care.today() + '"></div>' +
+      '<p class="meta"><b>' + here + ' of ' + ms.length + '</b> came to the ' + esc(kindPhrase(S.kind)) + ' on ' + Care.fmt(S.day) + '. Tap “Present” for each person. Tap a name to edit.</p>';
+    if (!ms.length) return h + '<div class="card empty">No members yet. Tap “+ Add member”, or share the join link above.</div>';
     return h + ms.map(function (m) {
-      var on = m.last_seen === S.day, w = weeksAway(m);
+      var a = attended(m.id, S.day, S.kind), w = weeksAway(m);
       return '<div class="card"><div class="row">' + avatar(m.name) + '<div class="grow tap" data-open="member:' + m.id + '" style="cursor:pointer"><div class="name">' + esc(m.name) + '</div>' +
         '<div class="meta">' + (m.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : (m.phone && S.links[m.group_id] ? '<a class="pill new" href="' + esc(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(group(m.group_id), S.links[m.group_id]))) + '" target="_blank" rel="noopener">💬 Invite to the app</a> ' : '')) +
-        (m.last_seen ? 'Last seen ' + Care.fmt(m.last_seen) : 'Not marked yet') + (w >= C.awayWeeks ? ' · <b style="color:var(--red)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
-        '<button class="btn sm ' + (on ? 'on' : 'alt') + '" data-present="' + m.id + '" aria-pressed="' + on + '">' + (on ? '✓ Present' : 'Present') + '</button></div></div>';
+        statsText(m) + (w >= C.awayWeeks ? ' · <b style="color:var(--red)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
+        '<div style="text-align:right"><button class="btn sm ' + (a ? 'on' : 'alt') + '" data-present="' + m.id + '" aria-pressed="' + !!a + '">' + (a ? '✓ Present' : 'Present') + '</button>' +
+        (a && a.by_self ? '<div class="meta" style="margin-top:3px">said they came</div>' : '') + '</div></div></div>';
     }).join('');
   }
-  function sheetMember(id) {
-    var m = id ? S.members.filter(function (x) { return x.id === id; })[0] : null;
-    if (id && !m) return null;
-    var gid = m ? m.group_id : S.groupId;
-    return '<h2>' + (m ? esc(m.name) : 'Add a member') + '</h2>' +
-      (m ? '<div class="actions">' + contactButtons(m.phone, isAway(m) ? awayMsg(m) : '') + '</div>' : '') +
-      '<form data-member="' + (m ? m.id : '') + '">' +
-      '<div class="field"><label for="m-name">Name</label><input id="m-name" type="text" maxlength="80" required value="' + esc(m ? m.name : '') + '"></div>' +
-      '<div class="field"><label for="m-phone">WhatsApp number</label><input id="m-phone" type="tel" inputmode="tel" maxlength="20" value="' + esc(m ? m.phone : '') + '"></div>' +
-      (can('groups') ? '<div class="field"><label for="m-group">Group</label><select id="m-group">' + groupOptions(gid) + '</select></div>' : '<input type="hidden" id="m-group" value="' + gid + '">') +
-      (m ? '' : '<label class="check"><input type="checkbox" id="m-consent"><span>They agreed to the church keeping these details and contacting them on WhatsApp.</span></label>') +
-      '<div class="actions"><button class="btn" type="submit">' + (m ? 'Save' : 'Add to ' + esc(groupName(gid))) + '</button></div></form>' +
-      (m ? '<div class="actions" style="margin-top:18px"><button class="btn sm danger" data-del-member="' + m.id + '">Remove from the list</button></div>' : '');
-  }
-
-  /* ---------- away ---------- */
   function viewAway() {
+    var suns = lastSundays(4), d = S.missDay || suns[0];
+    var pool = S.members.filter(function (m) { return (m.joined_at || '2000-01-01') <= d; });
+    var missed = pool.filter(function (m) { return !attended(m.id, d, 'sunday'); }).sort(function (a, b) { return sundayStats(b).row - sundayStats(a).row; });
+    var h = '<h2 class="sec">Missed a Sunday</h2><div class="chips">' + suns.map(function (x, i) {
+      return '<button class="chip" data-miss="' + x + '" aria-pressed="' + (x === d) + '">' + (i === 0 ? 'Last Sunday' : Care.fmt(x)) + '</button>';
+    }).join('') + '</div>';
+    if (!pool.length) h += '<div class="card empty">No members on the list yet.</div>';
+    else if (!missed.length) h += '<div class="card empty">Everyone came on ' + Care.fmt(d) + '. 🙌</div>';
+    else {
+      h += '<p class="meta" style="margin-top:-4px">' + missed.length + ' of ' + pool.length + ' were not marked present on ' + Care.fmt(d) + '. A kind message is ready in WhatsApp.</p>';
+      h += missed.map(function (m) {
+        return '<div class="card top ' + (sundayStats(m).row >= 2 ? 'red' : 'gold') + '"><div class="row">' + avatar(m.name) + '<div class="grow"><div class="name">' + esc(m.name) + '</div>' +
+          '<div class="meta">' + (!isLeader() ? esc(groupName(m.group_id)) + ' · ' : '') + statsText(m) + '</div></div></div>' +
+          '<div class="actions">' + (contactButtons(m.phone, missedMsg(m, d)) || '<span class="meta">No number saved.</span>') + '</div></div>';
+      }).join('');
+    }
     var list = S.members.filter(isAway).sort(function (a, b) { return weeksAway(b) - weeksAway(a); });
-    var h = '<p class="meta">Members not marked present for ' + C.awayWeeks + ' weeks or more. A kind message is ready in WhatsApp; just tap and send.</p>';
-    if (!list.length) return h + '<div class="card empty">Everyone has been seen recently. 🙌</div>';
+    h += '<h2 class="sec">Away ' + C.awayWeeks + '+ weeks</h2>';
+    if (!list.length) return h + '<div class="card empty">Everyone has been seen in the last ' + C.awayWeeks + ' weeks. 🙌</div>';
     return h + list.map(function (m) {
       return '<div class="card top gold"><div class="row">' + avatar(m.name) + '<div class="grow"><div class="name">' + esc(m.name) + '</div>' +
         '<div class="meta">' + (!isLeader() ? esc(groupName(m.group_id)) + ' · ' : '') + 'away ' + weeksAway(m) + ' weeks' + (m.last_seen ? ' · last seen ' + Care.fmt(m.last_seen) : '') + '</div></div></div>' +
@@ -697,6 +759,8 @@
   document.addEventListener('click', function (e) {
     var wl = e.target.closest('[data-welcome]');
     if (wl) { var wid = wl.dataset.welcome; setTimeout(function () { act(Store.markWelcomed(wid), 'Marked as welcomed. 💬'); }, 400); return; }
+    var kb = e.target.closest('[data-kind],[data-miss]');
+    if (kb) { if (kb.dataset.kind) { S.kind = kb.dataset.kind; S.day = serviceDay(S.kind); } else S.missDay = kb.dataset.miss; render(); return; }
     var el = e.target.closest('[data-tab],[data-act],[data-open],[data-vf],[data-pf],[data-g],[data-present],[data-status],[data-join],[data-prayed],[data-close],[data-del-visitor],[data-del-member],[data-del-staff]');
     if (!el) { if (e.target.id === 'veil') closeSheet(); return; }
     var d = el.dataset;
@@ -709,7 +773,7 @@
     else if ('close' in d) closeSheet();
     else if (d.present) {
       var m = S.members.filter(function (x) { return x.id === d.present; })[0];
-      act(m.last_seen === S.day ? Store.unpresent(m.id, S.day) : Store.present(m.id, S.day));
+      act(attended(m.id, S.day, S.kind) ? Store.unpresent(m.id, S.day, S.kind) : Store.present(m.id, S.day, S.kind));
     } else if (d.status) {
       var p = d.status.split(':');
       act(Store.update('visitors', 'id', p[1], { status: p[0], seen_by_leader: true }), p[0] === 'reached' ? 'Marked reached. Well done!' : 'Moved back to “to contact”.');
@@ -801,12 +865,20 @@
   });
 
   document.addEventListener('click', function (e) {
+    var ci = e.target.closest('[data-checkin]');
+    if (ci) {
+      e.preventDefault(); e.stopPropagation();
+      var c = ci.dataset.checkin.split('|');
+      if (c[2] === 'leader') return Care.toast('Your leader already marked you present. 🙌');
+      Store.memberCheckin(S.groupId, c[0], c[1], c[2] === 'here').then(function () { Care.toast(c[2] === 'here' ? 'Thank you! Your leader can see you were there. 🙏' : 'Removed.'); reload(); }, fail);
+      return;
+    }
     var el = e.target.closest('[data-invite-leader],[data-invite-one],[data-copy],[data-reset-link],[data-mg]');
     if (!el) return;
     e.preventDefault(); e.stopPropagation();
     var d = el.dataset;
     if (d.inviteLeader) openSheet('leaderlink:' + d.inviteLeader);
-    else if (d.mg) { S.groupId = d.mg; render(); }
+    else if (d.mg) { S.groupId = d.mg; reload(); }
     else if (d.copy) {
       var done = function () { Care.toast('Invite copied. Paste it in WhatsApp.'); };
       try { navigator.clipboard.writeText(d.copy).then(done, function () { Care.toast('Press and hold the link to copy it.'); }); } catch (x) { Care.toast('Press and hold the link to copy it.'); }

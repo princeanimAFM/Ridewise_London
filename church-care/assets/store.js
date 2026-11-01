@@ -53,9 +53,10 @@
           sb.from('visitors').select('*').order('created_at', { ascending: false }).then(must),
           sb.from('visitor_notes').select('*').order('created_at').then(must),
           sb.from('members').select('*').order('name').then(must),
-          sb.from('prayers').select('*').order('created_at', { ascending: false }).then(must)
+          sb.from('prayers').select('*').order('created_at', { ascending: false }).then(must),
+          sb.from('attendance').select('member_id, seen_on, kind, by_self').gte('seen_on', Care.addDays(Care.today(), -120)).then(must)
         ]).then(function (a) {
-          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5] };
+          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6] };
         });
       },
       // Prayer requests are saved without reading them back: the welcome team may add one but not read it.
@@ -64,11 +65,13 @@
       remove: function (t, key, id) { return sb.from(t).delete().eq(key, id).then(must); },
       // groups are loaded separately; staff/groups changes reload too
       markWelcomed: function (id) { return sb.rpc('mark_welcomed', { p_id: id }).then(must); },
-      present: function (memberId, day) { return sb.from('attendance').upsert({ member_id: memberId, seen_on: day }, { ignoreDuplicates: true }).then(must); },
-      unpresent: function (memberId, day) { return sb.from('attendance').delete().eq('member_id', memberId).eq('seen_on', day).then(must); },
+      present: function (memberId, day, kind) { return sb.from('attendance').upsert({ member_id: memberId, seen_on: day, kind: kind || 'sunday' }, { ignoreDuplicates: true }).then(must); },
+      unpresent: function (memberId, day, kind) { return sb.from('attendance').delete().eq('member_id', memberId).eq('seen_on', day).eq('kind', kind || 'sunday').then(must); },
+      memberCheckin: function (group, kind, day, here) { return sb.rpc('member_checkin', { p_group: group, p_kind: kind, p_day: day, p_here: here }).then(must); },
+      myAttendance: function (group) { return sb.rpc('my_attendance', { p_group: group }).then(must); },
       subscribe: function (cb) {
         var ch = sb.channel('care');
-        TABLES.concat(['groups']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, cb); });
+        TABLES.concat(['groups', 'attendance']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, cb); });
         ch.subscribe();
       }
     };
@@ -76,7 +79,7 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v4', listeners = [];
+    var KEY = 'care-demo-v5', listeners = [];
     var data = read();
     var role = 'pastor';
     try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
@@ -121,6 +124,19 @@
           login: onApp ? Care.intl(phone) : null, joined_app_at: onApp ? Care.addDays(t, -10) + 'T10:00:00Z' : null });
       });
       d.invites = [];
+      // Sunday attendance for the last 8 Sundays, matching each person's "weeks away"
+      var lastSun = Care.addDays(t, -new Date().getDay());
+      d.members.forEach(function (m, i) {
+        var away = names[i][2], days = [];
+        for (var k = 0; k < 8; k++) {
+          if (k < away) continue;
+          if ((k + i) % 5 === 4 && k !== away) continue;
+          var sun = Care.addDays(lastSun, -7 * k);
+          d.attendance.push({ member_id: m.id, seen_on: sun, kind: 'sunday', by_self: k === 0 && i % 4 === 0 }); days.push(sun);
+          if ((k + i) % 3 === 0) { var fri = Care.addDays(sun, -2); d.attendance.push({ member_id: m.id, seen_on: fri, kind: 'friday', by_self: false }); days.push(fri); }
+        }
+        m.last_seen = days.length ? days.sort()[days.length - 1] : null;
+      });
       var vs = [['Kwesi Ofori', -5, 'new', null, 'g2'], ['Maame Ama', -3, 'new', 'g2', null], ['Daniel Addo', -1, 'new', null, 'wog'], ['Grace Nartey', -8, 'reached', 'g1', null], ['Samuel Opoku', -12, 'joined', 'g3', null]];
       vs.forEach(function (v, i) {
         var made = Care.addDays(t, v[1]);
@@ -192,6 +208,7 @@
         return this.groups().then(function (gs) {
           out.groups = gs;
           TABLES.forEach(function (t) { out[t] = data[t].filter(function (r) { return canSee(t, r, m); }).map(function (r) { return Object.assign({}, r); }); });
+          out.attendance = data.attendance.filter(function (a) { var mm = find('members', 'id', a.member_id); return mm && canSee('members', mm, m); }).map(function (a) { return Object.assign({}, a); });
           return out;
         });
       },
@@ -339,6 +356,26 @@
         var ids = myMembers().map(function (x) { return x.id; });
         return Promise.resolve(data.prayers.filter(function (p) { return ids.indexOf(p.member_id) >= 0; }));
       },
+      memberCheckin: function (group, kind, day, here) {
+        return Promise.resolve().then(function () {
+          var mm = myMembers().filter(function (x) { return x.group_id === group; })[0];
+          check(mm);
+          if (day > Care.today() || day < Care.addDays(Care.today(), -2)) throw new Error('You can mark attendance for today or the last two days');
+          var dow = Care.parse(day).getDay();
+          if ((kind === 'sunday' || kind === 'online') && dow !== 0) throw new Error('That service is on Sundays');
+          if (kind === 'friday' && dow !== 5) throw new Error('The Miracle Service is on Fridays');
+          var ex = data.attendance.filter(function (a) { return a.member_id === mm.id && a.seen_on === day && a.kind === kind; })[0];
+          if (here && !ex) data.attendance.push({ member_id: mm.id, seen_on: day, kind: kind, by_self: true });
+          if (!here && ex && ex.by_self) data.attendance = data.attendance.filter(function (a) { return a !== ex; });
+          var days = data.attendance.filter(function (a) { return a.member_id === mm.id; }).map(function (a) { return a.seen_on; }).sort();
+          mm.last_seen = days.length ? days[days.length - 1] : null;
+          save();
+        });
+      },
+      myAttendance: function (group) {
+        var ids = myMembers().filter(function (x) { return x.group_id === group; }).map(function (x) { return x.id; });
+        return Promise.resolve(data.attendance.filter(function (a) { return ids.indexOf(a.member_id) >= 0; }));
+      },
       markWelcomed: function (id) {
         return Promise.resolve().then(function () {
           var m = me(), v = find('visitors', 'id', id);
@@ -347,20 +384,23 @@
           save();
         });
       },
-      present: function (memberId, day) {
+      present: function (memberId, day, kind) {
+        kind = kind || 'sunday';
         return Promise.resolve().then(function () {
           var row = find('members', 'id', memberId);
           check(row && canSee('members', row, me()));
-          if (!data.attendance.some(function (a) { return a.member_id === memberId && a.seen_on === day; })) data.attendance.push({ member_id: memberId, seen_on: day });
+          if (day > Care.today()) throw new Error('You can\'t mark a service that hasn\'t happened yet');
+          if (!data.attendance.some(function (a) { return a.member_id === memberId && a.seen_on === day && a.kind === kind; })) data.attendance.push({ member_id: memberId, seen_on: day, kind: kind, by_self: false });
           if (!row.last_seen || row.last_seen < day) row.last_seen = day;
           save();
         });
       },
-      unpresent: function (memberId, day) {
+      unpresent: function (memberId, day, kind) {
+        kind = kind || 'sunday';
         return Promise.resolve().then(function () {
           var row = find('members', 'id', memberId);
           check(row && canSee('members', row, me()));
-          data.attendance = data.attendance.filter(function (a) { return !(a.member_id === memberId && a.seen_on === day); });
+          data.attendance = data.attendance.filter(function (a) { return !(a.member_id === memberId && a.seen_on === day && a.kind === kind); });
           var days = data.attendance.filter(function (a) { return a.member_id === memberId; }).map(function (a) { return a.seen_on; }).sort();
           row.last_seen = days.length ? days[days.length - 1] : (row.last_seen === day ? null : row.last_seen);
           save();

@@ -80,11 +80,17 @@ alter table public.members add column if not exists last_app_at   timestamptz;
 create unique index if not exists members_login_phone on public.members (group_id, login_phone) where login_phone is not null;
 create unique index if not exists members_login_email on public.members (group_id, login_email) where login_email is not null;
 
+-- One row per person per service attended. kind: sunday (Sunday service), friday (Friday Miracle Service),
+-- online (Sunday night online prayer), meeting (group meeting). by_self: the member marked it themselves.
 create table if not exists public.attendance (
   member_id uuid not null references public.members(id) on delete cascade,
   seen_on   date not null default current_date,
-  primary key (member_id, seen_on)
+  kind      text not null default 'sunday' check (kind in ('sunday', 'friday', 'online', 'meeting')),
+  by_self   boolean not null default false,
+  marked_by text not null default '',
+  primary key (member_id, seen_on, kind)
 );
+create index if not exists attendance_day on public.attendance (seen_on);
 
 alter table public.staff add column if not exists joined_app_at timestamptz;
 alter table public.staff add column if not exists last_app_at   timestamptz;
@@ -293,6 +299,18 @@ begin
 end $$;
 drop trigger if exists visitor_prayers_follow on public.visitors;
 create trigger visitor_prayers_follow after update of assigned_to on public.visitors for each row execute function public.visitor_prayers_follow();
+
+create or replace function public.attendance_rules() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  if current_setting('care.member', true) is distinct from '1' then
+    new.by_self := false;
+    new.marked_by := coalesce(public.my_name(), '');
+  end if;
+  if new.seen_on > current_date then raise exception 'You can''t mark a service that hasn''t happened yet'; end if;
+  return new;
+end $$;
+drop trigger if exists attendance_rules on public.attendance;
+create trigger attendance_rules before insert on public.attendance for each row execute function public.attendance_rules();
 
 -- Last seen = the latest attendance mark.
 create or replace function public.update_last_seen() returns trigger language plpgsql security definer set search_path = public as $$
@@ -575,7 +593,37 @@ create or replace function public.my_prayers() returns jsonb language sql stable
   where (m.login_phone is not null and m.login_phone = public.my_login_phone()) or (m.login_email is not null and m.login_email = public.my_login_email())
 $$;
 
+-- Members say they were at a service (today or the two days before). Sunday and online services are on Sundays,
+-- the Miracle Service on Fridays; group meetings any day.
+create or replace function public.member_checkin(p_group text, p_kind text, p_day date, p_here boolean) returns void language plpgsql security definer set search_path = public as $$
+declare mid uuid;
+begin
+  select id into mid from public.members where group_id = p_group and id in (
+    select id from public.members where (login_phone is not null and login_phone = public.my_login_phone()) or (login_email is not null and login_email = public.my_login_email()));
+  if mid is null then raise exception 'You can only mark attendance in your own group'; end if;
+  if p_day is null or p_day > current_date or p_day < current_date - 2 then raise exception 'You can mark attendance for today or the last two days'; end if;
+  if p_kind in ('sunday', 'online') and extract(dow from p_day) <> 0 then raise exception 'That service is on Sundays'; end if;
+  if p_kind = 'friday' and extract(dow from p_day) <> 5 then raise exception 'The Miracle Service is on Fridays'; end if;
+  if p_here then
+    perform set_config('care.member', '1', true);
+    insert into public.attendance (member_id, seen_on, kind, by_self, marked_by)
+    values (mid, p_day, p_kind, true, (select name from public.members where id = mid)) on conflict do nothing;
+    perform set_config('care.member', '', true);
+  else
+    delete from public.attendance where member_id = mid and seen_on = p_day and kind = p_kind and by_self;
+  end if;
+end $$;
+
+create or replace function public.my_attendance(p_group text) returns jsonb language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('seen_on', a.seen_on, 'kind', a.kind, 'by_self', a.by_self) order by a.seen_on desc), '[]'::jsonb)
+  from public.attendance a join public.members m on m.id = a.member_id
+  where m.group_id = p_group and a.seen_on > current_date - 120
+    and ((m.login_phone is not null and m.login_phone = public.my_login_phone()) or (m.login_email is not null and m.login_email = public.my_login_email()))
+$$;
+
 do $$ begin
+  revoke all on function public.member_checkin(text, text, date, boolean), public.my_attendance(text) from public, anon;
+  grant execute on function public.member_checkin(text, text, date, boolean), public.my_attendance(text) to authenticated;
   revoke all on function public.whoami(), public.create_invite(text, text), public.reset_member_invite(text), public.accept_invite(text, text),
     public.my_group_view(text), public.member_prayer(text, text, text), public.my_prayers(), public.my_member_groups() from public, anon;
   grant execute on function public.whoami(), public.create_invite(text, text), public.reset_member_invite(text), public.accept_invite(text, text),
@@ -588,7 +636,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups'] loop
+  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance'] loop
     if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = t) then
       execute format('alter publication supabase_realtime add table public.%I', t);
     end if;

@@ -32,6 +32,12 @@ Enforced by the database (`supabase/schema.sql`), not just hidden in the app:
 - **Member:** joins through their group's link and sees only their group (names, no phone numbers), their leader
   (with a WhatsApp button), the church's service times and links, and their own prayer requests.
 
+**Attendance:** leaders tick who came to each service: Sunday service, Friday Miracle Service, online prayer and
+group meetings (any date up to today). Members can tap "I was in church" in their app for today or the last two days;
+leaders see "said they came" and can untick it. Each person shows "Came 6 of the last 8 Sundays" and "missed 2 in a row".
+The Follow up tab lists who missed each of the last 4 Sundays, with a kind WhatsApp message ready, and anyone away
+3+ weeks. Home shows how many came last Sunday and a 4-Sunday table by group.
+
 **Invite links:** the pastor taps *Invite leader* on a group (Team & groups) and sends the link. It works once: whoever
 opens it and signs in becomes that group's leader. Each group also has a *join link* that the leader (or pastor) shares
 in the group's WhatsApp or sends to each member; members who join show as "📱 On the app". A leader can make a new join
