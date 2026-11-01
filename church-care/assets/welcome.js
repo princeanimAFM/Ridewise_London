@@ -32,9 +32,8 @@
       '<p>' + Care.esc(window.CareWords.prayer(first)) + '</p><span class="amen">Amen. 🙏</span></div>';
   }
   function showAfter(withLetter, first) {
-    $('after').hidden = false;
-    $('letter').parentNode.hidden = !withLetter;
     if (withLetter) {
+      $('letter-sec').hidden = false;
       $('letter').innerHTML = letter(first);
       if (!document.querySelector('#letter + .prayer')) $('letter').insertAdjacentHTML('afterend', prayerCard(first));
     }
@@ -97,7 +96,7 @@
         '<p class="lead" style="margin-bottom:0">Someone from the church will message you on WhatsApp within two days.</p>';
       showAfter(true, first);
       document.querySelector('#form details').hidden = true;
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 

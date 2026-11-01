@@ -21,10 +21,16 @@
   <img src="assets/wordmark-white.png" alt="The AFM Church">
 </div></div>
 
-<div class="hero slim"><div class="wrap"><div class="text">
-  <h1>You are <span>welcome</span> to The AFM Church</h1>
-  <p>We're glad you're here. Please tell us a little about you.</p>
-</div></div></div>
+<div class="hero"><div class="wrap">
+  <div class="text">
+    <h1>You are <span>welcome</span> to The AFM Church</h1>
+    <p>We're glad you're here. Please tell us a little about you.</p>
+  </div>
+  <div class="photo">
+    <img src="assets/prophet.png" alt="Prophet Micah Felix Azanduna">
+    <div class="name"><b>Prophet Micah Felix Azanduna</b><span>D.D · LEAD PASTOR</span></div>
+  </div>
+</div></div>
 
 <div class="wrap">
   <div id="demo" class="banner" hidden><b>Preview:</b> what you send stays on this phone only. <a href="team.html">Open the team app</a></div>
@@ -68,10 +74,23 @@
     </details>
   </section>
 
-  <!-- Shown only after they send a form -->
-  <div id="after" hidden>
+  <!-- The welcome letter and prayer appear here after they send the form -->
+  <section style="padding-top:0" id="letter-sec" hidden>
+    <div class="letter" id="letter"></div>
+  </section>
+
+  <div id="after">
+
+    <section style="padding-top:0" id="programs-sec" hidden>
+      <div class="kicker">Special programs</div>
+      <h2 class="title">Coming up</h2>
+      <div id="programs" style="margin-top:12px"></div>
+    </section>
+
     <section style="padding-top:0">
-      <div class="letter" id="letter"></div>
+      <div class="kicker">Weekly services</div>
+      <h2 class="title">Join us again</h2>
+      <div id="services" style="margin-top:14px"></div>
     </section>
 
     <section style="padding-top:0">
@@ -93,17 +112,6 @@
       </div>
     </section>
 
-    <section style="padding-top:0" id="programs-sec" hidden>
-      <div class="kicker">Special programs</div>
-      <h2 class="title">Coming up</h2>
-      <div id="programs" style="margin-top:12px"></div>
-    </section>
-
-    <section style="padding-top:0">
-      <div class="kicker">Weekly services</div>
-      <h2 class="title">Join us again</h2>
-      <div id="services" style="margin-top:14px"></div>
-    </section>
   </div>
 </div>
 
