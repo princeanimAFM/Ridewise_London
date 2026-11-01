@@ -696,8 +696,8 @@ end $$;
 
 -- ---------- groups (the pastor can rename them and add more in the app) ----------
 insert into care.groups (id, name, tag, leader_name, sort) values
-  ('g1',   'Archbishop Nicholas Duncan-Williams', '',                    'Prophet Richmond Taku', 1),
-  ('g2',   'Bishop David Oyedepo',                '',                    'Elijah Antwi',          2),
+  ('g1',   'Bishop David Oyedepo',                '',                    'Prophet Richmond Taku', 1),
+  ('g2',   'Archbishop Nicholas Duncan-Williams', '',                    'Elijah Antwi',          2),
   ('g3',   'Prophet Miracle Damoah Godfred',      '',                    'Prophet Elijah',        3),
   ('g4',   'Dr. Mike Murdock',                    '',                    'Mr. Owusu Erga',        4),
   ('wog',  'Women of Glory',                      'Women''s Fellowship', 'Madam Millicent',       5),
