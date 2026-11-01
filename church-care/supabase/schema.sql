@@ -42,6 +42,8 @@ create table if not exists public.visitors (
   created_at     timestamptz not null default now()
 );
 create index if not exists visitors_assigned on public.visitors (assigned_to);
+alter table public.visitors add column if not exists welcomed_at timestamptz;
+alter table public.visitors add column if not exists welcomed_by text not null default '';
 
 create table if not exists public.visitor_notes (
   id         bigint generated always as identity primary key,
@@ -134,6 +136,11 @@ begin
   if r is distinct from 'pastor' then new.due := old.due; end if;
   if new.status <> 'new' and old.status = 'new' and new.reached_at is null then
     new.reached_at := current_date;
+  end if;
+  if r is distinct from 'pastor' and (new.welcomed_at is distinct from old.welcomed_at or new.welcomed_by is distinct from old.welcomed_by) and not public.from_form() then
+    if current_setting('care.welcoming', true) is distinct from '1' then
+      new.welcomed_at := old.welcomed_at; new.welcomed_by := old.welcomed_by;
+    end if;
   end if;
   if new.consent_at is distinct from old.consent_at or new.source is distinct from old.source or new.created_at is distinct from old.created_at then
     raise exception 'Those details cannot be changed';
@@ -335,6 +342,20 @@ revoke all on function public.submit_prayer(text, text, text, boolean) from publ
 grant execute on function public.submit_welcome(text, text, text, text, text, text, boolean) to anon, authenticated;
 grant execute on function public.submit_prayer(text, text, text, boolean) to anon, authenticated;
 revoke all on function public.form_brake() from public, anon, authenticated;
+
+-- Records that the welcome message was sent (the welcome team can't edit visitors otherwise).
+create or replace function public.mark_welcomed(p_id uuid) returns void language plpgsql security definer set search_path = public as $$
+declare r text := public.my_role();
+begin
+  if r is null then raise exception 'You don''t have access to do that'; end if;
+  perform set_config('care.welcoming', '1', true);
+  update public.visitors set welcomed_at = coalesce(welcomed_at, now()),
+         welcomed_by = case when welcomed_at is null then coalesce(public.my_name(), '') else welcomed_by end
+   where id = p_id and (r in ('pastor', 'welcome') or (r = 'leader' and assigned_to = public.my_group()));
+  if not found then raise exception 'You don''t have access to do that'; end if;
+end $$;
+revoke all on function public.mark_welcomed(uuid) from public, anon;
+grant execute on function public.mark_welcomed(uuid) to authenticated;
 
 -- ---------- live updates ----------
 do $$

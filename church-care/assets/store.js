@@ -48,6 +48,7 @@
       insert: function (t, row) { var q = sb.from(t).insert(row); return (t === 'prayers' ? q : q.select().single()).then(must); },
       update: function (t, key, id, patch) { return sb.from(t).update(patch).eq(key, id).select().then(must); },
       remove: function (t, key, id) { return sb.from(t).delete().eq(key, id).then(must); },
+      markWelcomed: function (id) { return sb.rpc('mark_welcomed', { p_id: id }).then(must); },
       present: function (memberId, day) { return sb.from('attendance').upsert({ member_id: memberId, seen_on: day }, { ignoreDuplicates: true }).then(must); },
       unpresent: function (memberId, day) { return sb.from('attendance').delete().eq('member_id', memberId).eq('seen_on', day).then(must); },
       subscribe: function (cb) {
@@ -60,7 +61,7 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v1', listeners = [];
+    var KEY = 'care-demo-v2', listeners = [];
     var data = read();
     var role = 'pastor';
     function uid() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
@@ -100,7 +101,8 @@
         var made = Care.addDays(t, v[1]);
         var o = { id: 'v' + i, name: v[0], phone: '055' + (2000000 + i * 9137), reason: C.reasons[i % 5], invited_by: i === 1 ? 'Ama Serwaa' : '', group_interest: v[4], assigned_to: v[3],
           status: v[2], due: Care.addDays(made, C.followDays), reached_at: v[2] !== 'new' ? Care.addDays(made, 1) : null, seen_by_leader: v[2] !== 'new' || !v[3],
-          consent_at: made + 'T10:00:00Z', source: 'form', created_at: made + 'T10:00:00Z' };
+          consent_at: made + 'T10:00:00Z', source: 'form', created_at: made + 'T10:00:00Z',
+          welcomed_at: i === 0 || i === 2 ? null : made + 'T15:00:00Z', welcomed_by: i === 0 || i === 2 ? '' : 'Welcome team' };
         d.visitors.push(o);
         if (o.reached_at) d.visitor_notes.push({ id: 'n' + i, visitor_id: o.id, author: v[3] ? C.groups.filter(function (g) { return g.id === v[3]; })[0].leader_name : '', body: 'Called and welcomed. Will come again on Sunday.', created_at: o.reached_at + 'T12:00:00Z' });
       });
@@ -123,7 +125,7 @@
         return Promise.resolve().then(function () {
           if (!o.consent) throw new Error('Please tick the consent box');
           var v = { id: uid(), name: o.name.trim(), phone: o.phone.trim(), reason: o.reason || '', invited_by: o.invited_by || '', group_interest: o.group_interest || null, assigned_to: null,
-            status: 'new', due: Care.addDays(Care.today(), C.followDays), reached_at: null, seen_by_leader: true, consent_at: now(), source: 'form', created_at: now() };
+            status: 'new', due: Care.addDays(Care.today(), C.followDays), reached_at: null, seen_by_leader: true, consent_at: now(), source: 'form', created_at: now(), welcomed_at: null, welcomed_by: '' };
           data.visitors.unshift(v);
           if ((o.prayer || '').trim()) data.prayers.unshift({ id: uid(), name: v.name, phone: v.phone, body: o.prayer.trim(), status: 'open', assigned_to: null, visitor_id: v.id, source: 'form', created_at: now() });
           save();
@@ -203,6 +205,14 @@
             data.prayers = data.prayers.filter(function (p) { return p.visitor_id !== id; });
             data.visitor_notes = data.visitor_notes.filter(function (n) { return n.visitor_id !== id; });
           }
+          save();
+        });
+      },
+      markWelcomed: function (id) {
+        return Promise.resolve().then(function () {
+          var m = me(), v = data.visitors.filter(function (x) { return x.id === id; })[0];
+          check(v && canSee('visitors', v, m));
+          if (!v.welcomed_at) { v.welcomed_at = now(); v.welcomed_by = m.name; }
           save();
         });
       },

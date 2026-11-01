@@ -24,9 +24,19 @@
   function notesOf(id) { return S.notes.filter(function (n) { return n.visitor_id === id; }); }
   function fail(e) { Care.toast(Care.errText(e)); }
 
-  function welcomeMsg(v) {
-    return 'Hello ' + Care.first(v.name) + ', this is ' + S.me.name + ' from ' + C.church + '. Thank you for worshipping with us! ' +
-      'We are so glad you came. Is there anything we can pray with you about this week? God bless you.';
+  function welcomeMsg(v) { return window.CareWords.whatsapp(Care.first(v.name), day(v.created_at), S.me.name); }
+  var COLORS = ['#1552B5', '#2D6A3E', '#C9A227', '#56A3FF', '#0A3A80', '#C62828', '#7A4DFF'];
+  function avatar(name) {
+    var n = String(name || '?').trim(), h = 0;
+    for (var i = 0; i < n.length; i++) h = (h * 31 + n.charCodeAt(i)) >>> 0;
+    var ini = n.split(/\s+/).slice(0, 2).map(function (w) { return w.charAt(0).toUpperCase(); }).join('');
+    return '<span class="avatar" style="background:' + COLORS[h % COLORS.length] + '">' + esc(ini || '?') + '</span>';
+  }
+  function greeting() { var h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'; }
+  function welcomeButton(v) {
+    if (!v.phone) return '';
+    return '<a class="btn sm wa" data-welcome="' + v.id + '" href="' + esc(Care.waLink(v.phone, welcomeMsg(v))) + '" target="_blank" rel="noopener">' +
+      (v.welcomed_at ? '💬 Send welcome again' : '💬 Send welcome message') + '</a>';
   }
   function awayMsg(m) {
     return 'Hello ' + Care.first(m.name) + ', this is ' + S.me.name + ' from ' + C.church + '. We have missed you at church and just wanted to check on you. ' +
@@ -64,7 +74,7 @@
     $('signout').onclick = function () { Store.signOut().then(function () { location.reload(); }); };
     if (Store.mode === 'demo') {
       $('demo-roles').hidden = false;
-      $('banner').innerHTML = '<div class="banner">Demo mode with sample people. Nothing leaves this browser. <button class="back" id="reset">Reset sample data</button></div>';
+      $('banner').innerHTML = '<div class="banner">Demo with sample people. Nothing leaves this phone. <button class="back" id="reset">Reset</button></div>';
       $('reset').onclick = function () { Store.reset(); Care.toast('Sample data reset.'); };
       $('role').innerHTML = Store.roles().map(function (r) { return '<option value="' + r[0] + '">' + esc(r[1]) + '</option>'; }).join('');
       $('role').onchange = function () { Store.setRole(this.value); S.tab = 'overview'; S.groupId = null; signedIn(); };
@@ -86,10 +96,10 @@
     }).catch(fail);
   }
   function signInScreen() {
-    $('sub').textContent = C.church;
+    $('hello').textContent = 'Team sign in'; $('sub').textContent = 'For the pastor, the welcome team and group leaders';
     $('nav').hidden = true; $('fab').hidden = true;
     $('main').innerHTML =
-      '<h2>Team sign in</h2><div class="card"><p class="meta">For the pastor, the welcome team and group leaders. Use the email the pastor added to the team list.</p>' +
+      '<div class="card top" style="margin-top:16px"><p class="meta">Use the email the pastor added to the team list. We\'ll send you a code.</p>' +
       '<form id="f-email"><div class="field"><label for="email">Email</label><input id="email" type="email" autocomplete="email" required></div>' +
       '<button class="btn wide" type="submit">Send me a sign-in code</button></form>' +
       '<form id="f-code" hidden><p>We sent a code to <b id="sent-to"></b>. Enter it below, or tap the link in that email.</p>' +
@@ -113,7 +123,7 @@
     $('again').onclick = function () { $('f-email').hidden = false; $('f-code').hidden = true; $('f-email').querySelector('button').disabled = false; };
   }
   function notOnTeam(email) {
-    $('sub').textContent = C.church;
+    $('hello').textContent = 'Almost there'; $('sub').textContent = C.church;
     $('main').innerHTML = '<div class="card empty"><p><b>' + esc(email) + '</b> isn\'t on the team list yet.</p><p>Ask ' + esc(C.pastor) + ' to add you, then sign in again.</p></div>';
   }
   function signedIn(me) {
@@ -121,7 +131,8 @@
     p.then(function (m) {
       S.me = m;
       var label = m.role === 'pastor' ? 'Overseeing pastor' : m.role === 'welcome' ? 'Welcome team' : 'Leader · ' + groupName(m.group_id);
-      $('sub').textContent = m.name + ' · ' + label;
+      $('hello').textContent = greeting() + ', ' + m.name.split(/\s+/).slice(0, 2).join(' ');
+      $('sub').textContent = label + ' · ' + C.church;
       $('nav').hidden = false;
       if (isLeader()) S.groupId = m.group_id;
       reload();
@@ -130,9 +141,9 @@
 
   /* ---------- layout ---------- */
   function tabs() {
-    if (role() === 'welcome') return [['overview', 'Overview'], ['visitors', 'Visitors']];
-    if (isLeader()) return [['overview', 'Overview'], ['visitors', 'Visitors'], ['groups', 'My group'], ['away', 'Away'], ['prayer', 'Prayer']];
-    return [['overview', 'Overview'], ['visitors', 'Visitors'], ['groups', 'Groups'], ['away', 'Away'], ['prayer', 'Prayer']];
+    if (role() === 'welcome') return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋']];
+    if (isLeader()) return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋'], ['groups', 'My group', '👥'], ['away', 'Away', '💛'], ['prayer', 'Prayer', '🙏']];
+    return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋'], ['groups', 'Groups', '👥'], ['away', 'Away', '💛'], ['prayer', 'Prayer', '🙏']];
   }
   function badge(t) {
     if (t === 'visitors') {
@@ -148,7 +159,7 @@
     var ts = tabs();
     if (!ts.some(function (t) { return t[0] === S.tab; })) S.tab = 'overview';
     $('tabs').innerHTML = ts.map(function (t) {
-      return '<button data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : '') + '>' + t[1] + badge(t[0]) + '</button>';
+      return '<button data-tab="' + t[0] + '"' + (S.tab === t[0] ? ' aria-current="page"' : '') + '><i>' + t[2] + '</i>' + t[1] + badge(t[0]) + '</button>';
     }).join('');
     var fab = $('fab');
     fab.hidden = false;
@@ -186,19 +197,27 @@
     }
     h += '</div>';
 
+    var toWelcome = vs.filter(function (v) { return !v.welcomed_at && v.phone && v.status !== 'joined'; });
+    if (toWelcome.length) {
+      h += '<h2 class="sec">Welcome messages to send</h2><p class="meta" style="margin-top:-4px">A warm welcome, a prayer and the app links, ready in WhatsApp. Tap, then press send.</p>' +
+        toWelcome.map(function (v) {
+          return '<div class="card top green"><div class="row">' + avatar(v.name) + '<div class="grow"><div class="name">' + esc(v.name) + '</div><div class="meta">Came ' + Care.fmt(day(v.created_at)) + '</div></div></div>' +
+            '<div class="actions" style="margin-bottom:0">' + welcomeButton(v) + '<button class="btn sm alt" data-open="visitor:' + v.id + '">Details</button></div></div>';
+        }).join('');
+    }
     if (isPastor() && waiting.length) {
-      h += '<h2>Waiting for a leader</h2>' + waiting.slice().sort(function (a, b) { return a.created_at < b.created_at ? -1 : 1; }).map(visitorCard).join('');
+      h += '<h2 class="sec">Waiting for a leader</h2>' + waiting.slice().sort(function (a, b) { return a.created_at < b.created_at ? -1 : 1; }).map(visitorCard).join('');
     }
     if (isLeader()) {
       var mine = vs.filter(function (v) { return v.status === 'new'; });
-      if (mine.length) h += '<h2>To contact</h2>' + mine.map(visitorCard).join('');
+      if (mine.length) h += '<h2 class="sec">To contact</h2>' + mine.map(visitorCard).join('');
     }
     if (isPastor() && overdue.length) {
-      h += '<h2>Overdue follow-ups</h2>' + overdue.map(visitorCard).join('');
+      h += '<h2 class="sec">Overdue follow-ups</h2>' + overdue.map(visitorCard).join('');
     }
     if (role() !== 'welcome') {
       var gs = isLeader() ? [group(S.me.group_id)] : S.groups;
-      h += '<h2>' + (isLeader() ? 'My group' : 'All groups') + '</h2><div class="card scroll"><table class="table"><thead><tr><th>Group</th><th class="n">Members</th><th class="n">Seen this week</th><th class="n">Away</th><th class="n">To contact</th><th class="n">Overdue</th></tr></thead><tbody>';
+      h += '<h2 class="sec">' + (isLeader() ? 'My group' : 'All groups') + '</h2><div class="card scroll"><table class="table"><thead><tr><th>Group</th><th class="n">Members</th><th class="n">Seen this week</th><th class="n">Away</th><th class="n">To contact</th><th class="n">Overdue</th></tr></thead><tbody>';
       gs.forEach(function (g) {
         var gm = ms.filter(function (m) { return m.group_id === g.id; });
         var gv = vs.filter(function (v) { return v.assigned_to === g.id; });
@@ -226,7 +245,7 @@
   }
   function visitorCard(v) {
     var where = v.assigned_to ? groupName(v.assigned_to) + ' · ' + leaderOf(v.assigned_to) : (v.group_interest ? 'Interested in ' + groupName(v.group_interest) : 'Not assigned yet');
-    return '<div class="card tap" data-open="visitor:' + v.id + '"><div class="row"><div class="grow"><div class="name">' + esc(v.name) + '</div>' +
+    return '<div class="card tap" data-open="visitor:' + v.id + '"><div class="row">' + avatar(v.name) + '<div class="grow"><div class="name">' + esc(v.name) + '</div>' +
       '<div class="meta">Came ' + Care.fmt(day(v.created_at)) + ' · ' + esc(where) + (v.status === 'new' && v.due ? ' · due ' + Care.fmt(v.due) : '') + '</div></div>' + pill(v) + '</div></div>';
   }
   function viewVisitors() {
@@ -248,14 +267,15 @@
     if (!v) return null;
     if (isLeader() && !v.seen_by_leader && !seenSent[v.id]) seenSent[v.id] = Store.update('visitors', 'id', v.id, { seen_by_leader: true }).then(reload, function () {});
     var canEdit = isPastor() || isLeader();
-    var h = '<h2>' + esc(v.name) + '</h2><div class="actions">' + pill(v) + '</div>' +
+    var h = '<div class="row" style="justify-content:flex-start">' + avatar(v.name) + '<h2>' + esc(v.name) + '</h2></div><div class="actions">' + pill(v) + '</div>' +
       '<div class="meta">' + (v.phone ? esc(v.phone) + ' · ' : '') + 'came ' + Care.fmt(day(v.created_at)) + (v.source === 'form' ? ' (welcome form)' : '') + '</div>' +
       (v.reason ? '<div class="meta">How they came: ' + esc(v.reason) + '</div>' : '') +
       (v.invited_by ? '<div class="meta">Invited by: ' + esc(v.invited_by) + '</div>' : '') +
       (v.group_interest ? '<div class="meta">Interested in: ' + esc(groupName(v.group_interest)) + '</div>' : '') +
       (v.status === 'new' && v.due ? '<div class="meta">First contact due by ' + Care.fmt(v.due) + '</div>' : '') +
       (v.reached_at ? '<div class="meta">First reached ' + Care.fmt(v.reached_at) + '</div>' : '') +
-      '<div class="actions">' + contactButtons(v.phone, welcomeMsg(v)) + '</div>';
+      (v.welcomed_at ? '<div class="meta">💬 Welcome sent ' + Care.fmt(day(v.welcomed_at)) + (v.welcomed_by ? ' by ' + esc(v.welcomed_by) : '') + '</div>' : '') +
+      '<div class="actions">' + welcomeButton(v) + (v.phone ? '<a class="btn sm alt" href="' + Care.telLink(v.phone) + '">📞 Call</a>' : '') + '</div>';
     if (isPastor()) {
       h += '<div class="field"><label for="assign">Group leader</label><select id="assign" data-assign="' + v.id + '">' + groupOptions(v.assigned_to, 'Not assigned yet') + '</select></div>';
     } else {
@@ -268,7 +288,7 @@
         '</div>';
     }
     var ns = notesOf(v.id);
-    h += '<h2>Notes</h2>' + (ns.length ? ns.map(function (n) {
+    h += '<h2 class="sec">Notes</h2>' + (ns.length ? ns.map(function (n) {
       return '<div class="note">' + esc(n.body) + '<div class="meta">' + esc(n.author || '') + ' · ' + Care.fmt(day(n.created_at)) + '</div></div>';
     }).join('') : '<p class="meta">No notes yet.</p>') +
       '<form data-note="' + v.id + '"><div class="field"><label for="note">Add a note</label><textarea id="note" maxlength="1000" placeholder="e.g. Called, prayed with her, coming on Sunday"></textarea></div><button class="btn sm" type="submit">Save note</button></form>';
@@ -284,7 +304,7 @@
     S.groupId = gid;
     var g = group(gid), h = '';
     if (isPastor()) h += '<div class="chips">' + S.groups.map(function (x) { return '<button class="chip" data-g="' + x.id + '" aria-pressed="' + (x.id === gid) + '">' + esc(x.name) + '</button>'; }).join('') + '</div>';
-    h += '<div class="card" style="border-left-color:var(--sun)"><div class="name">' + esc(g.name) + '</div><div class="meta">' + esc(g.tag) + ' · leader ' + esc(g.leader_name) + '</div></div>';
+    h += '<div class="card top gold"><div class="kicker">' + esc(g.tag) + '</div><h3 style="font-size:1.4rem;color:var(--navy-800);margin-top:4px">' + esc(g.name) + '</h3><div class="meta">Leader: ' + esc(g.leader_name) + '</div></div>';
     var ms = S.members.filter(function (m) { return m.group_id === gid; });
     var here = ms.filter(function (m) { return m.last_seen === S.day; }).length;
     h += '<div class="field"><label for="day">Service date</label><input type="date" id="day" value="' + S.day + '" max="' + Care.today() + '"></div>' +
@@ -292,7 +312,7 @@
     if (!ms.length) return h + '<div class="card empty">No members yet. Tap “+ Add member”.</div>';
     return h + ms.map(function (m) {
       var on = m.last_seen === S.day, w = weeksAway(m);
-      return '<div class="card"><div class="row"><div class="grow tap" data-open="member:' + m.id + '" style="cursor:pointer"><div class="name">' + esc(m.name) + '</div>' +
+      return '<div class="card"><div class="row">' + avatar(m.name) + '<div class="grow tap" data-open="member:' + m.id + '" style="cursor:pointer"><div class="name">' + esc(m.name) + '</div>' +
         '<div class="meta">' + (m.last_seen ? 'Last seen ' + Care.fmt(m.last_seen) : 'Not marked yet') + (w >= C.awayWeeks ? ' · <b style="color:var(--bad)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
         '<button class="btn sm ' + (on ? 'on' : 'alt') + '" data-present="' + m.id + '" aria-pressed="' + on + '">' + (on ? '✓ Present' : 'Present') + '</button></div></div>';
     }).join('');
@@ -318,8 +338,8 @@
     var h = '<p class="meta">Members not marked present for ' + C.awayWeeks + ' weeks or more. A kind message is ready in WhatsApp; just tap and send.</p>';
     if (!list.length) return h + '<div class="card empty">Everyone has been seen recently. 🙌</div>';
     return h + list.map(function (m) {
-      return '<div class="card" style="border-left-color:var(--sun)"><div class="name">' + esc(m.name) + '</div>' +
-        '<div class="meta">' + (isPastor() ? esc(groupName(m.group_id)) + ' · ' : '') + 'away ' + weeksAway(m) + ' weeks' + (m.last_seen ? ' · last seen ' + Care.fmt(m.last_seen) : '') + '</div>' +
+      return '<div class="card top gold"><div class="row">' + avatar(m.name) + '<div class="grow"><div class="name">' + esc(m.name) + '</div>' +
+        '<div class="meta">' + (isPastor() ? esc(groupName(m.group_id)) + ' · ' : '') + 'away ' + weeksAway(m) + ' weeks' + (m.last_seen ? ' · last seen ' + Care.fmt(m.last_seen) : '') + '</div></div></div>' +
         '<div class="actions">' + (contactButtons(m.phone, awayMsg(m)) || '<span class="meta">No number saved.</span>') + '</div></div>';
     }).join('');
   }
@@ -332,7 +352,7 @@
     }).join('') + '</div>';
     if (!list.length) return h + '<div class="card empty">No prayer requests here.</div>';
     return h + list.map(function (p) {
-      return '<div class="card" style="border-left-color:var(--violet)"><div class="row"><div class="grow"><div class="name">' + esc(p.name || 'Anonymous') + '</div>' +
+      return '<div class="card top sky"><div class="row">' + avatar(p.name || '?') + '<div class="grow"><div class="name">' + esc(p.name || 'Anonymous') + '</div>' +
         '<div class="meta">' + Care.fmt(day(p.created_at)) + (p.source === 'form' ? ' · from the QR page' : '') + (isPastor() ? ' · ' + esc(p.assigned_to ? groupName(p.assigned_to) : 'with the pastor') : '') + '</div></div>' +
         (p.status === 'prayed' ? '<span class="pill reached">Prayed for</span>' : '<span class="pill new">Open</span>') + '</div>' +
         '<p style="margin:8px 0;white-space:pre-wrap">' + esc(p.body) + '</p>' +
@@ -376,7 +396,7 @@
         return '<div class="card"><div class="row"><div class="grow"><div class="name">' + esc(s.name) + '</div><div class="meta">' + esc(s.email) + ' · ' + esc(what) + '</div></div>' +
           (s.email !== S.me.email ? '<button class="btn sm danger" data-del-staff="' + esc(s.email) + '">Remove</button>' : '') + '</div></div>';
       }).join('') +
-      '<h2>Add someone</h2><form data-newstaff>' +
+      '<h2 class="sec">Add someone</h2><form data-newstaff>' +
       '<div class="field"><label for="ns-name">Name</label><input id="ns-name" type="text" maxlength="80" required></div>' +
       '<div class="field"><label for="ns-email">Email</label><input id="ns-email" type="email" required></div>' +
       '<div class="field"><label for="ns-role">Role</label><select id="ns-role"><option value="leader">Group leader</option><option value="welcome">Welcome team</option><option value="pastor">Pastor (sees everything)</option></select></div>' +
@@ -404,7 +424,7 @@
     var f = document.activeElement;
     if (keep && f && sh.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)) return; // don't wipe what they're typing
     var top = keep ? sh.scrollTop : 0;
-    sh.innerHTML = '<button class="back" data-close>✕ Close</button>' + html;
+    sh.innerHTML = '<div class="grab"></div><button class="back" data-close>✕ Close</button>' + html;
     sh.scrollTop = top;
     S.sheet = key;
     $('veil').className = 'veil open';
@@ -415,6 +435,8 @@
 
   /* ---------- events ---------- */
   document.addEventListener('click', function (e) {
+    var wl = e.target.closest('[data-welcome]');
+    if (wl) { var wid = wl.dataset.welcome; setTimeout(function () { act(Store.markWelcomed(wid), 'Marked as welcomed. 💬'); }, 400); return; }
     var el = e.target.closest('[data-tab],[data-act],[data-open],[data-vf],[data-pf],[data-g],[data-present],[data-status],[data-join],[data-prayed],[data-close],[data-del-visitor],[data-del-member],[data-del-staff]');
     if (!el) { if (e.target.id === 'veil') closeSheet(); return; }
     var d = el.dataset;

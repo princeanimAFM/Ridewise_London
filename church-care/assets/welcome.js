@@ -4,7 +4,23 @@
   var C = window.CARE_CONFIG, Care = window.Care, Store = window.Store;
   function $(id) { return document.getElementById(id); }
 
-  $('church').textContent = C.church + ' · ' + C.churchFull;
+  $('theme').textContent = C.themeOfTheYear;
+  $('foot').innerHTML = Care.esc(C.churchFull) + '<br>' + Care.esc(C.place);
+  $('services').innerHTML = C.services.map(function (x, i) {
+    return '<div class="card top ' + ['', 'red', 'sky'][i % 3] + '"><div class="svc"><span class="big">' + Care.esc(x.day) + '</span>' +
+      '<span class="when">' + Care.esc(x.when) + '<small>GMT</small></span><span class="what">' + Care.esc(x.what) + '</span><span class="where">' + Care.esc(x.where) + '</span></div></div>';
+  }).join('');
+  function letter(first) {
+    var W = window.CareWords;
+    return '<div class="dear">Dear ' + Care.esc(first) + ',</div>' +
+      W.welcome(first).map(function (p) { return '<p>' + Care.esc(p) + '</p>'; }).join('') +
+      '<p class="sign">' + Care.esc(W.sign) + '</p>';
+  }
+  function prayerCard(first) {
+    return '<div class="prayer"><div class="kicker">A prayer for you</div><h3>We are praying for you, ' + Care.esc(first) + '</h3>' +
+      '<p>' + Care.esc(window.CareWords.prayer(first)) + '</p><span class="amen">Amen. 🙏</span></div>';
+  }
+  $('letter').innerHTML = letter('friend');
   $('l-play').href = C.links.playStore;
   $('l-web').href = C.links.webApp;
   $('l-site').href = C.links.website;
@@ -50,10 +66,14 @@
     busy(f, true); msg('w-msg');
     Store.submitWelcome(o).then(done, function (err) { busy(f, false); msg('w-msg', 'bad', Care.errText(err)); });
     function done() {
-      f.innerHTML = '<h2 style="margin-top:4px">Thank you, ' + Care.esc(Care.first(o.name)) + '!</h2>' +
-        '<p>Someone from the church will reach you on WhatsApp within two days. We are glad you came.</p>' +
-        '<p class="meta">While you wait, get the AFM HUB app above for sermons, the Bible and live services.</p>';
-      window.scrollTo({ top: f.offsetTop - 20, behavior: 'smooth' });
+      var first = Care.first(o.name);
+      document.querySelector('.chips').hidden = true;
+      f.className = 'card top green';
+      f.innerHTML = '<div class="kicker">Thank you</div><h2 class="title">We\'re so glad you came, ' + Care.esc(first) + '!</h2>' +
+        '<p class="lead" style="margin-bottom:0">Someone from the church will message you on WhatsApp within two days.</p>';
+      $('letter').innerHTML = letter(first);
+      $('letter').insertAdjacentHTML('afterend', prayerCard(first));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -67,8 +87,11 @@
     busy(f, true); msg('p-msg');
     Store.submitPrayer(o).then(done, function (err) { busy(f, false); msg('p-msg', 'bad', Care.errText(err)); });
     function done() {
-      f.innerHTML = '<h2 style="margin-top:4px">We are praying with you</h2><p>Your request has reached our pastor and ministry team.' +
-        (o.phone ? ' Someone may reach you on WhatsApp.' : '') + '</p><p class="meta">"The effectual fervent prayer of a righteous man availeth much." James 5:16</p>';
+      var first = o.name ? Care.first(o.name) : 'friend';
+      f.className = 'card top green';
+      f.innerHTML = '<div class="kicker">Received</div><h2 class="title">We are standing with you in prayer</h2>' +
+        '<p class="lead">Your request has reached our pastor and ministry team.' + (o.phone ? ' Someone may reach you on WhatsApp.' : '') + '</p>' +
+        prayerCard(first) + '<p class="meta" style="margin-top:12px">\u201CThe effectual fervent prayer of a righteous man availeth much.\u201D James 5:16</p>';
     }
   };
 })();

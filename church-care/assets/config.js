@@ -9,6 +9,14 @@ window.CARE_CONFIG = {
   churchFull: 'Alleluia Faith Mission Global Assembly',
   pastor: 'Prophet Micah Felix Azanduna D.D',
 
+  themeOfTheYear: '2026 · Our Year of the Blessing',
+  place: 'AFM Center, Sunyani',
+  services: [
+    { day: 'Sun', when: '8:00 AM', what: 'International Word Assembly', where: 'AFM Center, Sunyani' },
+    { day: 'Fri', when: '6:00 PM', what: 'Friday Miracle Service', where: 'AFM Center, Sunyani' },
+    { day: 'Sun', when: '8:00 PM', what: 'International Online Prayer Connect', where: 'Online on Zoom' }
+  ],
+
   // Shown on the welcome page the QR code opens.
   links: {
     playStore: 'https://play.google.com/store/apps/details?id=com.afm.hub',

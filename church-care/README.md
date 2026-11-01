@@ -8,6 +8,17 @@ group attendance, an "away" list and prayer requests, with the overseeing pastor
 | `index.html` | Visitors (the QR code opens this) | AFM HUB download, web app and church website links; welcome form; prayer request form. No login. |
 | `team.html` | Pastor, welcome team, group leaders | Sign in with email. Overview, visitors, groups, away list, prayer requests. Can be added to the phone's home screen. |
 
+## Look and wording
+
+Styled like theafmchurch.org and the AFM HUB app (Church Blue & White, Playfair Display and Montserrat, the church
+wordmark and JESUS seal, the AFM HUB logo, Prophet Micah's photo). The welcome note, the prayer for new visitors and
+the WhatsApp welcome message are all in `assets/messages.js`; service times, links and the theme of the year are in
+`assets/config.js`.
+
+After a visitor sends the form they see a personal welcome letter and a prayer with their name. On the team's Home
+screen, "Welcome messages to send" lists every new visitor not yet welcomed: one tap opens WhatsApp with the welcome,
+the prayer, the app and website links and service times, and marks them as welcomed.
+
 ## Who sees what
 
 Enforced by the database (`supabase/schema.sql`), not just hidden in the app:
