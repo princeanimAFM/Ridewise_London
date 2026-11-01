@@ -19,33 +19,48 @@
   function can(area) { return isPastor() || (role() === 'pa' && (S.me.areas || []).indexOf(area) >= 0); }
   function canPrayer() { return can('prayer_groups') || can('prayer_pastor'); }
   var AREAS = [['visitors', 'Visitors', 'See all visitors and give them a group leader'], ['groups', 'Groups', 'Every group\'s members, attendance and the Away list'],
-    ['prayer_groups', 'Group prayer requests', 'Prayer requests meant for group leaders'], ['prayer_pastor', 'Prayer requests to the pastor', 'Requests people sent to the pastor only']];
+    ['prayer_groups', 'Group prayer requests', 'Prayer requests meant for group leaders'], ['prayer_pastor', 'Prayer requests to the pastor', 'Requests people sent to the pastor only'],
+    ['programs', 'Special programs', 'Add and change special services and programs']];
   function group(id) { return S.groups.filter(function (g) { return g.id === id; })[0]; }
   function groupName(id) { var g = group(id); return g ? g.name : ''; }
   function leaderOf(id) { var g = group(id); return g ? g.leader_name : ''; }
   function day(ts) { return ts ? String(ts).slice(0, 10) : ''; }
   /* ---------- attendance helpers ---------- */
-  var KINDS = [['sunday', 'Sunday service'], ['friday', 'Friday Miracle'], ['online', 'Online prayer'], ['meeting', 'Group meeting']];
+  var KINDS = [['sunday', 'Sunday service'], ['tuesday', 'Time with the Rabbi'], ['friday', 'Friday Miracle'], ['online', 'Online prayer'], ['meeting', 'Group meeting'], ['special', 'Special program']];
+  var WEEKLY = { sunday: 0, tuesday: 2, friday: 5 };
   function kindName(k) { return (KINDS.filter(function (x) { return x[0] === k; })[0] || [k, k])[1]; }
-  function kindPhrase(k) { return { sunday: 'Sunday service', friday: 'Friday Miracle Service', online: 'online prayer', meeting: 'group meeting' }[k] || k; }
-  function defaultKind() { var d = new Date().getDay(); return d === 0 ? 'sunday' : d === 5 ? 'friday' : 'meeting'; }
-  function serviceDay(kind) { var t = Care.today(), d = new Date().getDay(); return kind === 'sunday' || kind === 'online' ? Care.addDays(t, -d) : kind === 'friday' ? Care.addDays(t, -((d + 2) % 7)) : t; }
-  function lastSundays(n) { var s0 = serviceDay('sunday'), out = []; for (var i = 0; i < n; i++) out.push(Care.addDays(s0, -7 * i)); return out; }
-  function attended(mid, day, kind) { return S.attMap[mid + '|' + day + '|' + kind]; }
-  function sundayStats(m) {
+  function kindPhrase(k) { return { sunday: 'Sunday service', tuesday: 'Time with the Rabbi', friday: 'Friday Miracle Service', online: 'online prayer', meeting: 'group meeting', special: 'program' }[k] || k; }
+  function program(id) { return (S.programs || []).filter(function (p) { return p.id === id; })[0]; }
+  function pastPrograms() { var t = Care.today(); return (S.programs || []).filter(function (p) { return p.starts_on <= t; }).sort(function (a, b) { return a.starts_on < b.starts_on ? 1 : -1; }); }
+  function progDays(p) { var out = [], t = Care.today(); for (var d = p.starts_on; d <= p.ends_on && d <= t; d = Care.addDays(d, 1)) out.push(d); return out; }
+  function progWhen(p) { return Care.fmt(p.starts_on) + (p.ends_on !== p.starts_on ? ' – ' + Care.fmt(p.ends_on) : '') + (p.time_text ? ' · ' + p.time_text : ''); }
+  function defaultKind() { var d = new Date().getDay(); return d === 0 ? 'sunday' : d === 2 ? 'tuesday' : d === 5 ? 'friday' : 'meeting'; }
+  function serviceDay(kind) {
+    var t = Care.today(), d = new Date().getDay();
+    if (kind === 'online') kind = 'sunday';
+    if (kind in WEEKLY) return Care.addDays(t, -((d - WEEKLY[kind] + 7) % 7));
+    if (kind === 'special') { var p = program(S.progId) || pastPrograms()[0]; if (p) { var ds = progDays(p); return ds[ds.length - 1]; } }
+    return t;
+  }
+  function lastServices(kind, n) { var s0 = serviceDay(kind), out = []; for (var i = 0; i < n; i++) out.push(Care.addDays(s0, -7 * i)); return out; }
+  function lastSundays(n) { return lastServices('sunday', n); }
+  function attended(mid, day, kind, prog) { return S.attMap[mid + '|' + day + '|' + kind + '|' + (prog || '')]; }
+  function sundayStats(m, kind) {
+    kind = kind || 'sunday';
     var joined = m.joined_at || day(m.created_at) || '2000-01-01';
-    var suns = lastSundays(8).filter(function (d) { return d >= joined; });
-    var came = suns.filter(function (d) { return attended(m.id, d, 'sunday'); }).length, row = 0;
-    for (var i = 0; i < suns.length; i++) { if (attended(m.id, suns[i], 'sunday')) break; row++; }
+    var suns = lastServices(kind, 8).filter(function (d) { return d >= joined; });
+    var came = suns.filter(function (d) { return attended(m.id, d, kind); }).length, row = 0;
+    for (var i = 0; i < suns.length; i++) { if (attended(m.id, suns[i], kind)) break; row++; }
     return { total: suns.length, came: came, missed: suns.length - came, row: row };
   }
-  function statsText(m) {
-    var st = sundayStats(m);
+  function statsText(m, kind) {
+    kind = kind || 'sunday';
+    var st = sundayStats(m, kind), word = { sunday: 'Sunday', tuesday: 'Tuesday', friday: 'Friday' }[kind];
     if (!st.total) return 'New';
-    return 'Came ' + st.came + ' of the last ' + st.total + ' Sunday' + (st.total === 1 ? '' : 's') + (st.row >= 2 ? ' · <b style="color:var(--red)">missed ' + st.row + ' in a row</b>' : '');
+    return 'Came ' + st.came + ' of the last ' + st.total + ' ' + word + (st.total === 1 ? '' : 's') + (st.row >= 2 ? ' · <b style="color:var(--red)">missed ' + st.row + ' in a row</b>' : '');
   }
-  function missedMsg(m, d) {
-    return 'Hello ' + Care.first(m.name) + ', this is ' + S.me.name + ' from ' + C.church + '. We missed you at church on ' +
+  function missedMsg(m, d, kind) {
+    return 'Hello ' + Care.first(m.name) + ', this is ' + S.me.name + ' from ' + C.church + '. We missed you at ' + (kind === 'tuesday' ? 'Time with the Rabbi' : kind === 'friday' ? 'the Friday Miracle Service' : 'church') + ' on ' +
       Care.parse(d).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) + '. We hope you and your family are well. Is there anything we can pray with you about? God bless you.';
   }
 
@@ -95,7 +110,8 @@
       if (isMember()) return loadMember();
       Store.loadAll().then(function (d) {
         S.groups = d.groups; S.staff = d.staff; S.visitors = d.visitors; S.notes = d.visitor_notes; S.members = d.members; S.prayers = d.prayers;
-        S.attMap = {}; (d.attendance || []).forEach(function (a) { S.attMap[a.member_id + '|' + a.seen_on + '|' + a.kind] = a; });
+        S.programs = d.programs || [];
+        S.attMap = {}; (d.attendance || []).forEach(function (a) { S.attMap[a.member_id + '|' + a.seen_on + '|' + a.kind + '|' + (a.program_id || '')] = a; });
         S.loaded = true;
         if (Store.mode === 'demo') demoRoles();
         render();
@@ -301,6 +317,7 @@
     if (can('visitors') && overdue.length) {
       h += '<h2 class="sec">Overdue follow-ups</h2>' + overdue.map(visitorCard).join('');
     }
+    h += programsSection();
     if (can('groups') || isLeader()) {
       var suns4 = lastSundays(4).reverse(), gs4 = isLeader() ? [group(S.me.group_id)] : S.groups;
       h += '<h2 class="sec">Sunday attendance</h2><div class="card scroll"><table class="table"><thead><tr><th>Group</th>' + suns4.map(function (x) { return '<th class="n">' + Care.fmt(x) + '</th>'; }).join('') + '</tr></thead><tbody>';
@@ -330,6 +347,51 @@
     }
     if (!vs.length && !ms.length) h += '<div class="card empty">Nothing here yet. Visitors appear when they fill in the welcome form, or tap “+ New visitor”.</div>';
     return h;
+  }
+
+  /* ---------- special programs ---------- */
+  function progState(p) { var t = Care.today(); return p.starts_on > t ? 'soon' : p.ends_on < t ? 'past' : 'now'; }
+  function progPill(p) { var st = progState(p); return st === 'soon' ? '<span class="pill new">Coming up</span>' : st === 'now' ? '<span class="pill foryou">On now</span>' : '<span class="pill joined">Ended</span>'; }
+  function progCount(p) { var c = {}; Object.keys(S.attMap).forEach(function (k) { var a = S.attMap[k]; if (a.program_id === p.id) c[a.member_id] = 1; }); return Object.keys(c).length; }
+  function programsSection() {
+    var t = Care.today(), list = (S.programs || []).filter(function (p) { return p.ends_on >= Care.addDays(t, -30); });
+    var h = '<h2 class="sec">Special programs</h2>';
+    if (!list.length) h += '<div class="card empty">No special programs coming up.' + (can('programs') ? ' Add conventions, Holy Ghost nights, thanksgiving services and more.' : '') + '</div>';
+    h += list.map(function (p) {
+      var past = progState(p) !== 'soon', n = past && (can('groups') || isLeader()) ? progCount(p) : null;
+      return '<div class="card tap top ' + (progState(p) === 'past' ? 'sky' : 'gold') + '" data-open="prog:' + p.id + '"><div class="row"><div class="grow"><div class="name">' + esc(p.title) + '</div>' +
+        '<div class="meta">' + esc(progWhen(p)) + (p.place ? ' · ' + esc(p.place) : '') + '</div>' + (n !== null ? '<div class="meta"><b>' + n + '</b> marked present</div>' : '') + '</div>' + progPill(p) + '</div></div>';
+    }).join('');
+    if (can('programs')) h += '<div class="actions"><button class="btn sm blue" data-act="new-prog">+ Add a special program</button></div>';
+    return h;
+  }
+  function sheetProgram(id) {
+    var p = id ? program(id) : null, edit = can('programs');
+    if (id && !p) return null;
+    var h = '<h2>' + (p ? esc(p.title) : 'New special program') + '</h2>';
+    if (p) {
+      h += '<div class="actions">' + progPill(p) + '</div><div class="meta">' + esc(progWhen(p)) + (p.place ? ' · ' + esc(p.place) : '') + '</div>' +
+        (p.details ? '<p style="white-space:pre-wrap">' + esc(p.details) + '</p>' : '');
+      if (progState(p) !== 'soon' && (can('groups') || isLeader())) {
+        var gs = isLeader() ? [group(S.me.group_id)] : S.groups;
+        h += '<h2 class="sec">Who came</h2><div class="card scroll"><table class="table"><tbody>' + gs.map(function (g) {
+          var gm = S.members.filter(function (m) { return m.group_id === g.id; });
+          var c = gm.filter(function (m) { return progDays(p).some(function (d) { return attended(m.id, d, 'special', p.id); }); }).length;
+          return '<tr><td>' + esc(g.name) + '</td><td class="n"><b>' + c + '</b><span class="meta">/' + gm.length + '</span></td></tr>';
+        }).join('') + '</tbody></table></div>' +
+          '<div class="actions"><button class="btn sm blue" data-markprog="' + p.id + '">✓ Mark who came</button></div>';
+      }
+    }
+    if (!edit) return h;
+    return h + (p ? '<h2 class="sec">Change details</h2>' : '') + '<form data-prog="' + (p ? p.id : '') + '">' +
+      '<div class="field"><label for="pg-title">Name of the program</label><input id="pg-title" type="text" maxlength="120" required placeholder="e.g. Holy Ghost Night" value="' + esc(p ? p.title : '') + '"></div>' +
+      '<div class="row" style="gap:10px"><div class="field grow"><label for="pg-start">First day</label><input id="pg-start" type="date" required value="' + esc(p ? p.starts_on : Care.today()) + '"></div>' +
+      '<div class="field grow"><label for="pg-end">Last day</label><input id="pg-end" type="date" required value="' + esc(p ? p.ends_on : Care.today()) + '"></div></div>' +
+      '<div class="field"><label for="pg-time">Time</label><input id="pg-time" type="text" maxlength="60" placeholder="e.g. 6:00 PM each night" value="' + esc(p ? p.time_text : '') + '"></div>' +
+      '<div class="field"><label for="pg-place">Place</label><input id="pg-place" type="text" maxlength="120" value="' + esc(p ? p.place : C.place) + '"></div>' +
+      '<div class="field"><label for="pg-details">About it (shown to visitors and members)</label><textarea id="pg-details" maxlength="1000">' + esc(p ? p.details : '') + '</textarea></div>' +
+      '<div class="actions"><button class="btn" type="submit">' + (p ? 'Save changes' : 'Add program') + '</button></div></form>' +
+      (p ? '<div class="actions" style="margin-top:14px"><button class="btn sm danger" data-del-prog="' + p.id + '">Delete this program</button></div>' : '');
   }
 
   /* ---------- visitors ---------- */
@@ -486,9 +548,9 @@
   function loadMember() {
     var gs = S.me.groups || [{ group_id: S.me.group_id }];
     if (!S.groupId || !gs.some(function (g) { return g.group_id === S.groupId; })) S.groupId = gs[0].group_id;
-    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups(), Store.myAttendance(S.groupId)])).then(function (r) {
+    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups(), Store.myAttendance(S.groupId), Store.programs()])).then(function (r) {
       S.mview = {}; gs.forEach(function (g, i) { S.mview[g.group_id] = r[i]; });
-      S.myPrayers = r[gs.length]; S.groups = r[gs.length + 1]; S.myAtt = r[gs.length + 2];
+      S.myPrayers = r[gs.length]; S.groups = r[gs.length + 1]; S.myAtt = r[gs.length + 2]; S.programs = r[gs.length + 3] || [];
       S.loaded = true;
       if (Store.mode === 'demo') demoRoles();
       render();
@@ -509,6 +571,11 @@
       '<div class="card">' + ppl.map(function (p) {
         return '<div class="row" style="padding:5px 0">' + avatar(p.name) + '<div class="grow name">' + esc(p.name) + '</div>' + (p.on_app ? '<span class="pill reached">📱 On the app</span>' : '') + '</div>';
       }).join('') + '</div>';
+    var soon = (S.programs || []).filter(function (p) { return p.ends_on >= Care.today(); });
+    if (soon.length) h += '<h2 class="sec">Coming up</h2>' + soon.map(function (p) {
+      return '<div class="card top gold"><div class="row"><div class="grow"><div class="name">' + esc(p.title) + '</div><div class="meta">' + esc(progWhen(p)) + (p.place ? ' · ' + esc(p.place) : '') + '</div>' +
+        (p.details ? '<p class="meta" style="margin:4px 0 0">' + esc(p.details) + '</p>' : '') + '</div>' + progPill(p) + '</div></div>';
+    }).join('');
     h += '<h2 class="sec">Church</h2><div class="card">' + C.services.map(function (x) {
       return '<div class="row" style="padding:4px 0"><b style="font-family:var(--serif);color:var(--navy-800);width:40px">' + esc(x.day) + '</b><div class="grow"><div class="name">' + esc(x.what) + '</div><div class="meta">' + esc(x.when) + ' GMT · ' + esc(x.where) + '</div></div></div>';
     }).join('') + '<div class="actions"><a class="btn sm blue" href="' + esc(C.links.playStore) + '" target="_blank" rel="noopener">📱 AFM HUB app</a><a class="btn sm alt" href="' + esc(C.links.website) + '" target="_blank" rel="noopener">⛪ Website</a></div></div>';
@@ -519,15 +586,17 @@
     for (var back = 0; back <= 2; back++) {
       var d = Care.addDays(t, -back), w = (dow - back + 7) % 7, when = back === 0 ? 'today' : back === 1 ? 'yesterday' : Care.parse(d).toLocaleDateString('en-GB', { weekday: 'long' });
       if (w === 0) { opts.push(['sunday', d, 'Sunday service, ' + when]); opts.push(['online', d, 'Online prayer, ' + when]); }
+      if (w === 2) opts.push(['tuesday', d, 'Time with the Rabbi, ' + when]);
       if (w === 5) opts.push(['friday', d, 'Friday Miracle Service, ' + when]);
+      (S.programs || []).forEach(function (p) { if (d >= p.starts_on && d <= p.ends_on) opts.push(['special', d, p.title + ', ' + when, p.id]); });
     }
     opts.push(['meeting', t, 'Group meeting, today']);
-    var mine = {}; (S.myAtt || []).forEach(function (a) { mine[a.seen_on + '|' + a.kind] = a; });
-    var suns = lastSundays(8), came = suns.filter(function (d) { return mine[d + '|sunday']; }).length;
+    var mine = {}; (S.myAtt || []).forEach(function (a) { mine[a.seen_on + '|' + a.kind + '|' + (a.program_id || '')] = a; });
+    var suns = lastSundays(8), came = suns.filter(function (d) { return mine[d + '|sunday|']; }).length;
     return '<div class="card top green"><div class="kicker">Were you in church?</div><p class="meta" style="margin:4px 0 8px">Tap to let your leader know you were there.</p>' +
       '<div class="actions" style="margin:0">' + opts.map(function (o) {
-        var a = mine[o[1] + '|' + o[0]];
-        return '<button class="btn sm ' + (a ? 'on' : 'alt') + '" data-checkin="' + o[0] + '|' + o[1] + '|' + (a ? (a.by_self ? 'undo' : 'leader') : 'here') + '">' + (a ? '✓ ' : '') + esc(o[2]) + '</button>';
+        var a = mine[o[1] + '|' + o[0] + '|' + (o[3] || '')];
+        return '<button class="btn sm ' + (a ? 'on' : 'alt') + '" data-checkin="' + o[0] + '|' + o[1] + '|' + (a ? (a.by_self ? 'undo' : 'leader') : 'here') + '|' + (o[3] || '') + '">' + (a ? '✓ ' : '') + esc(o[2]) + '</button>';
       }).join('') + '</div><p class="meta" style="margin:8px 0 0">You came to <b>' + came + ' of the last 8</b> Sunday services.</p></div>';
   }
   function viewMemberPrayer() {
@@ -555,13 +624,23 @@
     var ms = S.members.filter(function (m) { return m.group_id === gid; });
     h += inviteCard(gid);
     if (!S.kind) { S.kind = defaultKind(); S.day = serviceDay(S.kind); }
-    var here = ms.filter(function (m) { return attended(m.id, S.day, S.kind); }).length;
-    h += '<h2 class="sec">Attendance</h2><div class="chips">' + KINDS.map(function (k) { return '<button class="chip" data-kind="' + k[0] + '" aria-pressed="' + (S.kind === k[0]) + '">' + k[1] + '</button>'; }).join('') + '</div>' +
-      '<div class="field"><label for="day">Date of the ' + esc(kindPhrase(S.kind)) + '</label><input type="date" id="day" value="' + S.day + '" max="' + Care.today() + '"></div>' +
-      '<p class="meta"><b>' + here + ' of ' + ms.length + '</b> came to the ' + esc(kindPhrase(S.kind)) + ' on ' + Care.fmt(S.day) + '. Tap “Present” for each person. Tap a name to edit.</p>';
+    var prog = S.kind === 'special' ? (program(S.progId) || pastPrograms()[0]) : null, pid = prog ? prog.id : null;
+    if (prog) S.progId = pid;
+    h += '<h2 class="sec">Attendance</h2><div class="chips">' + KINDS.map(function (k) { return '<button class="chip" data-kind="' + k[0] + '" aria-pressed="' + (S.kind === k[0]) + '">' + k[1] + '</button>'; }).join('') + '</div>';
+    if (S.kind === 'special') {
+      if (!prog) return h + '<div class="card empty">No special programs yet. ' + (can('programs') ? 'Add one under Special programs on Home.' : 'The pastor adds them.') + '</div>';
+      var pdays = progDays(prog);
+      if (pdays.indexOf(S.day) < 0) S.day = pdays[pdays.length - 1];
+      h += '<div class="field"><label for="prog">Program</label><select id="prog">' + pastPrograms().map(function (p) { return '<option value="' + p.id + '"' + (p.id === pid ? ' selected' : '') + '>' + esc(p.title + ' · ' + Care.fmt(p.starts_on)) + '</option>'; }).join('') + '</select></div>' +
+        (pdays.length > 1 ? '<div class="chips">' + pdays.map(function (d, i) { return '<button class="chip" data-pday="' + d + '" aria-pressed="' + (d === S.day) + '">Day ' + (i + 1) + ' · ' + Care.fmt(d) + '</button>'; }).join('') + '</div>' : '');
+    } else {
+      h += '<div class="field"><label for="day">Date of the ' + esc(kindPhrase(S.kind)) + '</label><input type="date" id="day" value="' + S.day + '" max="' + Care.today() + '"></div>';
+    }
+    var here = ms.filter(function (m) { return attended(m.id, S.day, S.kind, pid); }).length;
+    h += '<p class="meta"><b>' + here + ' of ' + ms.length + '</b> came to ' + (prog ? esc(prog.title) : (S.kind === 'tuesday' ? '' : 'the ') + esc(kindPhrase(S.kind))) + ' on ' + Care.fmt(S.day) + '. Tap “Present” for each person. Tap a name to edit.</p>';
     if (!ms.length) return h + '<div class="card empty">No members yet. Tap “+ Add member”, or share the join link above.</div>';
     return h + ms.map(function (m) {
-      var a = attended(m.id, S.day, S.kind), w = weeksAway(m);
+      var a = attended(m.id, S.day, S.kind, pid), w = weeksAway(m);
       return '<div class="card"><div class="row">' + avatar(m.name) + '<div class="grow tap" data-open="member:' + m.id + '" style="cursor:pointer"><div class="name">' + esc(m.name) + '</div>' +
         '<div class="meta">' + (m.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : (m.phone && S.links[m.group_id] ? '<a class="pill new" href="' + esc(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(group(m.group_id), S.links[m.group_id]))) + '" target="_blank" rel="noopener">💬 Invite to the app</a> ' : '')) +
         statsText(m) + (w >= C.awayWeeks ? ' · <b style="color:var(--red)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
@@ -570,20 +649,23 @@
     }).join('');
   }
   function viewAway() {
-    var suns = lastSundays(4), d = S.missDay || suns[0];
+    var fk = S.fKind || 'sunday', label = { sunday: 'Sunday', tuesday: 'Tuesday', friday: 'Friday' }[fk];
+    var suns = lastServices(fk, 4), d = S.missDay || suns[0];
     var pool = S.members.filter(function (m) { return (m.joined_at || '2000-01-01') <= d; });
-    var missed = pool.filter(function (m) { return !attended(m.id, d, 'sunday'); }).sort(function (a, b) { return sundayStats(b).row - sundayStats(a).row; });
-    var h = '<h2 class="sec">Missed a Sunday</h2><div class="chips">' + suns.map(function (x, i) {
-      return '<button class="chip" data-miss="' + x + '" aria-pressed="' + (x === d) + '">' + (i === 0 ? 'Last Sunday' : Care.fmt(x)) + '</button>';
+    var missed = pool.filter(function (m) { return !attended(m.id, d, fk); }).sort(function (a, b) { return sundayStats(b, fk).row - sundayStats(a, fk).row; });
+    var h = '<h2 class="sec">Who missed a service</h2><div class="chips">' + [['sunday', 'Sunday service'], ['tuesday', 'Time with the Rabbi'], ['friday', 'Friday Miracle']].map(function (k) {
+      return '<button class="chip" data-fkind="' + k[0] + '" aria-pressed="' + (fk === k[0]) + '">' + k[1] + '</button>';
+    }).join('') + '</div><div class="chips">' + suns.map(function (x, i) {
+      return '<button class="chip" data-miss="' + x + '" aria-pressed="' + (x === d) + '">' + (i === 0 ? 'Last ' + label : Care.fmt(x)) + '</button>';
     }).join('') + '</div>';
     if (!pool.length) h += '<div class="card empty">No members on the list yet.</div>';
     else if (!missed.length) h += '<div class="card empty">Everyone came on ' + Care.fmt(d) + '. 🙌</div>';
     else {
       h += '<p class="meta" style="margin-top:-4px">' + missed.length + ' of ' + pool.length + ' were not marked present on ' + Care.fmt(d) + '. A kind message is ready in WhatsApp.</p>';
       h += missed.map(function (m) {
-        return '<div class="card top ' + (sundayStats(m).row >= 2 ? 'red' : 'gold') + '"><div class="row">' + avatar(m.name) + '<div class="grow"><div class="name">' + esc(m.name) + '</div>' +
-          '<div class="meta">' + (!isLeader() ? esc(groupName(m.group_id)) + ' · ' : '') + statsText(m) + '</div></div></div>' +
-          '<div class="actions">' + (contactButtons(m.phone, missedMsg(m, d)) || '<span class="meta">No number saved.</span>') + '</div></div>';
+        return '<div class="card top ' + (sundayStats(m, fk).row >= 2 ? 'red' : 'gold') + '"><div class="row">' + avatar(m.name) + '<div class="grow"><div class="name">' + esc(m.name) + '</div>' +
+          '<div class="meta">' + (!isLeader() ? esc(groupName(m.group_id)) + ' · ' : '') + statsText(m, fk) + '</div></div></div>' +
+          '<div class="actions">' + (contactButtons(m.phone, missedMsg(m, d, fk)) || '<span class="meta">No number saved.</span>') + '</div></div>';
       }).join('');
     }
     var list = S.members.filter(isAway).sort(function (a, b) { return weeksAway(b) - weeksAway(a); });
@@ -726,6 +808,8 @@
       parts[0] === 'new-prayer' ? sheetNewPrayer() :
       parts[0] === 'team' ? sheetTeam() :
       parts[0] === 'leaderlink' ? sheetLeaderLink(parts[1]) :
+      parts[0] === 'prog' ? sheetProgram(parts[1]) :
+      parts[0] === 'new-prog' ? sheetProgram(null) :
       parts[0] === 'staff' ? sheetStaff(parts[1]) :
       parts[0] === 'new-staff' ? sheetStaff(null) :
       parts[0] === 'grp' ? sheetGroup(parts[1]) :
@@ -759,8 +843,15 @@
   document.addEventListener('click', function (e) {
     var wl = e.target.closest('[data-welcome]');
     if (wl) { var wid = wl.dataset.welcome; setTimeout(function () { act(Store.markWelcomed(wid), 'Marked as welcomed. 💬'); }, 400); return; }
-    var kb = e.target.closest('[data-kind],[data-miss]');
-    if (kb) { if (kb.dataset.kind) { S.kind = kb.dataset.kind; S.day = serviceDay(S.kind); } else S.missDay = kb.dataset.miss; render(); return; }
+    var kb = e.target.closest('[data-kind],[data-miss],[data-pday],[data-fkind]');
+    if (kb) {
+      var kd = kb.dataset;
+      if (kd.kind) { S.kind = kd.kind; S.day = serviceDay(S.kind); }
+      else if (kd.pday) S.day = kd.pday;
+      else if (kd.fkind) { S.fKind = kd.fkind; S.missDay = null; }
+      else S.missDay = kd.miss;
+      render(); return;
+    }
     var el = e.target.closest('[data-tab],[data-act],[data-open],[data-vf],[data-pf],[data-g],[data-present],[data-status],[data-join],[data-prayed],[data-close],[data-del-visitor],[data-del-member],[data-del-staff]');
     if (!el) { if (e.target.id === 'veil') closeSheet(); return; }
     var d = el.dataset;
@@ -773,7 +864,8 @@
     else if ('close' in d) closeSheet();
     else if (d.present) {
       var m = S.members.filter(function (x) { return x.id === d.present; })[0];
-      act(attended(m.id, S.day, S.kind) ? Store.unpresent(m.id, S.day, S.kind) : Store.present(m.id, S.day, S.kind));
+      var rp = S.kind === 'special' ? S.progId : null;
+      act(attended(m.id, S.day, S.kind, rp) ? Store.unpresent(m.id, S.day, S.kind, rp) : Store.present(m.id, S.day, S.kind, rp));
     } else if (d.status) {
       var p = d.status.split(':');
       act(Store.update('visitors', 'id', p[1], { status: p[0], seen_by_leader: true }), p[0] === 'reached' ? 'Marked reached. Well done!' : 'Moved back to “to contact”.');
@@ -796,6 +888,7 @@
   document.addEventListener('change', function (e) {
     var t = e.target;
     if (t.id === 'day') { S.day = t.value || Care.today(); render(); }
+    else if (t.id === 'prog') { S.progId = t.value; S.day = serviceDay('special'); render(); }
     else if (t.dataset.assign) {
       t.blur();
       var g = t.value || null;
@@ -852,6 +945,13 @@
       if (st.email && !/^\S+@\S+\.\S+$/.test(st.email)) return Care.toast('That email looks wrong.');
       if (st.role === 'pa' && !st.areas.length) return Care.toast('Tick at least one area the PA can see.');
       act(d.staff ? Store.update('staff', 'id', d.staff, st) : Store.insert('staff', st), d.staff ? 'Saved.' : st.name + ' can now sign in.').then(function (r) { if (r) openSheet('team'); });
+    } else if ('prog' in d) {
+      var pr = { title: val('pg-title'), starts_on: val('pg-start'), ends_on: val('pg-end'), time_text: val('pg-time'), place: val('pg-place'), details: val('pg-details') };
+      if (!pr.title) return Care.toast('Please enter the program name.');
+      if (!pr.starts_on || !pr.ends_on || pr.ends_on < pr.starts_on) return Care.toast('The last day must be on or after the first day.');
+      if (Care.daysBetween(pr.starts_on, pr.ends_on) > 31) return Care.toast('A program can last up to a month.');
+      closeSheet();
+      act(d.prog ? Store.update('programs', 'id', d.prog, pr) : Store.insert('programs', pr), d.prog ? 'Saved.' : pr.title + ' added.');
     } else if ('group' in d) {
       var g = { name: val('ng-name'), tag: val('ng-tag'), leader_name: val('ng-leader') };
       if (!g.name) return Care.toast('Please enter the group name.');
@@ -865,12 +965,22 @@
   });
 
   document.addEventListener('click', function (e) {
+    var pg = e.target.closest('[data-markprog],[data-del-prog]');
+    if (pg) {
+      e.preventDefault(); e.stopPropagation();
+      if (pg.dataset.markprog) {
+        closeSheet(); S.kind = 'special'; S.progId = pg.dataset.markprog; S.day = serviceDay('special'); S.tab = 'groups'; render();
+        setTimeout(function () { var h2 = Array.prototype.filter.call(document.querySelectorAll('h2.sec'), function (x) { return /Attendance/.test(x.textContent); })[0]; if (h2) h2.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 50);
+      }
+      else ask('Delete this program? Its attendance records go too.', function () { act(Store.remove('programs', 'id', pg.dataset.delProg), 'Program deleted.'); });
+      return;
+    }
     var ci = e.target.closest('[data-checkin]');
     if (ci) {
       e.preventDefault(); e.stopPropagation();
       var c = ci.dataset.checkin.split('|');
       if (c[2] === 'leader') return Care.toast('Your leader already marked you present. 🙌');
-      Store.memberCheckin(S.groupId, c[0], c[1], c[2] === 'here').then(function () { Care.toast(c[2] === 'here' ? 'Thank you! Your leader can see you were there. 🙏' : 'Removed.'); reload(); }, fail);
+      Store.memberCheckin(S.groupId, c[0], c[1], c[2] === 'here', c[3] || null).then(function () { Care.toast(c[2] === 'here' ? 'Thank you! Your leader can see you were there. 🙏' : 'Removed.'); reload(); }, fail);
       return;
     }
     var el = e.target.closest('[data-invite-leader],[data-invite-one],[data-copy],[data-reset-link],[data-mg]');

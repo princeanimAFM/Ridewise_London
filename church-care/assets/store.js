@@ -54,9 +54,10 @@
           sb.from('visitor_notes').select('*').order('created_at').then(must),
           sb.from('members').select('*').order('name').then(must),
           sb.from('prayers').select('*').order('created_at', { ascending: false }).then(must),
-          sb.from('attendance').select('member_id, seen_on, kind, by_self').gte('seen_on', Care.addDays(Care.today(), -120)).then(must)
+          sb.from('attendance').select('member_id, seen_on, kind, program_id, by_self').gte('seen_on', Care.addDays(Care.today(), -120)).then(must),
+          this.programs()
         ]).then(function (a) {
-          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6] };
+          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6], programs: a[7] };
         });
       },
       // Prayer requests are saved without reading them back: the welcome team may add one but not read it.
@@ -65,13 +66,20 @@
       remove: function (t, key, id) { return sb.from(t).delete().eq(key, id).then(must); },
       // groups are loaded separately; staff/groups changes reload too
       markWelcomed: function (id) { return sb.rpc('mark_welcomed', { p_id: id }).then(must); },
-      present: function (memberId, day, kind) { return sb.from('attendance').upsert({ member_id: memberId, seen_on: day, kind: kind || 'sunday' }, { ignoreDuplicates: true }).then(must); },
-      unpresent: function (memberId, day, kind) { return sb.from('attendance').delete().eq('member_id', memberId).eq('seen_on', day).eq('kind', kind || 'sunday').then(must); },
-      memberCheckin: function (group, kind, day, here) { return sb.rpc('member_checkin', { p_group: group, p_kind: kind, p_day: day, p_here: here }).then(must); },
+      programs: function () { return sb.from('programs').select('*').gte('ends_on', Care.addDays(Care.today(), -120)).order('starts_on').then(must); },
+      present: function (memberId, day, kind, program) {
+        return sb.from('attendance').insert({ member_id: memberId, seen_on: day, kind: kind || 'sunday', program_id: program || null })
+          .then(function (r) { if (r.error && r.error.code !== '23505') throw r.error; });
+      },
+      unpresent: function (memberId, day, kind, program) {
+        var q = sb.from('attendance').delete().eq('member_id', memberId).eq('seen_on', day).eq('kind', kind || 'sunday');
+        return (program ? q.eq('program_id', program) : q.is('program_id', null)).then(must);
+      },
+      memberCheckin: function (group, kind, day, here, program) { return sb.rpc('member_checkin', { p_group: group, p_kind: kind, p_day: day, p_here: here, p_program: program || null }).then(must); },
       myAttendance: function (group) { return sb.rpc('my_attendance', { p_group: group }).then(must); },
       subscribe: function (cb) {
         var ch = sb.channel('care');
-        TABLES.concat(['groups', 'attendance']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, cb); });
+        TABLES.concat(['groups', 'attendance', 'programs']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: 'public', table: t }, cb); });
         ch.subscribe();
       }
     };
@@ -79,7 +87,7 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v5', listeners = [];
+    var KEY = 'care-demo-v6', listeners = [];
     var data = read();
     var role = 'pastor';
     try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
@@ -102,7 +110,7 @@
     function has(m, a) { return m.role === 'pastor' || (m.role === 'pa' && m.areas.indexOf(a) >= 0); }
     function canSee(t, row, m) {
       if (t === 'staff') return m.role === 'pastor' || row.id === m.id;
-      if (t === 'groups') return true;
+      if (t === 'groups' || t === 'programs') return true;
       if (t === 'visitors') return has(m, 'visitors') || m.role === 'welcome' || (m.role === 'leader' && row.assigned_to === m.group_id);
       if (t === 'visitor_notes') return data.visitors.some(function (v) { return v.id === row.visitor_id && canSee('visitors', v, m); });
       if (t === 'members') return has(m, 'groups') || (m.role === 'leader' && row.group_id === m.group_id);
@@ -124,6 +132,11 @@
           login: onApp ? Care.intl(phone) : null, joined_app_at: onApp ? Care.addDays(t, -10) + 'T10:00:00Z' : null });
       });
       d.invites = [];
+      d.programs = [
+        { id: 'prog1', title: 'Holy Ghost Night', starts_on: Care.addDays(t, -3), ends_on: Care.addDays(t, -3), time_text: '7:00 PM', place: 'AFM Center, Sunyani', details: 'A night of worship, prayer and the power of the Holy Spirit.' },
+        { id: 'prog2', title: 'Year of the Blessing Convention', starts_on: Care.addDays(t, 12), ends_on: Care.addDays(t, 14), time_text: '6:00 PM each night', place: 'AFM Center, Sunyani', details: 'Three nights of the Word with Prophet Micah Felix Azanduna and guest ministers.' },
+        { id: 'prog3', title: 'Carols Night', starts_on: Care.addDays(t, 49), ends_on: Care.addDays(t, 49), time_text: '6:30 PM', place: 'AFM Center, Sunyani', details: 'Christmas carols, drama and thanksgiving.' }
+      ];
       // Sunday attendance for the last 8 Sundays, matching each person's "weeks away"
       var lastSun = Care.addDays(t, -new Date().getDay());
       d.members.forEach(function (m, i) {
@@ -134,6 +147,8 @@
           var sun = Care.addDays(lastSun, -7 * k);
           d.attendance.push({ member_id: m.id, seen_on: sun, kind: 'sunday', by_self: k === 0 && i % 4 === 0 }); days.push(sun);
           if ((k + i) % 3 === 0) { var fri = Care.addDays(sun, -2); d.attendance.push({ member_id: m.id, seen_on: fri, kind: 'friday', by_self: false }); days.push(fri); }
+          if ((k + i) % 2 === 0 && k > 0) { var tue = Care.addDays(sun, 2); d.attendance.push({ member_id: m.id, seen_on: tue, kind: 'tuesday', by_self: false }); days.push(tue); }
+          if (k === 0 && i % 3 !== 1) { var hg = Care.addDays(t, -3); d.attendance.push({ member_id: m.id, seen_on: hg, kind: 'special', program_id: 'prog1', by_self: false }); days.push(hg); }
         }
         m.last_seen = days.length ? days.sort()[days.length - 1] : null;
       });
@@ -208,6 +223,7 @@
         return this.groups().then(function (gs) {
           out.groups = gs;
           TABLES.forEach(function (t) { out[t] = data[t].filter(function (r) { return canSee(t, r, m); }).map(function (r) { return Object.assign({}, r); }); });
+          out.programs = data.programs.slice().sort(function (a, b) { return a.starts_on < b.starts_on ? -1 : 1; });
           out.attendance = data.attendance.filter(function (a) { var mm = find('members', 'id', a.member_id); return mm && canSee('members', mm, m); }).map(function (a) { return Object.assign({}, a); });
           return out;
         });
@@ -237,6 +253,10 @@
             check(!data.staff.some(function (s) { return (row.email && s.email === row.email) || (row.phone && s.phone === row.phone); }));
           } else if (t === 'groups') {
             check(m.role === 'pastor');
+          } else if (t === 'programs') {
+            check(has(m, 'programs'));
+            if (!row.title || !row.starts_on || !row.ends_on || row.ends_on < row.starts_on) throw new Error('Please check the program name and dates.');
+            row.id = uid();
           }
           data[t].unshift(row);
           if (t === 'staff') leaderNames();
@@ -264,6 +284,7 @@
           }
           if (t === 'members') check(has(m, 'groups') || m.role === 'leader');
           if (t === 'staff' || t === 'groups') check(m.role === 'pastor');
+          if (t === 'programs') check(has(m, 'programs'));
           if (t === 'staff') {
             if (row.role === 'pastor' && patch.role !== 'pastor' && data.staff.filter(function (s) { return s.role === 'pastor'; }).length < 2) throw new Error('The team needs at least one pastor');
             if ('phone' in patch) patch.phone = patch.phone ? Care.intl(patch.phone) : null;
@@ -277,7 +298,8 @@
       remove: function (t, key, id) {
         return Promise.resolve().then(function () {
           var m = me(), row = find(t, key, id);
-          check(row && (m.role === 'pastor' || (t === 'members' && (m.role === 'leader' || has(m, 'groups')) && canSee(t, row, m))));
+          check(row && (m.role === 'pastor' || (t === 'programs' && has(m, 'programs')) || (t === 'members' && (m.role === 'leader' || has(m, 'groups')) && canSee(t, row, m))));
+          if (t === 'programs') data.attendance = data.attendance.filter(function (a) { return a.program_id !== id; });
           if (t === 'staff' && row.role === 'pastor' && data.staff.filter(function (s) { return s.role === 'pastor'; }).length < 2) throw new Error('The team needs at least one pastor');
           data[t] = data[t].filter(function (r) { return r !== row; });
           if (t === 'staff') leaderNames();
@@ -356,7 +378,8 @@
         var ids = myMembers().map(function (x) { return x.id; });
         return Promise.resolve(data.prayers.filter(function (p) { return ids.indexOf(p.member_id) >= 0; }));
       },
-      memberCheckin: function (group, kind, day, here) {
+      memberCheckin: function (group, kind, day, here, program) {
+        program = kind === 'special' ? program || null : null;
         return Promise.resolve().then(function () {
           var mm = myMembers().filter(function (x) { return x.group_id === group; })[0];
           check(mm);
@@ -364,8 +387,9 @@
           var dow = Care.parse(day).getDay();
           if ((kind === 'sunday' || kind === 'online') && dow !== 0) throw new Error('That service is on Sundays');
           if (kind === 'friday' && dow !== 5) throw new Error('The Miracle Service is on Fridays');
-          var ex = data.attendance.filter(function (a) { return a.member_id === mm.id && a.seen_on === day && a.kind === kind; })[0];
-          if (here && !ex) data.attendance.push({ member_id: mm.id, seen_on: day, kind: kind, by_self: true });
+          if (kind === 'tuesday' && dow !== 2) throw new Error('Time with the Rabbi is on Tuesdays');
+          var ex = data.attendance.filter(function (a) { return a.member_id === mm.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program; })[0];
+          if (here && !ex) data.attendance.push({ member_id: mm.id, seen_on: day, kind: kind, program_id: program, by_self: true });
           if (!here && ex && ex.by_self) data.attendance = data.attendance.filter(function (a) { return a !== ex; });
           var days = data.attendance.filter(function (a) { return a.member_id === mm.id; }).map(function (a) { return a.seen_on; }).sort();
           mm.last_seen = days.length ? days[days.length - 1] : null;
@@ -384,23 +408,25 @@
           save();
         });
       },
-      present: function (memberId, day, kind) {
-        kind = kind || 'sunday';
+      programs: function () { return Promise.resolve(data.programs.slice().sort(function (a, b) { return a.starts_on < b.starts_on ? -1 : 1; })); },
+      present: function (memberId, day, kind, program) {
+        kind = kind || 'sunday'; program = program || null;
         return Promise.resolve().then(function () {
           var row = find('members', 'id', memberId);
           check(row && canSee('members', row, me()));
           if (day > Care.today()) throw new Error('You can\'t mark a service that hasn\'t happened yet');
-          if (!data.attendance.some(function (a) { return a.member_id === memberId && a.seen_on === day && a.kind === kind; })) data.attendance.push({ member_id: memberId, seen_on: day, kind: kind, by_self: false });
+          if (program) { var pr = find('programs', 'id', program); if (!pr || day < pr.starts_on || day > pr.ends_on) throw new Error('That date is not part of the program'); }
+          if (!data.attendance.some(function (a) { return a.member_id === memberId && a.seen_on === day && a.kind === kind && (a.program_id || null) === program; })) data.attendance.push({ member_id: memberId, seen_on: day, kind: kind, program_id: program, by_self: false });
           if (!row.last_seen || row.last_seen < day) row.last_seen = day;
           save();
         });
       },
-      unpresent: function (memberId, day, kind) {
-        kind = kind || 'sunday';
+      unpresent: function (memberId, day, kind, program) {
+        kind = kind || 'sunday'; program = program || null;
         return Promise.resolve().then(function () {
           var row = find('members', 'id', memberId);
           check(row && canSee('members', row, me()));
-          data.attendance = data.attendance.filter(function (a) { return !(a.member_id === memberId && a.seen_on === day && a.kind === kind); });
+          data.attendance = data.attendance.filter(function (a) { return !(a.member_id === memberId && a.seen_on === day && a.kind === kind && (a.program_id || null) === program); });
           var days = data.attendance.filter(function (a) { return a.member_id === memberId; }).map(function (a) { return a.seen_on; }).sort();
           row.last_seen = days.length ? days[days.length - 1] : (row.last_seen === day ? null : row.last_seen);
           save();

@@ -26,7 +26,7 @@ create table if not exists public.staff (
   phone      text unique check (phone is null or phone ~ '^[0-9]{10,15}$'),
   role       text not null check (role in ('pastor', 'pa', 'welcome', 'leader')),
   group_id   text references public.groups(id),
-  areas      text[] not null default '{}' check (areas <@ array['visitors', 'groups', 'prayer_groups', 'prayer_pastor']),
+  areas      text[] not null default '{}',
   created_at timestamptz not null default now(),
   check (email is not null or phone is not null),
   check (role <> 'leader' or group_id is not null)
@@ -80,17 +80,50 @@ alter table public.members add column if not exists last_app_at   timestamptz;
 create unique index if not exists members_login_phone on public.members (group_id, login_phone) where login_phone is not null;
 create unique index if not exists members_login_email on public.members (group_id, login_email) where login_email is not null;
 
+-- Areas a PA can be given (kept as its own check so it can grow).
+alter table public.staff drop constraint if exists staff_areas_check;
+alter table public.staff drop constraint if exists staff_areas_allowed;
+alter table public.staff add constraint staff_areas_allowed check (areas <@ array['visitors', 'groups', 'prayer_groups', 'prayer_pastor', 'programs']);
+
+-- Special services and programs (conventions, Holy Ghost nights, thanksgiving…). Anyone may read them:
+-- they show on the welcome page and in the app. The pastor (or a PA with "programs") manages them.
+create table if not exists public.programs (
+  id         uuid primary key default gen_random_uuid(),
+  title      text not null check (char_length(btrim(title)) between 1 and 120),
+  starts_on  date not null,
+  ends_on    date not null,
+  time_text  text not null default '' check (char_length(time_text) <= 60),
+  place      text not null default '' check (char_length(place) <= 120),
+  details    text not null default '' check (char_length(details) <= 1000),
+  created_at timestamptz not null default now(),
+  check (ends_on >= starts_on and ends_on <= starts_on + 31)
+);
+
 -- One row per person per service attended. kind: sunday (Sunday service), friday (Friday Miracle Service),
 -- online (Sunday night online prayer), meeting (group meeting). by_self: the member marked it themselves.
 create table if not exists public.attendance (
   member_id uuid not null references public.members(id) on delete cascade,
   seen_on   date not null default current_date,
-  kind      text not null default 'sunday' check (kind in ('sunday', 'friday', 'online', 'meeting')),
+  kind      text not null default 'sunday',
   by_self   boolean not null default false,
-  marked_by text not null default '',
-  primary key (member_id, seen_on, kind)
+  marked_by text not null default ''
 );
 create index if not exists attendance_day on public.attendance (seen_on);
+-- kinds: sunday, tuesday (Time with the Rabbi), friday (Miracle Service), online (Sunday night), meeting (group), special (a program)
+alter table public.attendance add column if not exists program_id uuid references public.programs(id) on delete cascade;
+alter table public.attendance drop constraint if exists attendance_kind_check;
+alter table public.attendance drop constraint if exists attendance_kind_allowed;
+alter table public.attendance add constraint attendance_kind_allowed check (kind in ('sunday', 'tuesday', 'friday', 'online', 'meeting', 'special') and ((kind = 'special') = (program_id is not null)));
+-- Special programs are told apart by program, so the key is per program too.
+alter table public.attendance drop constraint if exists attendance_pkey;
+alter table public.attendance add column if not exists id bigint generated always as identity;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'attendance_id_pkey') then
+    alter table public.attendance add constraint attendance_id_pkey primary key (id);
+  end if;
+end $$;
+drop index if exists public.attendance_one;
+create unique index attendance_one on public.attendance (member_id, seen_on, kind, coalesce(program_id, '00000000-0000-0000-0000-000000000000'::uuid));
 
 alter table public.staff add column if not exists joined_app_at timestamptz;
 alter table public.staff add column if not exists last_app_at   timestamptz;
@@ -307,6 +340,9 @@ begin
     new.marked_by := coalesce(public.my_name(), '');
   end if;
   if new.seen_on > current_date then raise exception 'You can''t mark a service that hasn''t happened yet'; end if;
+  if new.kind = 'special' and not exists (select 1 from public.programs where id = new.program_id and new.seen_on between starts_on and ends_on) then
+    raise exception 'That date is not part of the program';
+  end if;
   return new;
 end $$;
 drop trigger if exists attendance_rules on public.attendance;
@@ -330,12 +366,19 @@ alter table public.visitor_notes enable row level security;
 alter table public.members       enable row level security;
 alter table public.attendance    enable row level security;
 alter table public.prayers       enable row level security;
-alter table public.invites       enable row level security;   -- no policies: only the functions below use it
+alter table public.invites       enable row level security;
+alter table public.programs      enable row level security;   -- no policies: only the functions below use it
 
 -- Nobody without a login reads or writes tables directly; the public forms use the functions below.
 revoke all on public.invites from anon, authenticated;
 revoke all on public.groups, public.staff, public.visitors, public.visitor_notes, public.members, public.attendance, public.prayers from anon;
 grant select on public.groups to anon;
+revoke all on public.programs from anon;
+grant select on public.programs to anon;
+drop policy if exists programs_read on public.programs;
+create policy programs_read on public.programs for select to anon, authenticated using (true);
+drop policy if exists programs_write on public.programs;
+create policy programs_write on public.programs for all to authenticated using (public.has_area('programs')) with check (public.has_area('programs'));
 
 drop policy if exists groups_read on public.groups;
 create policy groups_read on public.groups for select to anon, authenticated using (true);
@@ -595,7 +638,8 @@ $$;
 
 -- Members say they were at a service (today or the two days before). Sunday and online services are on Sundays,
 -- the Miracle Service on Fridays; group meetings any day.
-create or replace function public.member_checkin(p_group text, p_kind text, p_day date, p_here boolean) returns void language plpgsql security definer set search_path = public as $$
+drop function if exists public.member_checkin(text, text, date, boolean);
+create or replace function public.member_checkin(p_group text, p_kind text, p_day date, p_here boolean, p_program uuid default null) returns void language plpgsql security definer set search_path = public as $$
 declare mid uuid;
 begin
   select id into mid from public.members where group_id = p_group and id in (
@@ -604,26 +648,29 @@ begin
   if p_day is null or p_day > current_date or p_day < current_date - 2 then raise exception 'You can mark attendance for today or the last two days'; end if;
   if p_kind in ('sunday', 'online') and extract(dow from p_day) <> 0 then raise exception 'That service is on Sundays'; end if;
   if p_kind = 'friday' and extract(dow from p_day) <> 5 then raise exception 'The Miracle Service is on Fridays'; end if;
+  if p_kind = 'tuesday' and extract(dow from p_day) <> 2 then raise exception 'Time with the Rabbi is on Tuesdays'; end if;
+  if p_kind <> 'special' then p_program := null; end if;
   if p_here then
     perform set_config('care.member', '1', true);
-    insert into public.attendance (member_id, seen_on, kind, by_self, marked_by)
-    values (mid, p_day, p_kind, true, (select name from public.members where id = mid)) on conflict do nothing;
+    insert into public.attendance (member_id, seen_on, kind, program_id, by_self, marked_by)
+    values (mid, p_day, p_kind, p_program, true, (select name from public.members where id = mid)) on conflict do nothing;
     perform set_config('care.member', '', true);
   else
-    delete from public.attendance where member_id = mid and seen_on = p_day and kind = p_kind and by_self;
+    delete from public.attendance where member_id = mid and seen_on = p_day and kind = p_kind
+      and program_id is not distinct from p_program and by_self;
   end if;
 end $$;
 
 create or replace function public.my_attendance(p_group text) returns jsonb language sql stable security definer set search_path = public as $$
-  select coalesce(jsonb_agg(jsonb_build_object('seen_on', a.seen_on, 'kind', a.kind, 'by_self', a.by_self) order by a.seen_on desc), '[]'::jsonb)
+  select coalesce(jsonb_agg(jsonb_build_object('seen_on', a.seen_on, 'kind', a.kind, 'program_id', a.program_id, 'by_self', a.by_self) order by a.seen_on desc), '[]'::jsonb)
   from public.attendance a join public.members m on m.id = a.member_id
   where m.group_id = p_group and a.seen_on > current_date - 120
     and ((m.login_phone is not null and m.login_phone = public.my_login_phone()) or (m.login_email is not null and m.login_email = public.my_login_email()))
 $$;
 
 do $$ begin
-  revoke all on function public.member_checkin(text, text, date, boolean), public.my_attendance(text) from public, anon;
-  grant execute on function public.member_checkin(text, text, date, boolean), public.my_attendance(text) to authenticated;
+  revoke all on function public.member_checkin(text, text, date, boolean, uuid), public.my_attendance(text) from public, anon;
+  grant execute on function public.member_checkin(text, text, date, boolean, uuid), public.my_attendance(text) to authenticated;
   revoke all on function public.whoami(), public.create_invite(text, text), public.reset_member_invite(text), public.accept_invite(text, text),
     public.my_group_view(text), public.member_prayer(text, text, text), public.my_prayers(), public.my_member_groups() from public, anon;
   grant execute on function public.whoami(), public.create_invite(text, text), public.reset_member_invite(text), public.accept_invite(text, text),
@@ -636,7 +683,7 @@ end $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance'] loop
+  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance', 'programs'] loop
     if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and tablename = t) then
       execute format('alter publication supabase_realtime add table public.%I', t);
     end if;

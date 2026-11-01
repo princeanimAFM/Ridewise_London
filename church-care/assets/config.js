@@ -16,6 +16,7 @@ window.CARE_CONFIG = {
   place: 'AFM Center, Sunyani',
   services: [
     { day: 'Sun', when: '8:00 AM', what: 'International Word Assembly', where: 'AFM Center, Sunyani' },
+    { day: 'Tue', when: '6:00 PM', what: 'Time with the Rabbi', where: 'AFM Center, Sunyani' },
     { day: 'Fri', when: '6:00 PM', what: 'Friday Miracle Service', where: 'AFM Center, Sunyani' },
     { day: 'Sun', when: '8:00 PM', what: 'International Online Prayer Connect', where: 'Online on Zoom' }
   ],

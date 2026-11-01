@@ -10,6 +10,17 @@
     return '<div class="card top ' + ['', 'red', 'sky'][i % 3] + '"><div class="svc"><span class="big">' + Care.esc(x.day) + '</span>' +
       '<span class="when">' + Care.esc(x.when) + '<small>GMT</small></span><span class="what">' + Care.esc(x.what) + '</span><span class="where">' + Care.esc(x.where) + '</span></div></div>';
   }).join('');
+  Store.programs().then(function (ps) {
+    var t = Care.today(), soon = (ps || []).filter(function (p) { return p.ends_on >= t; }).slice(0, 4);
+    if (!soon.length) return;
+    $('programs-sec').hidden = false;
+    $('programs').innerHTML = soon.map(function (p) {
+      var when = Care.fmt(p.starts_on) + (p.ends_on !== p.starts_on ? ' – ' + Care.fmt(p.ends_on) : '') + (p.time_text ? ' · ' + p.time_text : '');
+      return '<div class="card top gold"><div class="what" style="font-family:var(--serif);font-weight:700;font-size:1.1rem;color:var(--navy-800)">' + Care.esc(p.title) + '</div>' +
+        '<div class="meta"><b>' + Care.esc(when) + '</b>' + (p.place ? ' · ' + Care.esc(p.place) : '') + '</div>' +
+        (p.details ? '<p class="meta" style="margin:6px 0 0">' + Care.esc(p.details) + '</p>' : '') + '</div>';
+    }).join('');
+  }, function () {});
   function letter(first) {
     var W = window.CareWords;
     return '<div class="dear">Dear ' + Care.esc(first) + ',</div>' +
