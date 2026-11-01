@@ -178,3 +178,46 @@ footer.foot a{color:var(--ice)}
 .prayer .kicker{color:var(--ice)}
 .hero .name{bottom:8px}
 .hero .name b{font-size:.82rem}
+/* compact sizing: more fits on a phone screen */
+html,body{font-size:14.5px;line-height:1.5}
+.hero h1{font-size:clamp(1.55rem,6.2vw,2.2rem)}
+.hero .text{padding:22px 0}
+.hero p{font-size:.9rem;margin-top:8px}
+.hero.slim .text{padding:12px 0 14px}
+.hero.slim h1{font-size:1.3rem}
+.hero.slim p{font-size:.8rem}
+section{padding:18px 0}
+.title{font-size:1.3rem}
+.lead{font-size:.92rem;margin:6px 0 10px}
+.card{padding:12px 13px;border-radius:16px;margin-bottom:8px}
+.letter{padding:20px 16px 14px}
+.letter .dear{font-size:1.15rem;margin-top:10px}
+.letter p{margin-bottom:9px;font-size:.95rem}
+.prayer{padding:18px 16px}
+.prayer h3{font-size:1.1rem}
+.prayer p{font-size:.93rem;line-height:1.6}
+.tiles{gap:8px;margin:10px 0}
+.tile{padding:12px 11px 9px;border-radius:14px}
+.tile b{font-size:1.45rem}
+.tile span{font-size:.7rem}
+h2.sec{font-size:1.05rem;margin:16px 0 8px}
+.sheet h2{font-size:1.25rem}
+.field{margin:9px 0}
+.field label{font-size:.75rem;margin-bottom:3px}
+select,input[type=text],input[type=tel],input[type=email],input[type=date],textarea{padding:9px 12px;border-radius:12px;font-size:16px}
+.btn{font-size:.85rem;padding:10px 15px}
+.btn.sm{font-size:.76rem;padding:6px 11px}
+.avatar{width:36px;height:36px;font-size:.78rem}
+.name{font-size:.95rem}
+.meta{font-size:.76rem}
+.chip{font-size:.78rem;padding:7px 13px}
+.check{font-size:.8rem;padding:10px}
+.svc .big{font-size:1.35rem}
+.appcard{grid-template-columns:86px 1fr;padding:14px;gap:12px}
+.appcard img.shot{width:86px}
+.appcard h3{font-size:1.1rem}
+nav.tabs button{padding:6px 2px 8px}
+nav.tabs button i{font-size:1.15rem}
+.fab{padding:11px 16px;bottom:76px}
+.roles{margin-top:8px}
+.roles select{padding:6px 10px;font-size:.8rem}

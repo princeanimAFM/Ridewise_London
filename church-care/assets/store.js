@@ -119,6 +119,13 @@
       return d;
     }
     function check(ok) { if (!ok) throw new Error('You don\'t have access to do that.'); }
+    function leaderNames() {
+      data.groups.forEach(function (g) {
+        var ls = data.staff.filter(function (x) { return x.role === 'leader' && x.group_id === g.id; });
+        if (ls.length) g.leader_name = ls[0].name; else if (g.hadLeader) g.leader_name = '';
+        g.hadLeader = !!ls.length || g.hadLeader;
+      });
+    }
     function find(t, key, id) { return data[t].filter(function (r) { return r[key] === id; })[0]; }
     return {
       mode: 'demo',
@@ -151,6 +158,9 @@
         });
       },
       session: function () { return Promise.resolve({ demo: true }); },
+      // Preview only: no code is really sent; any code signs in.
+      sendCode: function () { return Promise.resolve(); },
+      verify: function () { return Promise.resolve(); },
       signOut: function () { return Promise.resolve(); },
       onAuth: function () {},
       me: function () { return Promise.resolve(Object.assign({}, me())); },
@@ -185,11 +195,12 @@
             check(m.role === 'pastor');
             row.id = uid(); row.email = row.email ? row.email.toLowerCase() : null; row.phone = row.phone ? Care.intl(row.phone) : null;
             check(!data.staff.some(function (s) { return (row.email && s.email === row.email) || (row.phone && s.phone === row.phone); }));
-            if (row.role === 'leader') { var g = find('groups', 'id', row.group_id); if (g) g.leader_name = row.name; }
           } else if (t === 'groups') {
             check(m.role === 'pastor');
           }
-          data[t].unshift(row); save();
+          data[t].unshift(row);
+          if (t === 'staff') leaderNames();
+          save();
           return row;
         });
       },
@@ -216,9 +227,10 @@
           if (t === 'staff') {
             if (row.role === 'pastor' && patch.role !== 'pastor' && data.staff.filter(function (s) { return s.role === 'pastor'; }).length < 2) throw new Error('The team needs at least one pastor');
             if ('phone' in patch) patch.phone = patch.phone ? Care.intl(patch.phone) : null;
-            if (patch.role === 'leader') { var g = find('groups', 'id', patch.group_id); if (g) g.leader_name = patch.name || row.name; }
           }
-          Object.assign(row, patch); save();
+          Object.assign(row, patch);
+          if (t === 'staff') leaderNames();
+          save();
           return [row];
         });
       },
@@ -228,6 +240,7 @@
           check(row && (m.role === 'pastor' || (t === 'members' && (m.role === 'leader' || has(m, 'groups')) && canSee(t, row, m))));
           if (t === 'staff' && row.role === 'pastor' && data.staff.filter(function (s) { return s.role === 'pastor'; }).length < 2) throw new Error('The team needs at least one pastor');
           data[t] = data[t].filter(function (r) { return r !== row; });
+          if (t === 'staff') leaderNames();
           if (t === 'visitors') {
             data.prayers = data.prayers.filter(function (p) { return p.visitor_id !== id; });
             data.visitor_notes = data.visitor_notes.filter(function (n) { return n.visitor_id !== id; });

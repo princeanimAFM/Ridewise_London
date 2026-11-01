@@ -140,14 +140,21 @@ end $$;
 drop trigger if exists staff_rules on public.staff;
 create trigger staff_rules before insert or update on public.staff for each row execute function public.staff_rules();
 
--- A newly set leader's name shows on their group.
+-- Each group shows the name of its current leader (the most recently added one).
 create or replace function public.staff_leader_name() returns trigger language plpgsql security definer set search_path = public as $$
+declare g text;
 begin
-  if new.role = 'leader' then update public.groups set leader_name = new.name where id = new.group_id; end if;
+  foreach g in array array[case when tg_op <> 'INSERT' then old.group_id end, case when tg_op <> 'DELETE' then new.group_id end] loop
+    if g is not null then
+      update public.groups set leader_name = coalesce(
+        (select name from public.staff where role = 'leader' and group_id = g order by created_at desc limit 1), '')
+      where id = g;
+    end if;
+  end loop;
   return null;
 end $$;
 drop trigger if exists staff_leader_name on public.staff;
-create trigger staff_leader_name after insert or update of role, group_id, name on public.staff for each row execute function public.staff_leader_name();
+create trigger staff_leader_name after insert or update or delete on public.staff for each row execute function public.staff_leader_name();
 
 -- The team list always keeps at least one pastor.
 create or replace function public.keep_a_pastor() returns trigger language plpgsql security definer set search_path = public as $$

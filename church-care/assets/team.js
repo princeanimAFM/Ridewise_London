@@ -57,7 +57,7 @@
   }
   function groupOptions(sel, blank) {
     return (blank ? '<option value="">' + esc(blank) + '</option>' : '') + S.groups.map(function (g) {
-      return '<option value="' + g.id + '"' + (g.id === sel ? ' selected' : '') + '>' + esc(g.name + ' · ' + g.leader_name) + '</option>';
+      return '<option value="' + g.id + '"' + (g.id === sel ? ' selected' : '') + '>' + esc((g.leader_name ? g.leader_name + ' (' + g.name + ')' : g.name)) + '</option>';
     }).join('');
   }
 
@@ -86,11 +86,12 @@
     $('signout').onclick = function () { Store.signOut().then(function () { location.reload(); }); };
     if (Store.mode === 'demo') {
       $('demo-roles').hidden = false;
-      $('banner').innerHTML = '<div class="banner">Demo with sample people. Nothing leaves this phone. <button class="back" id="reset">Reset</button></div>';
+      $('banner').innerHTML = '<div class="banner"><b>Preview</b> with sample people. Nothing leaves this phone. <button class="back" id="reset">Reset</button> · <a href="team.html?signin=1">See the sign-in screen</a></div>';
       $('reset').onclick = function () { Store.reset(); Care.toast('Sample data reset.'); };
       demoRoles();
       $('role').onchange = function () { Store.setRole(this.value); S.tab = 'overview'; S.groupId = null; signedIn(); };
       Store.subscribe(reload);
+      if (/[?&]signin/.test(location.search)) { $('demo-roles').hidden = true; return signInScreen(); }
       return signedIn();
     }
     Store.onAuth(function () { if (!S.me) boot(); });
@@ -154,7 +155,7 @@
     };
     $('f-code').onsubmit = function (e) {
       e.preventDefault();
-      Store.verify(how, target, $('code').value.trim()).then(boot, function () { $('sign-msg').innerHTML = '<div class="banner bad">That code didn\'t work. Check it, or send a new one.</div>'; });
+      Store.verify(how, target, $('code').value.trim()).then(Store.mode === 'demo' ? function () { location.href = 'team.html'; } : boot, function () { $('sign-msg').innerHTML = '<div class="banner bad">That code didn\'t work. Check it, or send a new one.</div>'; });
     };
     $('again').onclick = function () {
       $('f-start').hidden = false; $('f-code').hidden = true; $('f-start').querySelector('button').disabled = false;
@@ -290,7 +291,7 @@
     return '<span class="pill new">To contact</span>';
   }
   function visitorCard(v) {
-    var where = v.assigned_to ? groupName(v.assigned_to) + ' · ' + leaderOf(v.assigned_to) : (v.group_interest ? 'Interested in ' + groupName(v.group_interest) : 'Not assigned yet');
+    var where = v.assigned_to ? 'Leader: ' + leaderOf(v.assigned_to) : (v.group_interest ? 'Chose ' + groupName(v.group_interest) : 'No leader yet');
     return '<div class="card tap" data-open="visitor:' + v.id + '"><div class="row">' + avatar(v.name) + '<div class="grow"><div class="name">' + esc(v.name) + '</div>' +
       '<div class="meta">Came ' + Care.fmt(day(v.created_at)) + ' · ' + esc(where) + (v.status === 'new' && v.due ? ' · due ' + Care.fmt(v.due) : '') + '</div></div>' + pill(v) + '</div></div>';
   }
@@ -317,15 +318,16 @@
       '<div class="meta">' + (v.phone ? esc(v.phone) + ' · ' : '') + 'came ' + Care.fmt(day(v.created_at)) + (v.source === 'form' ? ' (welcome form)' : '') + '</div>' +
       (v.reason ? '<div class="meta">How they came: ' + esc(v.reason) + '</div>' : '') +
       (v.invited_by ? '<div class="meta">Invited by: ' + esc(v.invited_by) + '</div>' : '') +
-      (v.group_interest ? '<div class="meta">Interested in: ' + esc(groupName(v.group_interest)) + '</div>' : '') +
+      (v.group_interest ? '<div class="meta">Group they chose: ' + esc(groupName(v.group_interest)) + '</div>' : '') +
+      '<div class="meta" style="margin-top:4px"><b>Leader: ' + esc(v.assigned_to ? leaderOf(v.assigned_to) + ' (' + groupName(v.assigned_to) + ')' : 'not given a leader yet') + '</b></div>' +
       (v.status === 'new' && v.due ? '<div class="meta">First contact due by ' + Care.fmt(v.due) + '</div>' : '') +
       (v.reached_at ? '<div class="meta">First reached ' + Care.fmt(v.reached_at) + '</div>' : '') +
       (v.welcomed_at ? '<div class="meta">💬 Welcome sent ' + Care.fmt(day(v.welcomed_at)) + (v.welcomed_by ? ' by ' + esc(v.welcomed_by) : '') + '</div>' : '') +
       '<div class="actions">' + welcomeButton(v) + (v.phone ? '<a class="btn sm alt" href="' + Care.telLink(v.phone) + '">📞 Call</a>' : '') + '</div>';
     if (can('visitors')) {
-      h += '<div class="field"><label for="assign">Group leader</label><select id="assign" data-assign="' + v.id + '">' + groupOptions(v.assigned_to, 'Not assigned yet') + '</select></div>';
+      h += '<div class="field"><label for="assign">' + (v.assigned_to ? 'Change leader' : 'Give her or him a leader') + '</label><select id="assign" data-assign="' + v.id + '">' + groupOptions(v.assigned_to, 'Not assigned yet') + '</select></div>';
     } else {
-      h += '<div class="meta">Leader: ' + esc(v.assigned_to ? leaderOf(v.assigned_to) + ' (' + groupName(v.assigned_to) + ')' : 'not assigned yet; the pastor will choose') + '</div>';
+      if (!v.assigned_to) h += '<div class="meta">The pastor will choose a leader.</div>';
     }
     if (canEdit) {
       h += '<div class="actions">' +
@@ -467,7 +469,7 @@
       '<h2 class="sec">Groups</h2>' + S.groups.map(function (g) {
         var n = S.members.filter(function (m) { return m.group_id === g.id; }).length;
         return '<div class="card tap" data-open="grp:' + g.id + '"><div class="row"><div class="grow"><div class="name">' + esc(g.name) + '</div>' +
-          '<div class="meta">' + esc((g.tag ? g.tag + ' · ' : '') + 'Leader: ' + (g.leader_name || 'not set')) + (n ? ' · ' + n + ' members' : '') + '</div></div><span class="meta">Edit ›</span></div></div>';
+          '<div class="meta">' + esc((g.tag ? g.tag + ' · ' : '') + 'Leader: ' + (g.leader_name || 'not set')) + (n ? ' · ' + n + (n === 1 ? ' member' : ' members') : '') + '</div></div><span class="meta">Edit ›</span></div></div>';
       }).join('') +
       '<div class="actions"><button class="btn alt" data-act="new-group">+ Add a group</button></div>';
   }
@@ -524,13 +526,23 @@
     if (html === null) return closeSheet();
     var sh = $('sheet');
     var f = document.activeElement;
-    if (keep && f && sh.contains(f) && /^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)) return; // don't wipe what they're typing
+    if (keep && f && sh.contains(f) && (f.tagName === 'TEXTAREA' || (f.tagName === 'INPUT' && !/checkbox|radio/.test(f.type)))) return; // don't wipe what they're typing
     var top = keep ? sh.scrollTop : 0;
     sh.innerHTML = '<div class="grab"></div>' + (/^<button class="back" data-open/.test(html) ? '' : '<button class="back" data-close>✕ Close</button>') + html;
     sh.scrollTop = top;
     S.sheet = key;
     $('veil').className = 'veil open';
     if (/^(staff|new-staff)/.test(key)) syncRole();
+  }
+  /** In-app confirmation (browser pop-ups are blocked in some views). */
+  function ask(text, yes) {
+    var sh = $('sheet');
+    sh.innerHTML = '<div class="grab"></div><h2 style="margin-top:8px">Are you sure?</h2><p>' + esc(text) + '</p>' +
+      '<div class="actions"><button class="btn danger" id="ask-yes">Yes, remove</button><button class="btn alt" id="ask-no">Cancel</button></div>';
+    $('veil').className = 'veil open';
+    var back = S.sheet; S.sheet = null;
+    $('ask-yes').onclick = function () { closeSheet(); yes(); };
+    $('ask-no').onclick = function () { if (back) openSheet(back); else closeSheet(); };
   }
   function closeSheet() { S.sheet = null; $('veil').className = 'veil'; $('sheet').innerHTML = ''; }
   function syncRole() { var r = $('ns-role'); if (r) { $('ns-group-f').hidden = r.value !== 'leader'; $('ns-areas-f').hidden = r.value !== 'pa'; } }
@@ -563,11 +575,11 @@
       var q = d.prayed.split(':');
       act(Store.update('prayers', 'id', q[1], { status: q[0] }), q[0] === 'prayed' ? 'Marked prayed for. 🙏' : 'Reopened.');
     } else if (d.delVisitor) {
-      if (confirm('Delete this person\'s record, notes and prayer requests? Use this when someone asks to be removed. It can\'t be undone.')) { closeSheet(); act(Store.remove('visitors', 'id', d.delVisitor), 'Record deleted.'); }
+      ask('Delete this person\'s record, notes and prayer requests? Use this when someone asks to be removed. It can\'t be undone.', function () { closeSheet(); act(Store.remove('visitors', 'id', d.delVisitor), 'Record deleted.'); });
     } else if (d.delMember) {
-      if (confirm('Remove this member from the list? Their attendance history goes too.')) { closeSheet(); act(Store.remove('members', 'id', d.delMember), 'Removed.'); }
+      ask('Remove this member from the list? Their attendance history goes too.', function () { closeSheet(); act(Store.remove('members', 'id', d.delMember), 'Removed.'); });
     } else if (d.delStaff) {
-      if (confirm('Remove this person from the team? They will lose access straight away.')) { openSheet('team'); act(Store.remove('staff', 'id', d.delStaff), 'Removed from the team.'); }
+      ask('Remove this person from the team? They will lose access straight away.', function () { openSheet('team'); act(Store.remove('staff', 'id', d.delStaff), 'Removed from the team.'); });
     }
   });
 
@@ -575,6 +587,7 @@
     var t = e.target;
     if (t.id === 'day') { S.day = t.value || Care.today(); render(); }
     else if (t.dataset.assign) {
+      t.blur();
       var g = t.value || null;
       act(Store.update('visitors', 'id', t.dataset.assign, { assigned_to: g }), g ? 'Assigned to ' + leaderOf(g) + '. They have ' + C.followDays + ' days to make contact.' : 'Unassigned.');
     } else if (t.dataset.passprayer) {
