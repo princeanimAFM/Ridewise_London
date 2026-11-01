@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welcome · The AFM Church</title>
+<meta name="description" content="Welcome to The AFM Church. Get the AFM HUB app, visit our website, and tell us a little about you.">
+<meta name="theme-color" content="#0b5cff">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=Fraunces:opsz,wght@9..144,600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="app" style="padding-bottom:32px">
+  <header>
+    <div class="brand">
+      <img src="assets/logo.png" alt="">
+      <div>
+        <h1>You're welcome!</h1>
+        <div class="sub" id="church"></div>
+      </div>
+    </div>
+  </header>
+  <div id="demo" class="banner" hidden>Demo mode: what you send stays in this browser only.</div>
+
+  <div class="links">
+    <a class="btn" id="l-play" target="_blank" rel="noopener">📱 Get the AFM HUB app<small>Free on Google Play: sermons, the Bible, live services</small></a>
+    <a class="btn alt" id="l-web" target="_blank" rel="noopener">💻 Open AFM HUB in your browser<small>For iPhone or any device</small></a>
+    <a class="btn alt" id="l-site" target="_blank" rel="noopener">⛪ Church website<small>theafmchurch.org</small></a>
+  </div>
+
+  <div class="chips" role="tablist">
+    <button class="chip" id="t-welcome" aria-pressed="true">First time here?</button>
+    <button class="chip" id="t-prayer" aria-pressed="false">Prayer request</button>
+  </div>
+
+  <form id="f-welcome" class="card" novalidate>
+    <h2 style="margin-top:4px">Tell us about you</h2>
+    <p class="meta">We'd love to welcome you properly. It takes a minute.</p>
+    <div class="field"><label for="w-name">Your name</label><input id="w-name" type="text" autocomplete="name" maxlength="80" required></div>
+    <div class="field"><label for="w-phone">WhatsApp number</label><input id="w-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="024 123 4567" maxlength="20" required></div>
+    <div class="field"><label for="w-reason">How did you hear about us?</label><select id="w-reason"><option value="">Choose one (optional)</option></select></div>
+    <div class="field"><label for="w-invited">Who invited you? (optional)</label><input id="w-invited" type="text" maxlength="80"></div>
+    <div class="field"><label for="w-group">Would you like to join a group? (optional)</label><select id="w-group"><option value="">Not sure yet</option></select></div>
+    <div class="field"><label for="w-prayer">Anything we can pray with you about? (optional)</label><textarea id="w-prayer" maxlength="1000"></textarea></div>
+    <div class="hp" aria-hidden="true"><label>Leave empty<input id="w-hp" type="text" tabindex="-1" autocomplete="off"></label></div>
+    <label class="check"><input id="w-consent" type="checkbox"><span class="consent"></span></label>
+    <div id="w-msg"></div>
+    <button class="btn wide" style="margin-top:12px" type="submit">Send</button>
+  </form>
+
+  <form id="f-prayer" class="card" novalidate hidden>
+    <h2 style="margin-top:4px">Prayer request</h2>
+    <p class="meta">Only our pastor and ministry team read prayer requests.</p>
+    <div class="field"><label for="p-body">Your prayer request</label><textarea id="p-body" maxlength="1000" required style="min-height:110px"></textarea></div>
+    <div class="field"><label for="p-name">Your name (optional)</label><input id="p-name" type="text" autocomplete="name" maxlength="80"></div>
+    <div class="field"><label for="p-phone">WhatsApp number, if you'd like us to reach you (optional)</label><input id="p-phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20"></div>
+    <div class="hp" aria-hidden="true"><label>Leave empty<input id="p-hp" type="text" tabindex="-1" autocomplete="off"></label></div>
+    <label class="check"><input id="p-consent" type="checkbox"><span class="consent"></span></label>
+    <div id="p-msg"></div>
+    <button class="btn wide" style="margin-top:12px" type="submit">Send prayer request</button>
+  </form>
+
+  <details class="card">
+    <summary><b>How we look after your details</b></summary>
+    <div class="meta" style="margin-top:8px" id="privacy"></div>
+  </details>
+  <p class="foot"><a href="team.html">Church team sign in</a></p>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/welcome.js"></script>
+</body>
+</html>
