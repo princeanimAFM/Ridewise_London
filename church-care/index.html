@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Welcome · The AFM Church</title>
+<meta name="description" content="Welcome to The AFM Church, Alleluia Faith Mission Global Assembly. Get the AFM HUB app, visit our website and tell us a little about you.">
+<meta name="theme-color" content="#061F4A">
+<meta property="og:title" content="Welcome to The AFM Church">
+<meta property="og:description" content="It was really good to have you with us. Get the AFM HUB app and stay connected.">
+<meta property="og:image" content="assets/icon-512.png">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<div class="bar"><div class="wrap">
+  <img src="assets/wordmark-white.png" alt="The AFM Church">
+</div></div>
+
+<div class="hero"><div class="wrap">
+  <div class="text">
+    <h1>You are <span>welcome</span> to The AFM Church</h1>
+    <p>We're glad you're here. Please tell us a little about you.</p>
+  </div>
+  <div class="photo">
+    <img src="assets/prophet.png" alt="Prophet Micah Felix Azanduna">
+    <div class="name"><b>Prophet Micah Felix Azanduna</b><span>D.D · LEAD PASTOR</span></div>
+  </div>
+</div></div>
+
+<div class="wrap">
+  <div id="demo" class="banner" hidden><b>Preview:</b> what you send stays on this phone only. <a href="team.html">Open the team app</a></div>
+
+  <section id="form" style="padding-top:14px">
+    <div class="chips" role="tablist">
+      <button class="chip" id="t-welcome" aria-pressed="true">👋 I'm new here</button>
+      <button class="chip" id="t-prayer" aria-pressed="false">🙏 Prayer request</button>
+    </div>
+
+    <form id="f-welcome" class="card top" novalidate>
+      <div class="field"><label for="w-name">Your name</label><input id="w-name" type="text" autocomplete="name" maxlength="80" required></div>
+      <div class="field"><label for="w-phone">WhatsApp number</label><input id="w-phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="024 123 4567" maxlength="20" required></div>
+      <div class="field"><label for="w-reason">How did you hear about us? (optional)</label><select id="w-reason"><option value="">Choose one</option></select></div>
+      <div class="field"><label for="w-invited">Who invited you? (optional)</label><input id="w-invited" type="text" maxlength="80"></div>
+      <div class="field"><label for="w-group">Would you like to join a group? (optional)</label><select id="w-group"><option value="">Not sure yet</option></select></div>
+      <div class="field"><label for="w-prayer">Anything we can pray with you about? (optional)</label><textarea id="w-prayer" maxlength="1000"></textarea></div>
+      <div class="field" id="w-prayer-to-f" hidden><label for="w-prayer-to">Who should read your prayer request?</label>
+        <select id="w-prayer-to"><option value="pastor">🔒 Only the pastor</option><option value="leader">The pastor and my group leader</option></select></div>
+      <div class="hp" aria-hidden="true"><label>Leave empty<input id="w-hp" type="text" tabindex="-1" autocomplete="off"></label></div>
+      <label class="check"><input id="w-consent" type="checkbox"><span class="consent"></span></label>
+      <div id="w-msg"></div>
+      <button class="btn blue wide" style="margin-top:14px" type="submit">Send</button>
+    </form>
+
+    <form id="f-prayer" class="card top gold" novalidate hidden>
+      <div class="field"><label for="p-body">Your prayer request</label><textarea id="p-body" maxlength="1000" required style="min-height:120px"></textarea></div>
+      <div class="field"><label for="p-to">Send it to</label><select id="p-to"><option value="pastor">🔒 The pastor only</option></select></div>
+      <div class="field"><label for="p-name">Your name (optional)</label><input id="p-name" type="text" autocomplete="name" maxlength="80"></div>
+      <div class="field"><label for="p-phone">WhatsApp number, if you'd like us to reach you (optional)</label><input id="p-phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20"></div>
+      <div class="hp" aria-hidden="true"><label>Leave empty<input id="p-hp" type="text" tabindex="-1" autocomplete="off"></label></div>
+      <label class="check"><input id="p-consent" type="checkbox"><span class="consent"></span></label>
+      <p class="meta" id="p-who">Only the person you choose reads it. If you choose the pastor, it stays private to him and the pastor's office.</p>
+      <div id="p-msg"></div>
+      <button class="btn blue wide" style="margin-top:6px" type="submit">Send prayer request</button>
+    </form>
+
+    <details style="margin-top:6px">
+      <summary class="meta">How we look after your details</summary>
+      <div class="meta" style="margin-top:8px" id="privacy"></div>
+    </details>
+  </section>
+
+  <!-- The welcome letter and prayer appear here after they send the form -->
+  <section style="padding-top:0" id="letter-sec" hidden>
+    <div class="letter" id="letter"></div>
+  </section>
+
+  <div id="after">
+
+    <section style="padding-top:0" id="programs-sec" hidden>
+      <div class="kicker">Special programs</div>
+      <h2 class="title">Coming up</h2>
+      <div id="programs" style="margin-top:12px"></div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="kicker">Weekly services</div>
+      <h2 class="title">Join us again</h2>
+      <div id="services" style="margin-top:14px"></div>
+    </section>
+
+    <section style="padding-top:0">
+      <div class="kicker">Stay connected</div>
+      <h2 class="title">Take the church with you</h2>
+      <p class="lead">Sermons, the Holy Bible, live services, daily quotes and church news, all in one free app.</p>
+      <div class="appcard">
+        <img class="shot" src="assets/app.jpg" alt="The AFM HUB app on a phone">
+        <div>
+          <div class="hubrow"><img src="assets/hub-logo.png" alt=""><b>The AFM HUB</b></div>
+          <h3>Get the app</h3>
+          <p>Free on Google Play. Tap to install.</p>
+          <a class="btn white" id="l-play" target="_blank" rel="noopener">▶ Google Play</a>
+        </div>
+      </div>
+      <div class="linkrow">
+        <a id="l-web" target="_blank" rel="noopener"><i>📱</i><b>iPhone or computer</b><span>Open AFM HUB in your browser</span></a>
+        <a id="l-site" target="_blank" rel="noopener"><i>⛪</i><b>Church website</b><span>theafmchurch.org</span></a>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<footer class="foot">
+  <img src="assets/wordmark-white.png" alt="The AFM Church">
+  <div id="foot"></div>
+  <p><a href="team.html">Church team sign in</a></p>
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/common.js"></script>
+<script src="assets/messages.js"></script>
+<script src="assets/store.js"></script>
+<script src="assets/welcome.js"></script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+{
+  "name": "The AFM HUB",
+  "minister": "Prophet Micah Felix Azanduna (D.D)",
+  "tagline": "Raising spiritually grounded and purpose-driven men and women.",
+  "theme": {
+    "year": "2026",
+    "title": "Our Year of the Blessing"
+  },
+  "email": "theafmfamily@gmail.com",
+  "givingUrl": "https://www.paypal.com/paypalme/AfmDiaspora",
+  "giving": [
+    {
+      "label": "PayPal",
+      "value": "@AfmDiaspora",
+      "url": "https://www.paypal.com/paypalme/AfmDiaspora"
+    },
+    {
+      "label": "Cash App",
+      "value": "$AsuamahRuth",
+      "url": "https://cash.app/$AsuamahRuth"
+    },
+    {
+      "label": "MTN Mobile Money (MoMo)",
+      "value": "0554405880",
+      "url": ""
+    },
+    {
+      "label": "Telecel Cash (V Cash)",
+      "value": "0506023820",
+      "url": ""
+    },
+    {
+      "label": "Bank transfer — Fidelity Bank",
+      "value": "2030801199719",
+      "url": ""
+    }
+  ],
+  "appUrl": "https://theafmchurch.org",
+  "sermonsUrl": "https://theafmpodcast.podbean.com/",
+  "socials": [
+    {
+      "label": "YouTube",
+      "url": "https://youtube.com/@thebrandmicah"
+    },
+    {
+      "label": "The AFM Podcast",
+      "url": "https://theafmpodcast.podbean.com/"
+    },
+    {
+      "label": "Spotify",
+      "url": "https://open.spotify.com/show/6WjSecJ6T3ZQBASwTDI1Bc"
+    },
+    {
+      "label": "Telegram",
+      "url": "https://t.me/rabbimicah"
+    },
+    {
+      "label": "Apple Podcasts",
+      "url": "https://podcasts.apple.com/us/podcast/the-afm-podcast/id1895848727"
+    },
+    {
+      "label": "Facebook",
+      "url": "https://www.facebook.com/share/1MbmmFb6Nx/"
+    },
+    {
+      "label": "Instagram",
+      "url": "https://www.instagram.com/thebrandafm"
+    },
+    {
+      "label": "TikTok (@dr_micah_azanduna)",
+      "url": "https://www.tiktok.com/@dr_micah_azanduna"
+    },
+    {
+      "label": "TikTok (@rabbiazanduna)",
+      "url": "https://www.tiktok.com/@rabbiazanduna"
+    }
+  ]
+}
