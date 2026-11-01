@@ -21,6 +21,8 @@
       '<p>' + Care.esc(window.CareWords.prayer(first)) + '</p><span class="amen">Amen. 🙏</span></div>';
   }
   $('letter').innerHTML = letter('friend');
+  $('p-to').options[0].textContent = '🔒 ' + C.pastor.replace(' D.D', '') + ' (the pastor) only';
+  $('w-prayer').addEventListener('input', function () { $('w-prayer-to-f').hidden = !this.value.trim(); });
   $('l-play').href = C.links.playStore;
   $('l-web').href = C.links.webApp;
   $('l-site').href = C.links.website;
@@ -31,12 +33,16 @@
   $('privacy').innerHTML =
     '<p>' + Care.esc(C.church) + ' (' + Care.esc(C.churchFull) + ') keeps what you send here to welcome you, follow up with you and pray with you. ' +
     'It is never sold or shared outside the church.</p>' +
-    '<p>Our pastor, ' + Care.esc(C.pastor) + ', sees it, and so does the leader of the group you are placed in. Prayer requests are read only by the pastor and the ministry team caring for you.</p>' +
+    '<p>Our pastor, ' + Care.esc(C.pastor) + ', and his office see it, and so does the leader of the group you are placed in. ' +
+    'You choose who reads a prayer request: the pastor only, or your group leader.</p>' +
     '<p>We keep your details while you are part of the church family. To see, correct or remove them, tell any church leader or the welcome team, and the pastor will do it.</p>';
 
   C.reasons.forEach(function (r) { var o = document.createElement('option'); o.textContent = r; o.value = r; $('w-reason').appendChild(o); });
   Store.groups().then(function (gs) {
-    gs.forEach(function (g) { var o = document.createElement('option'); o.value = g.id; o.textContent = g.name + (g.tag ? ' (' + g.tag + ')' : ''); $('w-group').appendChild(o); });
+    gs.forEach(function (g) {
+      var o = document.createElement('option'); o.value = g.id; o.textContent = g.name + (g.tag ? ' (' + g.tag + ')' : ''); $('w-group').appendChild(o);
+      var p = document.createElement('option'); p.value = g.id; p.textContent = 'My group leader: ' + (g.leader_name ? g.leader_name + ', ' : '') + g.name; $('p-to').appendChild(p);
+    });
   });
 
   function tab(which) {
@@ -57,7 +63,7 @@
     e.preventDefault();
     var f = this, o = {
       name: $('w-name').value.trim(), phone: $('w-phone').value.trim(), reason: $('w-reason').value,
-      invited_by: $('w-invited').value.trim(), group_interest: $('w-group').value, prayer: $('w-prayer').value.trim(), consent: $('w-consent').checked
+      invited_by: $('w-invited').value.trim(), group_interest: $('w-group').value, prayer: $('w-prayer').value.trim(), prayer_to: $('w-prayer-to').value, consent: $('w-consent').checked
     };
     if (!o.name) return msg('w-msg', 'bad', 'Please enter your name.');
     if (digits(o.phone) < 9 || digits(o.phone) > 15) return msg('w-msg', 'bad', 'Please enter your WhatsApp number, for example 024 123 4567.');
@@ -79,7 +85,7 @@
 
   $('f-prayer').onsubmit = function (e) {
     e.preventDefault();
-    var f = this, o = { body: $('p-body').value.trim(), name: $('p-name').value.trim(), phone: $('p-phone').value.trim(), consent: $('p-consent').checked };
+    var f = this, o = { body: $('p-body').value.trim(), to: $('p-to').value, name: $('p-name').value.trim(), phone: $('p-phone').value.trim(), consent: $('p-consent').checked };
     if (!o.body) return msg('p-msg', 'bad', 'Please write your prayer request.');
     if (o.phone && (digits(o.phone) < 9 || digits(o.phone) > 15)) return msg('p-msg', 'bad', 'That WhatsApp number looks too short. Check it, or leave it empty.');
     if (!o.consent) return msg('p-msg', 'bad', 'Please tick the box so we can keep your request.');
@@ -90,7 +96,7 @@
       var first = o.name ? Care.first(o.name) : 'friend';
       f.className = 'card top green';
       f.innerHTML = '<div class="kicker">Received</div><h2 class="title">We are standing with you in prayer</h2>' +
-        '<p class="lead">Your request has reached our pastor and ministry team.' + (o.phone ? ' Someone may reach you on WhatsApp.' : '') + '</p>' +
+        '<p class="lead">Your request has reached ' + (o.to === 'pastor' ? 'our pastor' : 'your group leader') + '.' + (o.phone ? ' Someone may reach you on WhatsApp.' : '') + '</p>' +
         prayerCard(first) + '<p class="meta" style="margin-top:12px">\u201CThe effectual fervent prayer of a righteous man availeth much.\u201D James 5:16</p>';
     }
   };

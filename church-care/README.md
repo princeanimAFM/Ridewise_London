@@ -23,12 +23,21 @@ the prayer, the app and website links and service times, and marks them as welco
 
 Enforced by the database (`supabase/schema.sql`), not just hidden in the app:
 
-- **Pastor:** everything; assigns visitors and prayer requests to group leaders; manages the team list; can delete a person's record when they ask.
-- **Welcome team:** adds visitors and sees the visitor list. Can add a prayer request but can't read any.
+- **Pastor:** everything. Sets everything up in the app (Home → Team & groups): adds group leaders, a PA and the
+  welcome team by WhatsApp number or email, renames groups and adds new ones, and can delete a person's record when they ask.
+- **PA:** only the areas the pastor ticks, in any mix: *Visitors* (all visitors, giving them a leader), *Groups*
+  (every group's members, attendance and Away list), *Group prayer requests*, *Prayer requests to the pastor*.
+  A PA can't change the team list, so can't give themselves more access.
 - **Group leader:** only their own group's visitors, members and prayer requests.
+- **Welcome team:** adds visitors and sends welcome messages. Can add a prayer request but can't read any.
 - **Visitors:** can only send the two forms. They can never read anything back.
 
-A visitor's prayer request goes to the same leader as the visitor once the pastor assigns them. New visitors are due a first contact within 2 days of assignment; members unseen for 3 weeks show on the Away list (both set in `assets/config.js`).
+**Prayer requests:** the sender chooses who reads it. "The pastor only" stays with the pastor (and a PA he allows);
+it is never passed to a leader. "My group leader" goes to the leader of the group they pick (on the prayer form), or to
+whichever leader they are given (on the welcome form).
+
+New visitors are due a first contact within 2 days of assignment; members unseen for 3 weeks show on the Away list
+(both set in `assets/config.js`).
 
 ## Try it
 
@@ -40,11 +49,15 @@ Serve the folder (for example `python3 -m http.server`) and open `team.html`; sw
 1. Create a free Supabase project (region: closest to Ghana, e.g. EU West / London). Free projects pause after
    7 days with no use; weekly services keep it active.
 2. Run `supabase/schema.sql` in the SQL editor (safe to run again after changes).
-3. Add the pastor: `insert into staff (email, name, role) values ('pastor@example.com', 'Prophet Micah Felix Azanduna D.D', 'pastor');`
-   Everyone else is added from the app (Overview → Team list).
-4. Authentication → URL configuration: set Site URL to the address of `team.html`.
-   Authentication → Email templates → Magic link: add `Your code: {{ .Token }}` so people can type the code
-   (a code works better than the link when the app is on the home screen).
+3. Add the pastor: `insert into staff (name, phone, email, role) values ('Prophet Micah Felix Azanduna D.D', '024xxxxxxx', 'pastor@example.com', 'pastor');`
+   (phone, email or both). Everyone else is added from the app (Home → Team & groups).
+4. Sign-in codes:
+   - **WhatsApp:** Supabase → Authentication → Sign In / Providers → Phone: turn it on and choose Twilio. In Twilio,
+     set up a WhatsApp sender (Twilio's sandbox works for testing; for everyone, Meta approves the church's WhatsApp
+     Business sender). Twilio and Meta charge a small fee per code sent.
+   - **Email (free):** Authentication → URL configuration: set Site URL to the address of `team.html`.
+     Email templates → Magic link: add `Your code: {{ .Token }}` so people can type the code.
+   - To offer only one of the two, set `signIn` in `assets/config.js`.
 5. Put the project URL and anon key in `assets/config.js`.
 6. Host the folder on any static host (GitHub Pages works) and make the QR code from the address of `index.html`.
 

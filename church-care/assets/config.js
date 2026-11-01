@@ -5,6 +5,9 @@ window.CARE_CONFIG = {
   supabaseUrl: '',
   supabaseAnonKey: '',
 
+  // How the team gets sign-in codes. WhatsApp needs Twilio set up in Supabase (see README).
+  signIn: { whatsapp: true, email: true },
+
   church: 'The AFM Church',
   churchFull: 'Alleluia Faith Mission Global Assembly',
   pastor: 'Prophet Micah Felix Azanduna D.D',
@@ -27,12 +30,13 @@ window.CARE_CONFIG = {
   // Used in demo mode and if the group list can't be loaded. The live list is in the database.
   groups: [
     { id: 'g1', name: 'Archbishop Nicholas Duncan-Williams', tag: '', leader_name: 'Prophet Richmond Taku' },
-    { id: 'g2', name: 'David Oyedepo', tag: '', leader_name: 'Elijah Antwi' },
-    { id: 'g3', name: 'Prophet Miracle Damoah', tag: '', leader_name: 'Prophet Elijah' },
+    { id: 'g2', name: 'Bishop David Oyedepo', tag: '', leader_name: 'Elijah Antwi' },
+    { id: 'g3', name: 'Prophet Miracle Damoah Godfred', tag: '', leader_name: 'Prophet Elijah' },
     { id: 'g4', name: 'Dr. Mike Murdock', tag: '', leader_name: 'Mr. Owusu Erga' },
     { id: 'wog', name: 'Women of Glory', tag: "Women's Fellowship", leader_name: 'Madam Millicent' },
     { id: 'sg', name: 'Stoic Gentleman', tag: "Men's Fellowship", leader_name: 'Mr. Owusu Geoffery' },
-    { id: 'prov', name: 'The Providence', tag: 'Church Choir', leader_name: 'Caljay Music' }
+    { id: 'prov', name: 'The Providence', tag: 'Church Choir', leader_name: 'Caljay Music' },
+    { id: 'dia', name: 'The AFM Diaspora', tag: '', leader_name: 'David Annor' }
   ],
   reasons: ['Invited by a member', 'Saw the church online', 'Passing by', 'Came with family', 'Other'],
 

@@ -76,6 +76,8 @@
       <div class="field"><label for="w-invited">Who invited you? (optional)</label><input id="w-invited" type="text" maxlength="80"></div>
       <div class="field"><label for="w-group">Would you like to join a group? (optional)</label><select id="w-group"><option value="">Not sure yet</option></select></div>
       <div class="field"><label for="w-prayer">Anything we can pray with you about? (optional)</label><textarea id="w-prayer" maxlength="1000"></textarea></div>
+      <div class="field" id="w-prayer-to-f" hidden><label for="w-prayer-to">Who should read your prayer request?</label>
+        <select id="w-prayer-to"><option value="pastor">🔒 Only the pastor</option><option value="leader">The pastor and my group leader</option></select></div>
       <div class="hp" aria-hidden="true"><label>Leave empty<input id="w-hp" type="text" tabindex="-1" autocomplete="off"></label></div>
       <label class="check"><input id="w-consent" type="checkbox"><span class="consent"></span></label>
       <div id="w-msg"></div>
@@ -84,11 +86,12 @@
 
     <form id="f-prayer" class="card top gold" novalidate hidden>
       <div class="field"><label for="p-body">Your prayer request</label><textarea id="p-body" maxlength="1000" required style="min-height:120px"></textarea></div>
+      <div class="field"><label for="p-to">Send it to</label><select id="p-to"><option value="pastor">🔒 The pastor only</option></select></div>
       <div class="field"><label for="p-name">Your name (optional)</label><input id="p-name" type="text" autocomplete="name" maxlength="80"></div>
       <div class="field"><label for="p-phone">WhatsApp number, if you'd like us to reach you (optional)</label><input id="p-phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="20"></div>
       <div class="hp" aria-hidden="true"><label>Leave empty<input id="p-hp" type="text" tabindex="-1" autocomplete="off"></label></div>
       <label class="check"><input id="p-consent" type="checkbox"><span class="consent"></span></label>
-      <p class="meta">Only our pastor and the ministry team caring for you read prayer requests.</p>
+      <p class="meta" id="p-who">Only the person you choose reads it. If you choose the pastor, it stays private to him and the pastor's office.</p>
       <div id="p-msg"></div>
       <button class="btn blue wide" style="margin-top:6px" type="submit">Send prayer request</button>
     </form>
