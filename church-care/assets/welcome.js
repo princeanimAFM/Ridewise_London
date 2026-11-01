@@ -1,10 +1,10 @@
-/* The page the QR code opens: app and website links, the welcome form and a prayer request form. */
+/* The page the QR code opens: a short welcome and two forms. After sending, they see the welcome letter, a prayer,
+   the app and website links, special programs and service times. */
 (function () {
   'use strict';
   var C = window.CARE_CONFIG, Care = window.Care, Store = window.Store;
   function $(id) { return document.getElementById(id); }
 
-  $('theme').textContent = C.themeOfTheYear;
   $('foot').innerHTML = Care.esc(C.churchFull) + '<br>' + Care.esc(C.place);
   $('services').innerHTML = C.services.map(function (x, i) {
     return '<div class="card top ' + ['', 'red', 'sky'][i % 3] + '"><div class="svc"><span class="big">' + Care.esc(x.day) + '</span>' +
@@ -31,7 +31,14 @@
     return '<div class="prayer"><div class="kicker">A prayer for you</div><h3>We are praying for you, ' + Care.esc(first) + '</h3>' +
       '<p>' + Care.esc(window.CareWords.prayer(first)) + '</p><span class="amen">Amen. 🙏</span></div>';
   }
-  $('letter').innerHTML = letter('friend');
+  function showAfter(withLetter, first) {
+    $('after').hidden = false;
+    $('letter').parentNode.hidden = !withLetter;
+    if (withLetter) {
+      $('letter').innerHTML = letter(first);
+      if (!document.querySelector('#letter + .prayer')) $('letter').insertAdjacentHTML('afterend', prayerCard(first));
+    }
+  }
   $('p-to').options[0].textContent = '🔒 ' + C.pastor.replace(' D.D', '') + ' (the pastor) only';
   $('w-prayer').addEventListener('input', function () { $('w-prayer-to-f').hidden = !this.value.trim(); });
   $('l-play').href = C.links.playStore;
@@ -88,8 +95,8 @@
       f.className = 'card top green';
       f.innerHTML = '<div class="kicker">Thank you</div><h2 class="title">We\'re so glad you came, ' + Care.esc(first) + '!</h2>' +
         '<p class="lead" style="margin-bottom:0">Someone from the church will message you on WhatsApp within two days.</p>';
-      $('letter').innerHTML = letter(first);
-      $('letter').insertAdjacentHTML('afterend', prayerCard(first));
+      showAfter(true, first);
+      document.querySelector('#form details').hidden = true;
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
@@ -109,6 +116,9 @@
       f.innerHTML = '<div class="kicker">Received</div><h2 class="title">We are standing with you in prayer</h2>' +
         '<p class="lead">Your request has reached ' + (o.to === 'pastor' ? 'our pastor' : 'your group leader') + '.' + (o.phone ? ' Someone may reach you on WhatsApp.' : '') + '</p>' +
         prayerCard(first) + '<p class="meta" style="margin-top:12px">\u201CThe effectual fervent prayer of a righteous man availeth much.\u201D James 5:16</p>';
+      document.querySelector('.chips').hidden = true;
+      document.querySelector('#form details').hidden = true;
+      showAfter(false);
     }
   };
 })();
