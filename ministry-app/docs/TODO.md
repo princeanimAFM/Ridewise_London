@@ -8,6 +8,18 @@ Ideas agreed with the owner, to build later. Nothing here is started or publishe
 - Remove the unused microphone permission (RECORD_AUDIO, added by expo-audio by default; the app only plays audio) so Play doesn't ask about it.
 - Google Play app quality requirements (memory use and code optimisation), deadline February 2027: check the version 9 build against them (R8 shrinking is already on since version 8).
 
+## Apple App Store (with version 9, November)
+- Apple Developer Program for the church ($99 a year). Enrolling as an organisation needs the church's D-U-N-S number (free from Dun & Bradstreet, takes a few days); an individual account is quicker but shows a person's name on the store.
+- App Store Connect: create the app (bundle ID `com.afm.hub`, already set in app.json), privacy policy link (afm-hub.expo.app/privacy.html), privacy labels, age rating, support URL.
+- Sign in with Apple: the app offers Google sign-in, so Apple requires Sign in with Apple as well (guideline 4.8). Add it on iPhone (expo-apple-authentication + Supabase Apple provider).
+- Give screen: Apple doesn't allow in-app donations unless the church is an approved nonprofit (guideline 3.2.2). On iPhone, show the bank and MoMo details as information only, or link to the website's giving section.
+- Push notifications on iPhone: EAS creates the Apple push key during the first iOS build.
+- Screenshots for 6.9" and 6.5" iPhones (and 13" iPad while iPad is supported; or turn iPad off).
+- `eas build -p ios --profile production`, test on TestFlight, then `eas submit -p ios`. Over-the-air updates then reach iPhones the same way as Android.
+
+## Church Care (separate web app in /church-care)
+- Preview approved by the pastor? Then: Supabase project, sign-in codes (WhatsApp via Twilio, or email), hosting at theafmchurch.org/welcome, QR code.
+
 ## Google Play account
 - Declare trader status in Play Console (Google requires it from November 2026, email of 29 October 2026). Owner to choose trader or non-trader.
 

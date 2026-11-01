@@ -72,11 +72,33 @@ create table if not exists public.members (
   created_at timestamptz not null default now()
 );
 create index if not exists members_group on public.members (group_id);
+-- Set when a member joins the app through their group's invite link.
+alter table public.members add column if not exists login_phone   text;
+alter table public.members add column if not exists login_email   text;
+alter table public.members add column if not exists joined_app_at timestamptz;
+alter table public.members add column if not exists last_app_at   timestamptz;
+create unique index if not exists members_login_phone on public.members (group_id, login_phone) where login_phone is not null;
+create unique index if not exists members_login_email on public.members (group_id, login_email) where login_email is not null;
 
 create table if not exists public.attendance (
   member_id uuid not null references public.members(id) on delete cascade,
   seen_on   date not null default current_date,
   primary key (member_id, seen_on)
+);
+
+alter table public.staff add column if not exists joined_app_at timestamptz;
+alter table public.staff add column if not exists last_app_at   timestamptz;
+
+-- Invite links. 'leader': one person, one use, made by the pastor. 'member': the group's join link, shared freely.
+create table if not exists public.invites (
+  token      text primary key default replace(gen_random_uuid()::text, '-', ''),
+  kind       text not null check (kind in ('leader', 'member')),
+  group_id   text not null references public.groups(id) on delete cascade,
+  created_by text not null default '',
+  created_at timestamptz not null default now(),
+  used_at    timestamptz,
+  used_by    text,
+  revoked    boolean not null default false
 );
 
 -- to_pastor: the person asked for only the pastor (and a PA he allows) to read it.
@@ -94,6 +116,7 @@ create table if not exists public.prayers (
   check (not (to_pastor and assigned_to is not null))
 );
 create index if not exists prayers_assigned on public.prayers (assigned_to);
+alter table public.prayers add column if not exists member_id uuid references public.members(id) on delete set null;
 
 -- ---------- who is signed in ----------
 -- Phone numbers are kept as international digits (233241234567), as the sign-in system gives them.
@@ -235,6 +258,7 @@ begin
     else
       new.source := 'team';
       new.visitor_id := null;
+      if current_setting('care.member', true) is distinct from '1' then new.member_id := null; end if;
       if r = 'leader' and not new.to_pastor then new.assigned_to := public.my_group(); end if;
       if r = 'welcome' then new.assigned_to := null; end if;
     end if;
@@ -249,7 +273,7 @@ begin
     if not public.has_area('prayer_groups') and current_setting('care.follow', true) is distinct from '1' then raise exception 'Only the pastor can pass a prayer request to a group'; end if;
   end if;
   if new.body is distinct from old.body or new.source is distinct from old.source or new.created_at is distinct from old.created_at
-     or new.visitor_id is distinct from old.visitor_id then
+     or new.visitor_id is distinct from old.visitor_id or new.member_id is distinct from old.member_id then
     raise exception 'A prayer request cannot be rewritten';
   end if;
   return new;
@@ -288,8 +312,10 @@ alter table public.visitor_notes enable row level security;
 alter table public.members       enable row level security;
 alter table public.attendance    enable row level security;
 alter table public.prayers       enable row level security;
+alter table public.invites       enable row level security;   -- no policies: only the functions below use it
 
 -- Nobody without a login reads or writes tables directly; the public forms use the functions below.
+revoke all on public.invites from anon, authenticated;
 revoke all on public.groups, public.staff, public.visitors, public.visitor_notes, public.members, public.attendance, public.prayers from anon;
 grant select on public.groups to anon;
 
@@ -416,6 +442,147 @@ begin
 end $$;
 revoke all on function public.mark_welcomed(uuid) from public, anon;
 grant execute on function public.mark_welcomed(uuid) to authenticated;
+
+-- ---------- the app for everyone: who am I, invite links, members ----------
+create or replace function public.my_login_phone() returns text language sql stable as $$ select public.intl_phone(nullif(auth.jwt() ->> 'phone', '')) $$;
+create or replace function public.my_login_email() returns text language sql stable as $$ select lower(nullif(auth.jwt() ->> 'email', '')) $$;
+
+-- Group memberships of the signed-in person (a person can be in more than one group).
+create or replace function public.my_member_groups() returns setof text language sql stable security definer set search_path = public as $$
+  select group_id from public.members
+  where (login_phone is not null and login_phone = public.my_login_phone()) or (login_email is not null and login_email = public.my_login_email())
+$$;
+
+-- Called when the app opens: says who you are and records that you use the app.
+create or replace function public.whoami() returns jsonb language plpgsql security definer set search_path = public as $$
+declare st public.staff := public.me(); ph text := public.my_login_phone(); em text := public.my_login_email(); gs jsonb;
+begin
+  if ph is null and em is null then return null; end if;
+  if st.id is not null then
+    update public.staff set joined_app_at = coalesce(joined_app_at, now()), last_app_at = now() where id = st.id;
+    return jsonb_build_object('kind', 'staff', 'id', st.id, 'name', st.name, 'role', st.role, 'group_id', st.group_id, 'areas', to_jsonb(st.areas), 'email', st.email, 'phone', st.phone);
+  end if;
+  update public.members set last_app_at = now()
+   where (login_phone is not null and login_phone = ph) or (login_email is not null and login_email = em);
+  select jsonb_agg(jsonb_build_object('member_id', m.id, 'group_id', m.group_id) order by m.joined_app_at), min(m.name)
+    into gs from public.members m
+   where (m.login_phone is not null and m.login_phone = ph) or (m.login_email is not null and m.login_email = em);
+  if gs is null then return null; end if;
+  return jsonb_build_object('kind', 'member', 'role', 'member', 'name',
+    (select name from public.members where (login_phone = ph or login_email = em) order by joined_app_at limit 1), 'groups', gs);
+end $$;
+
+-- Make (or fetch) an invite link token.
+create or replace function public.create_invite(p_group text, p_kind text) returns text language plpgsql security definer set search_path = public as $$
+declare r text := public.my_role(); t text;
+begin
+  if not exists (select 1 from public.groups where id = p_group) then raise exception 'That group does not exist'; end if;
+  if p_kind = 'leader' then
+    if r is distinct from 'pastor' then raise exception 'Only the pastor can invite a group leader'; end if;
+    update public.invites set revoked = true where group_id = p_group and kind = 'leader' and used_at is null and not revoked;
+    insert into public.invites (kind, group_id, created_by) values ('leader', p_group, coalesce(public.my_name(), '')) returning token into t;
+    return t;
+  elsif p_kind = 'member' then
+    if not coalesce(public.has_area('groups') or (r = 'leader' and public.my_group() = p_group), false) then raise exception 'You can only invite people to your own group'; end if;
+    select token into t from public.invites where group_id = p_group and kind = 'member' and not revoked order by created_at desc limit 1;
+    if t is null then insert into public.invites (kind, group_id, created_by) values ('member', p_group, coalesce(public.my_name(), '')) returning token into t; end if;
+    return t;
+  end if;
+  raise exception 'Unknown invite type';
+end $$;
+
+-- A new join link for the group (the old one stops working).
+create or replace function public.reset_member_invite(p_group text) returns text language plpgsql security definer set search_path = public as $$
+begin
+  if not coalesce(public.has_area('groups') or (public.my_role() = 'leader' and public.my_group() = p_group), false) then raise exception 'You can only change your own group''s link'; end if;
+  update public.invites set revoked = true where group_id = p_group and kind = 'member';
+  return public.create_invite(p_group, 'member');
+end $$;
+
+-- What an invite link is for, shown before signing in. Says nothing private.
+create or replace function public.invite_info(p_token text) returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object('kind', i.kind, 'group', g.name, 'tag', g.tag, 'leader', g.leader_name,
+    'valid', not i.revoked and (i.kind = 'member' or i.used_at is null))
+  from public.invites i join public.groups g on g.id = i.group_id where i.token = p_token
+$$;
+
+-- Accept an invite after signing in with a WhatsApp or email code.
+create or replace function public.accept_invite(p_token text, p_name text) returns jsonb language plpgsql security definer set search_path = public as $$
+declare i public.invites; ph text := public.my_login_phone(); em text := public.my_login_email(); st public.staff := public.me(); n text := btrim(coalesce(p_name, '')); mid uuid;
+begin
+  if ph is null and em is null then raise exception 'Please sign in first'; end if;
+  select * into i from public.invites where token = p_token for update;
+  if i.token is null or i.revoked then raise exception 'This invite link is no longer valid. Ask for a new one.'; end if;
+  if i.kind = 'leader' then
+    if i.used_at is not null then raise exception 'This invite link has already been used. Ask the pastor for a new one.'; end if;
+    if st.id is not null and st.role in ('pastor', 'pa') then raise exception 'You are already on the team as %', st.role; end if;
+    if st.id is not null then
+      update public.staff set role = 'leader', group_id = i.group_id, name = coalesce(nullif(n, ''), name) where id = st.id;
+    else
+      if char_length(n) not between 1 and 80 then raise exception 'Please enter your name'; end if;
+      insert into public.staff (name, phone, email, role, group_id, joined_app_at) values (n, ph, em, 'leader', i.group_id, now());
+    end if;
+    update public.invites set used_at = now(), used_by = coalesce(ph, em) where token = i.token;
+    return jsonb_build_object('kind', 'leader', 'group_id', i.group_id);
+  end if;
+  -- member: link to an existing entry the leader made with the same number, or add them
+  select id into mid from public.members where group_id = i.group_id
+    and ((login_phone is not null and login_phone = ph) or (login_email is not null and login_email = em));
+  if mid is null and ph is not null then
+    select id into mid from public.members where group_id = i.group_id and login_phone is null and login_email is null
+      and public.intl_phone(phone) = ph order by created_at limit 1;
+  end if;
+  if mid is not null then
+    update public.members set login_phone = coalesce(login_phone, ph), login_email = coalesce(login_email, em), joined_app_at = coalesce(joined_app_at, now()) where id = mid;
+  else
+    if char_length(n) not between 1 and 80 then raise exception 'Please enter your name'; end if;
+    insert into public.members (name, phone, group_id, login_phone, login_email, joined_app_at)
+    values (n, coalesce(case when ph is not null then '+' || ph end, ''), i.group_id, ph, em, now()) returning id into mid;
+  end if;
+  return jsonb_build_object('kind', 'member', 'group_id', i.group_id);
+end $$;
+
+-- A member's view of their group: names only (no phone numbers), plus their leader's WhatsApp.
+create or replace function public.my_group_view(p_group text) returns jsonb language plpgsql stable security definer set search_path = public as $$
+begin
+  if not coalesce(p_group in (select public.my_member_groups()) or public.my_group() = p_group or public.has_area('groups'), false) then
+    raise exception 'You can only see your own group';
+  end if;
+  return jsonb_build_object(
+    'group', (select to_jsonb(g) from public.groups g where g.id = p_group),
+    'leader_phone', (select phone from public.staff where role = 'leader' and group_id = p_group order by created_at desc limit 1),
+    'people', coalesce((select jsonb_agg(jsonb_build_object('name', m.name, 'on_app', m.joined_app_at is not null) order by m.name)
+                        from public.members m where m.group_id = p_group), '[]'::jsonb));
+end $$;
+
+-- Members send prayer requests to their leader or the pastor, and see their own.
+create or replace function public.member_prayer(p_body text, p_to text, p_group text) returns void language plpgsql security definer set search_path = public as $$
+declare m public.members;
+begin
+  select * into m from public.members where group_id = p_group and id in (
+    select id from public.members where (login_phone is not null and login_phone = public.my_login_phone()) or (login_email is not null and login_email = public.my_login_email()));
+  if m.id is null then raise exception 'You can only send prayer requests from your own group'; end if;
+  if char_length(btrim(coalesce(p_body, ''))) not between 1 and 1000 then raise exception 'Please write your prayer request'; end if;
+  perform set_config('care.member', '1', true);
+  insert into public.prayers (name, phone, body, to_pastor, assigned_to, member_id)
+  values (m.name, m.phone, btrim(p_body), p_to = 'pastor', case when p_to = 'pastor' then null else p_group end, m.id);
+  perform set_config('care.member', '', true);
+end $$;
+
+create or replace function public.my_prayers() returns jsonb language sql stable security definer set search_path = public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('body', p.body, 'status', p.status, 'to_pastor', p.to_pastor, 'created_at', p.created_at) order by p.created_at desc), '[]'::jsonb)
+  from public.prayers p join public.members m on m.id = p.member_id
+  where (m.login_phone is not null and m.login_phone = public.my_login_phone()) or (m.login_email is not null and m.login_email = public.my_login_email())
+$$;
+
+do $$ begin
+  revoke all on function public.whoami(), public.create_invite(text, text), public.reset_member_invite(text), public.accept_invite(text, text),
+    public.my_group_view(text), public.member_prayer(text, text, text), public.my_prayers(), public.my_member_groups() from public, anon;
+  grant execute on function public.whoami(), public.create_invite(text, text), public.reset_member_invite(text), public.accept_invite(text, text),
+    public.my_group_view(text), public.member_prayer(text, text, text), public.my_prayers() to authenticated;
+  revoke all on function public.invite_info(text) from public;
+  grant execute on function public.invite_info(text) to anon, authenticated;
+end $$;
 
 -- ---------- live updates ----------
 do $$

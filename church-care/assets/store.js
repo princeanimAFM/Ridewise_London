@@ -32,7 +32,20 @@
       },
       signOut: function () { return sb.auth.signOut(); },
       onAuth: function (cb) { sb.auth.onAuthStateChange(function () { cb(); }); },
-      me: function () { return sb.rpc('me').then(must).then(function (r) { r = Array.isArray(r) ? r[0] : r; return r && r.id ? r : null; }); },
+      me: function () {
+        return sb.rpc('whoami').then(must).then(function (r) {
+          if (!r) return null;
+          if (r.kind === 'member') { r.group_id = r.groups[0].group_id; }
+          return r;
+        });
+      },
+      createInvite: function (group, kind) { return sb.rpc('create_invite', { p_group: group, p_kind: kind }).then(must); },
+      resetInvite: function (group) { return sb.rpc('reset_member_invite', { p_group: group }).then(must); },
+      inviteInfo: function (token) { return sb.rpc('invite_info', { p_token: token }).then(must); },
+      acceptInvite: function (token, name) { return sb.rpc('accept_invite', { p_token: token, p_name: name }).then(must); },
+      groupView: function (group) { return sb.rpc('my_group_view', { p_group: group }).then(must); },
+      memberPrayer: function (body, to, group) { return sb.rpc('member_prayer', { p_body: body, p_to: to, p_group: group }).then(must); },
+      myPrayers: function () { return sb.rpc('my_prayers').then(must); },
       loadAll: function () {
         return Promise.all([
           this.groups(),
@@ -63,9 +76,10 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v3', listeners = [];
+    var KEY = 'care-demo-v4', listeners = [];
     var data = read();
     var role = 'pastor';
+    try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
     function uid() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
     function now() { return new Date().toISOString(); }
     function read() {
@@ -76,7 +90,12 @@
       try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { /* not kept */ }
       listeners.forEach(function (f) { setTimeout(f, 0); });
     }
-    function me() { return data.staff.filter(function (x) { return x.id === role; })[0] || data.staff[0]; }
+    function me() {
+      var mem = data.members.filter(function (x) { return 'mem:' + x.login === role; });
+      if (mem.length) return { kind: 'member', role: 'member', id: role, name: mem[0].name, login: mem[0].login, group_id: mem[0].group_id, groups: mem.map(function (x) { return { member_id: x.id, group_id: x.group_id }; }) };
+      return data.staff.filter(function (x) { return x.id === role; })[0] || data.staff[0];
+    }
+    function myMembers() { var m = me(); return m.role === 'member' ? data.members.filter(function (x) { return x.login === m.login; }) : []; }
     function has(m, a) { return m.role === 'pastor' || (m.role === 'pa' && m.areas.indexOf(a) >= 0); }
     function canSee(t, row, m) {
       if (t === 'staff') return m.role === 'pastor' || row.id === m.id;
@@ -89,16 +108,19 @@
     }
     function seed() {
       var t = Care.today(), d = { groups: C.groups.map(function (g, i) { return Object.assign({ sort: i + 1 }, g); }), staff: [], visitors: [], visitor_notes: [], members: [], prayers: [], attendance: [] };
-      d.staff.push({ id: 'pastor', name: C.pastor, email: 'pastor@example.org', phone: null, role: 'pastor', group_id: null, areas: [] });
+      d.staff.push({ id: 'pastor', name: C.pastor, email: 'pastor@example.org', phone: null, role: 'pastor', group_id: null, areas: [], joined_app_at: Care.addDays(t, -20) + 'T09:00:00Z' });
       d.staff.push({ id: 'pa', name: 'Pastor’s PA', email: null, phone: '233200000001', role: 'pa', group_id: null, areas: ['visitors', 'groups', 'prayer_groups'] });
       d.staff.push({ id: 'welcome', name: 'Welcome team', email: null, phone: '233200000002', role: 'welcome', group_id: null, areas: [] });
-      d.groups.forEach(function (g, i) { d.staff.push({ id: 'lead-' + g.id, name: g.leader_name, email: null, phone: '23324000000' + i, role: 'leader', group_id: g.id, areas: [] }); });
+      d.groups.forEach(function (g, i) { d.staff.push({ id: 'lead-' + g.id, name: g.leader_name, email: null, phone: '23324000000' + i, role: 'leader', group_id: g.id, areas: [], joined_app_at: i % 3 ? Care.addDays(t, -9) + 'T09:00:00Z' : null }); });
       var names = [['Kofi Mensah', 'g1', 0], ['Ama Serwaa', 'g1', 0], ['Yaw Boateng', 'g2', 1], ['Akosua Adjei', 'g2', 5], ['Kwame Asante', 'g3', 0],
         ['Efua Quaye', 'wog', 4], ['Abena Owusu', 'wog', 0], ['Nana Yeboah', 'sg', 1], ['Kojo Darko', 'sg', 6], ['Esi Appiah', 'prov', 0],
         ['Mensah Tetteh', 'g4', 2], ['Adwoa Frimpong', 'g4', 0], ['Kwabena Owusu', 'dia', 0], ['Akua Boakye', 'dia', 3]];
       names.forEach(function (n, i) {
-        d.members.push({ id: 'm' + i, name: n[0], phone: '024' + (1000000 + i * 7311), group_id: n[1], joined_at: Care.addDays(t, -90), last_seen: Care.addDays(t, -n[2] * 7), created_at: now() });
+        var phone = '024' + (1000000 + i * 7311), onApp = i % 3 !== 2;
+        d.members.push({ id: 'm' + i, name: n[0], phone: phone, group_id: n[1], joined_at: Care.addDays(t, -90), last_seen: Care.addDays(t, -n[2] * 7), created_at: now(),
+          login: onApp ? Care.intl(phone) : null, joined_app_at: onApp ? Care.addDays(t, -10) + 'T10:00:00Z' : null });
       });
+      d.invites = [];
       var vs = [['Kwesi Ofori', -5, 'new', null, 'g2'], ['Maame Ama', -3, 'new', 'g2', null], ['Daniel Addo', -1, 'new', null, 'wog'], ['Grace Nartey', -8, 'reached', 'g1', null], ['Samuel Opoku', -12, 'joined', 'g3', null]];
       vs.forEach(function (v, i) {
         var made = Care.addDays(t, v[1]);
@@ -130,14 +152,15 @@
     return {
       mode: 'demo',
       roles: function () {
+        var seen = {}, mems = data.members.filter(function (x) { if (!x.login || seen[x.login]) return false; seen[x.login] = 1; return true; }).slice(0, 6);
         return data.staff.map(function (x) {
           var what = x.role === 'pastor' ? 'Pastor' : x.role === 'pa' ? 'PA' : x.role === 'welcome' ? 'Welcome team' : 'Leader';
           return [x.id, x.role === 'leader' ? x.name + ' · ' + ((find('groups', 'id', x.group_id) || {}).name || '') : what + (x.role === 'pastor' ? ' · ' + x.name : '')];
-        });
+        }).concat(mems.map(function (x) { return ['mem:' + x.login, 'Member · ' + x.name + ' (' + ((find('groups', 'id', x.group_id) || {}).name || '') + ')']; }));
       },
-      setRole: function (r) { role = r; },
+      setRole: function (r) { role = r; try { localStorage.setItem(KEY + '-role', r); } catch (e) { /* not kept */ } },
       role: function () { return role; },
-      reset: function () { data = seed(); role = 'pastor'; save(); },
+      reset: function () { data = seed(); this.setRole('pastor'); save(); },
       groups: function () { return Promise.resolve(data.groups.slice().sort(function (a, b) { return a.sort - b.sort; })); },
       submitWelcome: function (o) {
         return Promise.resolve().then(function () {
@@ -247,6 +270,74 @@
           }
           save();
         });
+      },
+      createInvite: function (group, kind) {
+        return Promise.resolve().then(function () {
+          var m = me();
+          if (kind === 'leader') {
+            check(m.role === 'pastor');
+            data.invites.forEach(function (i) { if (i.group_id === group && i.kind === 'leader' && !i.used_at) i.revoked = true; });
+          } else {
+            check(has(m, 'groups') || (m.role === 'leader' && m.group_id === group));
+            var ex = data.invites.filter(function (i) { return i.group_id === group && i.kind === 'member' && !i.revoked; })[0];
+            if (ex) return ex.token;
+          }
+          var t = (uid() + uid()).replace(/[^a-z0-9]/g, '').slice(0, 32);
+          data.invites.push({ token: t, kind: kind, group_id: group, created_at: now(), used_at: null, revoked: false }); save();
+          return t;
+        });
+      },
+      resetInvite: function (group) {
+        var self = this;
+        data.invites.forEach(function (i) { if (i.group_id === group && i.kind === 'member') i.revoked = true; });
+        return self.createInvite(group, 'member');
+      },
+      inviteInfo: function (token) {
+        var i = find('invites', 'token', token);
+        if (!i) return Promise.resolve(null);
+        var g = find('groups', 'id', i.group_id) || {};
+        return Promise.resolve({ kind: i.kind, group: g.name, tag: g.tag, leader: g.leader_name, valid: !i.revoked && (i.kind === 'member' || !i.used_at) });
+      },
+      // target: the WhatsApp number or email they signed in with (preview only; live uses the sign-in itself)
+      acceptInvite: function (token, name, target) {
+        var self = this;
+        return Promise.resolve().then(function () {
+          var i = find('invites', 'token', token);
+          if (!i || i.revoked) throw new Error('This invite link is no longer valid. Ask for a new one.');
+          var login = /@/.test(target) ? target.toLowerCase() : Care.intl(target);
+          if (!name) throw new Error('Please enter your name');
+          if (i.kind === 'leader') {
+            if (i.used_at) throw new Error('This invite link has already been used. Ask the pastor for a new one.');
+            var st = { id: uid(), name: name, email: /@/.test(login) ? login : null, phone: /@/.test(login) ? null : login, role: 'leader', group_id: i.group_id, areas: [], joined_app_at: now() };
+            data.staff.unshift(st); i.used_at = now(); leaderNames(); save(); self.setRole(st.id);
+            return { kind: 'leader' };
+          }
+          var mm = data.members.filter(function (x) { return x.group_id === i.group_id && (x.login === login || (!x.login && Care.intl(x.phone) === login)); })[0];
+          if (mm) { mm.login = login; mm.joined_app_at = mm.joined_app_at || now(); }
+          else data.members.unshift({ id: uid(), name: name, phone: /@/.test(login) ? '' : '+' + login, group_id: i.group_id, joined_at: Care.today(), last_seen: null, created_at: now(), login: login, joined_app_at: now() });
+          save(); self.setRole('mem:' + login);
+          return { kind: 'member' };
+        });
+      },
+      groupView: function (group) {
+        return Promise.resolve().then(function () {
+          check(myMembers().some(function (x) { return x.group_id === group; }) || me().group_id === group || has(me(), 'groups'));
+          var lead = data.staff.filter(function (x) { return x.role === 'leader' && x.group_id === group; })[0];
+          return { group: find('groups', 'id', group), leader_phone: lead ? lead.phone : null,
+            people: data.members.filter(function (x) { return x.group_id === group; }).sort(function (a, b) { return a.name.localeCompare(b.name); }).map(function (x) { return { name: x.name, on_app: !!x.joined_app_at }; }) };
+        });
+      },
+      memberPrayer: function (body, to, group) {
+        return Promise.resolve().then(function () {
+          var mm = myMembers().filter(function (x) { return x.group_id === group; })[0];
+          check(mm);
+          data.prayers.unshift({ id: uid(), name: mm.name, phone: mm.phone, body: body, status: 'open', to_pastor: to === 'pastor', assigned_to: to === 'pastor' ? null : group, visitor_id: null, member_id: mm.id, source: 'team', created_at: now() });
+          save();
+        });
+      },
+      myPrayers: function () {
+        var ids = myMembers().map(function (x) { return x.id; });
+        return Promise.resolve(data.prayers.filter(function (p) { return ids.indexOf(p.member_id) >= 0; }));
       },
       markWelcomed: function (id) {
         return Promise.resolve().then(function () {

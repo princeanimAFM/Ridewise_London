@@ -14,6 +14,7 @@
   function role() { return S.me ? S.me.role : ''; }
   function isPastor() { return role() === 'pastor'; }
   function isLeader() { return role() === 'leader'; }
+  function isMember() { return role() === 'member'; }
   /** The pastor has every area; a PA has the ones the pastor ticked. */
   function can(area) { return isPastor() || (role() === 'pa' && (S.me.areas || []).indexOf(area) >= 0); }
   function canPrayer() { return can('prayer_groups') || can('prayer_pastor'); }
@@ -66,6 +67,7 @@
   function reload() {
     clearTimeout(reloading);
     reloading = setTimeout(function () {
+      if (isMember()) return loadMember();
       Store.loadAll().then(function (d) {
         S.groups = d.groups; S.staff = d.staff; S.visitors = d.visitors; S.notes = d.visitor_notes; S.members = d.members; S.prayers = d.prayers;
         S.loaded = true;
@@ -91,9 +93,11 @@
       demoRoles();
       $('role').onchange = function () { Store.setRole(this.value); S.tab = 'overview'; S.groupId = null; signedIn(); };
       Store.subscribe(reload);
+      if (inviteToken()) { $('demo-roles').hidden = true; $('banner').innerHTML = '<div class="banner"><b>Preview</b> of an invite link. No real code is sent; type any 6 digits.</div>'; return inviteFlow(inviteToken()); }
       if (/[?&]signin/.test(location.search)) { $('demo-roles').hidden = true; return signInScreen(); }
       return signedIn();
     }
+    if (inviteToken()) return inviteFlow(inviteToken());
     Store.onAuth(function () { if (!S.me) boot(); });
     boot();
   }
@@ -108,11 +112,12 @@
       });
     }).catch(fail);
   }
-  function signInScreen() {
-    $('hello').textContent = 'Team sign in'; $('sub').textContent = 'For the pastor, the PA, group leaders and the welcome team';
+  function signInScreen(opts) {
+    opts = opts || {};
+    if (!opts.intro) { $('hello').textContent = 'Sign in'; $('sub').textContent = 'For the church team and group members'; }
     $('nav').hidden = true; $('fab').hidden = true;
     var ways = C.signIn || { whatsapp: true, email: true }, how = ways.whatsapp ? 'whatsapp' : 'email', target = '';
-    $('main').innerHTML =
+    $('main').innerHTML = (opts.intro || '') +
       '<div class="card top" style="margin-top:16px">' +
       (ways.whatsapp && ways.email ? '<div class="chips"><button class="chip" data-how="whatsapp" aria-pressed="true">💬 WhatsApp</button><button class="chip" data-how="email" aria-pressed="false">✉️ Email</button></div>' : '') +
       '<form id="f-start"><p class="meta" id="how-note"></p><div class="field"><label for="who" id="who-label"></label><input id="who" required></div>' +
@@ -126,10 +131,10 @@
       Array.prototype.forEach.call(document.querySelectorAll('[data-how]'), function (b) { b.setAttribute('aria-pressed', b.dataset.how === h); });
       var w = $('who');
       if (h === 'whatsapp') {
-        $('how-note').textContent = 'Use the WhatsApp number the pastor added to the team list. The code arrives as a WhatsApp message.';
+        $('how-note').textContent = opts.intro ? 'Enter your WhatsApp number. We\'ll send a code to it on WhatsApp.' : 'Use your WhatsApp number. The code arrives as a WhatsApp message.';
         $('who-label').textContent = 'Your WhatsApp number'; w.type = 'tel'; w.inputMode = 'tel'; w.autocomplete = 'tel'; w.placeholder = '024 123 4567';
       } else {
-        $('how-note').textContent = 'Use the email the pastor added to the team list.';
+        $('how-note').textContent = 'We\'ll email you a code.';
         $('who-label').textContent = 'Your email'; w.type = 'email'; w.inputMode = 'email'; w.autocomplete = 'email'; w.placeholder = '';
       }
       w.value = '';
@@ -155,7 +160,7 @@
     };
     $('f-code').onsubmit = function (e) {
       e.preventDefault();
-      Store.verify(how, target, $('code').value.trim()).then(Store.mode === 'demo' ? function () { location.href = 'team.html'; } : boot, function () { $('sign-msg').innerHTML = '<div class="banner bad">That code didn\'t work. Check it, or send a new one.</div>'; });
+      Store.verify(how, target, $('code').value.trim()).then(opts.onDone ? function () { opts.onDone(target); } : Store.mode === 'demo' ? function () { location.href = 'team.html'; } : boot, function () { $('sign-msg').innerHTML = '<div class="banner bad">That code didn\'t work. Check it, or send a new one.</div>'; });
     };
     $('again').onclick = function () {
       $('f-start').hidden = false; $('f-code').hidden = true; $('f-start').querySelector('button').disabled = false;
@@ -164,13 +169,14 @@
   }
   function notOnTeam(email) {
     $('hello').textContent = 'Almost there'; $('sub').textContent = C.church;
-    $('main').innerHTML = '<div class="card empty"><p><b>' + esc(email) + '</b> isn\'t on the team list yet.</p><p>Ask ' + esc(C.pastor) + ' to add you, then sign in again.</p></div>';
+    $('main').innerHTML = '<div class="card empty"><p><b>' + esc(email) + '</b> hasn\'t joined yet.</p><p>Ask your group leader for your group\'s join link, or ask ' + esc(C.pastor) + ' to add you to the team.</p></div>';
   }
   function signedIn(me) {
     var p = me ? Promise.resolve(me) : Store.me();
     p.then(function (m) {
       S.me = m;
-      var label = m.role === 'pastor' ? 'Overseeing pastor' : m.role === 'welcome' ? 'Welcome team' : m.role === 'pa' ? 'PA to the pastor' : 'Leader · ' + groupName(m.group_id);
+      var label = m.role === 'pastor' ? 'Overseeing pastor' : m.role === 'welcome' ? 'Welcome team' : m.role === 'pa' ? 'PA to the pastor' : m.role === 'member' ? 'Member' : 'Leader · ' + groupName(m.group_id);
+      if (m.role === 'member') S.groupId = m.group_id;
       $('hello').textContent = greeting() + ', ' + m.name.split(/\s+/).slice(0, 2).join(' ');
       $('sub').textContent = label + ' · ' + C.church;
       $('nav').hidden = false;
@@ -181,6 +187,7 @@
 
   /* ---------- layout ---------- */
   function tabs() {
+    if (isMember()) return [['overview', 'My group', '👥'], ['prayer', 'Prayer', '🙏']];
     if (role() === 'welcome') return [['overview', 'Home', '🏠'], ['visitors', 'Visitors', '👋']];
     if (role() === 'pa') {
       var t = [['overview', 'Home', '🏠']];
@@ -210,13 +217,15 @@
     }).join('');
     var fab = $('fab');
     fab.hidden = false;
+    if (isMember()) fab.hidden = true;
     if (S.tab === 'groups' && (can('groups') || isLeader())) { fab.textContent = '+ Add member'; fab.dataset.act = 'new-member'; }
     else if (S.tab === 'prayer') { fab.textContent = '+ Prayer request'; fab.dataset.act = 'new-prayer'; }
     else if (S.tab === 'away') { fab.hidden = true; }
     else if (role() === 'pa' && !can('visitors')) { fab.hidden = true; }
     else { fab.textContent = '+ New visitor'; fab.dataset.act = 'new-visitor'; }
     if (!S.loaded) { $('main').innerHTML = '<p class="empty">Loading…</p>'; return; }
-    $('main').innerHTML = ({ overview: viewOverview, visitors: viewVisitors, groups: viewGroups, away: viewAway, prayer: viewPrayer })[S.tab]();
+    $('main').innerHTML = isMember() ? (S.tab === 'prayer' ? viewMemberPrayer() : viewMemberHome())
+      : ({ overview: viewOverview, visitors: viewVisitors, groups: viewGroups, away: viewAway, prayer: viewPrayer })[S.tab]();
     if (S.sheet) openSheet(S.sheet, true);
   }
 
@@ -346,6 +355,137 @@
 
   var seenSent = {};
 
+  /* ---------- invite links ---------- */
+  S.links = {}; S.leaderLinks = {}; var linkBusy = {};
+  function inviteToken() { var m = /[?&]invite=([a-z0-9]{8,64})/i.exec(location.search) || /#invite-([a-z0-9]{8,64})/i.exec(location.hash); return m ? m[1] : null; }
+  function appUrl() { return location.href.split('#')[0].split('?')[0]; }
+  function inviteUrl(t) { return appUrl() + '?invite=' + t; }
+  function memberInviteText(g, t) {
+    return 'You are invited to join ' + g.name + ' on The AFM Church app 🙏\n' +
+      'Tap the link and sign in with your WhatsApp number. You will see our group and our leader, and you can send prayer requests.\n' + inviteUrl(t);
+  }
+  function leaderInviteText(g, t) {
+    return 'Hello' + (g.leader_name ? ' ' + g.leader_name : '') + ', ' + C.pastor + ' has invited you to lead ' + g.name + ' on The AFM Church app. ' +
+      'Tap the link and sign in with your WhatsApp number. You will go straight to your group:\n' + inviteUrl(t);
+  }
+  function shareLink(text) { return 'https://wa.me/?text=' + encodeURIComponent(text); }
+  function linkBox(url, text, extra) {
+    return '<div class="field"><input type="text" readonly value="' + esc(url) + '" onclick="this.select()" aria-label="Invite link"></div>' +
+      '<div class="actions"><button class="btn sm blue" data-copy="' + esc(text) + '">📋 Copy invite</button>' +
+      '<a class="btn sm wa" href="' + esc(shareLink(text)) + '" target="_blank" rel="noopener">💬 Send on WhatsApp</a>' + (extra || '') +
+      (Store.mode === 'demo' ? '<a class="btn sm alt" href="' + esc(url) + '">▶ Try the link (preview)</a>' : '') + '</div>';
+  }
+  function getMemberLink(gid) {
+    if (S.links[gid] || linkBusy[gid]) return;
+    linkBusy[gid] = true;
+    Store.createInvite(gid, 'member').then(function (t) { S.links[gid] = t; linkBusy[gid] = false; render(); }, function (e) { linkBusy[gid] = false; fail(e); });
+  }
+  function inviteCard(gid) {
+    var g = group(gid), t = S.links[gid];
+    if (!g || !(can('groups') || isLeader())) return '';
+    if (!t) getMemberLink(gid);
+    var ms = S.members.filter(function (m) { return m.group_id === gid; }), on = ms.filter(function (m) { return m.joined_app_at; }).length;
+    return '<div class="card top green"><div class="kicker">Invite your group</div>' +
+      '<h3 style="font-size:1.1rem;color:var(--navy-800);margin:4px 0 2px">' + on + ' of ' + ms.length + (ms.length === 1 ? ' member is' : ' members are') + ' on the app</h3>' +
+      '<p class="meta" style="margin:0 0 6px">Send this link to your group\'s WhatsApp, or to each member. When they join, they see only this group.</p>' +
+      (t ? linkBox(inviteUrl(t), memberInviteText(g, t), '<button class="btn sm alt" data-reset-link="' + gid + '">New link</button>') : '<p class="meta">Making the link…</p>') + '</div>';
+  }
+  function sheetLeaderLink(gid) {
+    var g = group(gid), t = S.leaderLinks[gid];
+    if (!g) return null;
+    if (!t && !linkBusy['L' + gid]) {
+      linkBusy['L' + gid] = true;
+      Store.createInvite(gid, 'leader').then(function (tok) { S.leaderLinks[gid] = tok; linkBusy['L' + gid] = false; openSheet('leaderlink:' + gid, true); }, function (e) { linkBusy['L' + gid] = false; fail(e); });
+    }
+    return '<button class="back" data-open="team">‹ Team & groups</button><h2>Invite a leader</h2>' +
+      '<p>For <b>' + esc(g.name) + '</b>. Send this link to ' + esc(g.leader_name || 'the leader') + '. When they open it and sign in with their WhatsApp number, they become this group\'s leader and see only this group.</p>' +
+      (t ? linkBox(inviteUrl(t), leaderInviteText(g, t)) : '<p class="meta">Making the link…</p>') +
+      '<p class="meta">The link works once, for one person. Making a new link cancels this one.</p>';
+  }
+
+  /* ---------- joining from an invite link ---------- */
+  function inviteFlow(token) {
+    $('nav').hidden = true; $('fab').hidden = true;
+    $('hello').textContent = 'You\'re invited'; $('sub').textContent = C.church;
+    $('main').innerHTML = '<p class="empty">Opening your invite…</p>';
+    Store.inviteInfo(token).then(function (info) {
+      if (!info || !info.valid) {
+        $('main').innerHTML = '<div class="card top red" style="margin-top:16px"><h3 style="color:var(--navy-800)">This link no longer works</h3><p>It may have been used already or replaced by a new one. Ask ' +
+          (info && info.kind === 'leader' ? 'the pastor' : 'your group leader') + ' to send you a new link.</p></div>';
+        return;
+      }
+      var lead = info.kind === 'leader';
+      $('hello').textContent = lead ? 'Lead ' + info.group : 'Join ' + info.group;
+      var intro = '<div class="card top gold" style="margin-top:16px"><div class="kicker">' + (lead ? 'Group leader invite' : 'Group invite') + '</div>' +
+        '<h3 style="font-size:1.25rem;color:var(--navy-800);margin:4px 0">' + esc(info.group) + '</h3>' +
+        (info.tag ? '<div class="meta">' + esc(info.tag) + '</div>' : '') +
+        '<p style="margin:8px 0 0">' + (lead ? C.pastor + ' has invited you to lead this group. You will see your group\'s members, new visitors and prayer requests, and invite your members.'
+          : 'You are invited to join this group' + (info.leader ? ', led by ' + esc(info.leader) : '') + '. You will see your group and your leader, and you can send prayer requests.') + '</p></div>';
+      function nameStep(target) {
+        $('main').innerHTML = intro + '<form class="card top" id="f-join" style="margin-top:10px"><div class="field"><label for="join-name">Your name</label><input id="join-name" type="text" maxlength="80" autocomplete="name" required></div>' +
+          '<button class="btn wide blue" type="submit">' + (lead ? 'Become the group leader' : 'Join the group') + '</button><div id="join-msg"></div></form>';
+        $('join-name').focus();
+        $('f-join').onsubmit = function (e) {
+          e.preventDefault();
+          var n = $('join-name').value.trim();
+          if (!n) return Care.toast('Please enter your name.');
+          Store.acceptInvite(token, n, target).then(function () { location.href = appUrl(); },
+            function (err) { $('join-msg').innerHTML = '<div class="banner bad">' + esc(Care.errText(err)) + '</div>'; });
+        };
+      }
+      Store.session().then(function (session) {
+        if (session && Store.mode !== 'demo') { $('signout').hidden = false; return nameStep(); }
+        signInScreen({ intro: intro, onDone: nameStep });
+      });
+    }, fail);
+  }
+
+  /* ---------- members' own app ---------- */
+  function loadMember() {
+    var gs = S.me.groups || [{ group_id: S.me.group_id }];
+    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups()])).then(function (r) {
+      S.mview = {}; gs.forEach(function (g, i) { S.mview[g.group_id] = r[i]; });
+      S.myPrayers = r[gs.length]; S.groups = r[gs.length + 1];
+      if (!S.mview[S.groupId]) S.groupId = gs[0].group_id;
+      S.loaded = true;
+      if (Store.mode === 'demo') demoRoles();
+      render();
+    }, fail);
+  }
+  function viewMemberHome() {
+    var v = S.mview[S.groupId], g = v.group, ppl = v.people || [], h = '';
+    var gs = S.me.groups || [];
+    if (gs.length > 1) h += '<div class="chips">' + gs.map(function (x) { return '<button class="chip" data-mg="' + x.group_id + '" aria-pressed="' + (x.group_id === S.groupId) + '">' + esc(groupName(x.group_id)) + '</button>'; }).join('') + '</div>';
+    h += '<div class="card top gold" style="margin-top:12px">' + (g.tag ? '<div class="kicker">' + esc(g.tag) + '</div>' : '<div class="kicker">My group</div>') +
+      '<h3 style="font-size:1.35rem;color:var(--navy-800);margin:4px 0 2px">' + esc(g.name) + '</h3>' +
+      '<div class="meta">Leader: <b>' + esc(g.leader_name || 'not set yet') + '</b></div>' +
+      '<div class="actions">' + (v.leader_phone ? '<a class="btn sm wa" href="' + esc(Care.waLink(v.leader_phone, 'Hello ' + (g.leader_name || '') + ', this is ' + S.me.name + ' from ' + g.name + '.')) + '" target="_blank" rel="noopener">💬 Message my leader</a>' : '') +
+      '<button class="btn sm blue" data-tab="prayer">🙏 Send a prayer request</button></div></div>';
+    var on = ppl.filter(function (p) { return p.on_app; }).length;
+    h += '<h2 class="sec">Our group</h2><p class="meta" style="margin-top:-4px">' + ppl.length + ' members · ' + on + ' on the app</p>' +
+      '<div class="card">' + ppl.map(function (p) {
+        return '<div class="row" style="padding:5px 0">' + avatar(p.name) + '<div class="grow name">' + esc(p.name) + '</div>' + (p.on_app ? '<span class="pill reached">📱 On the app</span>' : '') + '</div>';
+      }).join('') + '</div>';
+    h += '<h2 class="sec">Church</h2><div class="card">' + C.services.map(function (x) {
+      return '<div class="row" style="padding:4px 0"><b style="font-family:var(--serif);color:var(--navy-800);width:40px">' + esc(x.day) + '</b><div class="grow"><div class="name">' + esc(x.what) + '</div><div class="meta">' + esc(x.when) + ' GMT · ' + esc(x.where) + '</div></div></div>';
+    }).join('') + '<div class="actions"><a class="btn sm blue" href="' + esc(C.links.playStore) + '" target="_blank" rel="noopener">📱 AFM HUB app</a><a class="btn sm alt" href="' + esc(C.links.website) + '" target="_blank" rel="noopener">⛪ Website</a></div></div>';
+    return h;
+  }
+  function viewMemberPrayer() {
+    var v = S.mview[S.groupId], g = v.group;
+    var h = '<form class="card top" data-mprayer style="margin-top:12px"><div class="kicker">Prayer request</div>' +
+      '<div class="field"><label for="mp-body">What can we pray with you about?</label><textarea id="mp-body" maxlength="1000" required></textarea></div>' +
+      '<div class="field"><label for="mp-to">Who should read it?</label><select id="mp-to"><option value="leader">My group leader' + (g.leader_name ? ', ' + esc(g.leader_name) : '') + '</option>' +
+      '<option value="pastor">🔒 ' + esc(C.pastor.replace(' D.D', '')) + ' (the pastor) only</option></select></div>' +
+      '<button class="btn blue" type="submit">Send</button></form>';
+    var mine = S.myPrayers || [];
+    h += '<h2 class="sec">My prayer requests</h2>' + (mine.length ? mine.map(function (p) {
+      return '<div class="card top ' + (p.to_pastor ? 'gold' : 'sky') + '"><div class="row"><div class="meta grow">' + Care.fmt(day(p.created_at)) + ' · ' + (p.to_pastor ? '🔒 To the pastor' : 'To my leader') + '</div>' +
+        (p.status === 'prayed' ? '<span class="pill reached">Prayed for 🙏</span>' : '<span class="pill new">Received</span>') + '</div><p style="margin:6px 0 0;white-space:pre-wrap">' + esc(p.body) + '</p></div>';
+    }).join('') : '<div class="card empty">Your prayer requests will show here, with a note when they have been prayed for.</div>');
+    return h;
+  }
+
   /* ---------- groups ---------- */
   function viewGroups() {
     var gid = S.groupId || (S.groups[0] && S.groups[0].id);
@@ -355,13 +495,15 @@
     h += '<div class="card top gold">' + (g.tag ? '<div class="kicker">' + esc(g.tag) + '</div>' : '') + '<h3 style="font-size:1.4rem;color:var(--navy-800);margin-top:4px">' + esc(g.name) + '</h3><div class="meta">Leader: ' + esc(g.leader_name) + '</div></div>';
     var ms = S.members.filter(function (m) { return m.group_id === gid; });
     var here = ms.filter(function (m) { return m.last_seen === S.day; }).length;
+    h += inviteCard(gid);
     h += '<div class="field"><label for="day">Service date</label><input type="date" id="day" value="' + S.day + '" max="' + Care.today() + '"></div>' +
       '<p class="meta">' + here + ' of ' + ms.length + ' marked present on ' + Care.fmt(S.day) + '. Tap a name to edit.</p>';
     if (!ms.length) return h + '<div class="card empty">No members yet. Tap “+ Add member”.</div>';
     return h + ms.map(function (m) {
       var on = m.last_seen === S.day, w = weeksAway(m);
       return '<div class="card"><div class="row">' + avatar(m.name) + '<div class="grow tap" data-open="member:' + m.id + '" style="cursor:pointer"><div class="name">' + esc(m.name) + '</div>' +
-        '<div class="meta">' + (m.last_seen ? 'Last seen ' + Care.fmt(m.last_seen) : 'Not marked yet') + (w >= C.awayWeeks ? ' · <b style="color:var(--bad)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
+        '<div class="meta">' + (m.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : (m.phone && S.links[m.group_id] ? '<a class="pill new" href="' + esc(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(group(m.group_id), S.links[m.group_id]))) + '" target="_blank" rel="noopener">💬 Invite to the app</a> ' : '')) +
+        (m.last_seen ? 'Last seen ' + Care.fmt(m.last_seen) : 'Not marked yet') + (w >= C.awayWeeks ? ' · <b style="color:var(--red)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
         '<button class="btn sm ' + (on ? 'on' : 'alt') + '" data-present="' + m.id + '" aria-pressed="' + on + '">' + (on ? '✓ Present' : 'Present') + '</button></div></div>';
     }).join('');
   }
@@ -461,15 +603,18 @@
     var people = S.staff.slice().sort(function (a, b) { return order[a.role] - order[b.role] || a.name.localeCompare(b.name); });
     return '<h2>Team & groups</h2><p class="meta">Only people on the team list can sign in, at <b>' + esc(url) + '</b>, with a code sent to their WhatsApp or email. ' +
       'Group leaders see only their own group.</p>' +
+      '<div class="banner ok">To bring a leader in, tap <b>Invite leader</b> on their group below and send them the link. They choose their own sign-in.</div>' +
       '<h2 class="sec">Team</h2>' + people.map(function (x) {
         return '<div class="card tap" data-open="staff:' + x.id + '"><div class="row">' + avatar(x.name) + '<div class="grow"><div class="name">' + esc(x.name) + '</div>' +
-          '<div class="meta">' + esc(roleText(x)) + '</div><div class="meta">' + esc([x.phone ? '+' + x.phone : '', x.email || ''].filter(Boolean).join(' · ')) + '</div></div><span class="meta">Edit ›</span></div></div>';
+          '<div class="meta">' + esc(roleText(x)) + '</div><div class="meta">' + (x.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : '<span class="pill new">Not joined yet</span> ') + esc([x.phone ? '+' + x.phone : '', x.email || ''].filter(Boolean).join(' · ')) + '</div></div><span class="meta">Edit ›</span></div></div>';
       }).join('') +
       '<div class="actions"><button class="btn" data-act="new-staff">+ Add a leader, PA or helper</button></div>' +
       '<h2 class="sec">Groups</h2>' + S.groups.map(function (g) {
         var n = S.members.filter(function (m) { return m.group_id === g.id; }).length;
         return '<div class="card tap" data-open="grp:' + g.id + '"><div class="row"><div class="grow"><div class="name">' + esc(g.name) + '</div>' +
-          '<div class="meta">' + esc((g.tag ? g.tag + ' · ' : '') + 'Leader: ' + (g.leader_name || 'not set')) + (n ? ' · ' + n + (n === 1 ? ' member' : ' members') : '') + '</div></div><span class="meta">Edit ›</span></div></div>';
+          '<div class="meta">' + esc((g.tag ? g.tag + ' · ' : '') + 'Leader: ' + (g.leader_name || 'not set')) + (n ? ' · ' + n + (n === 1 ? ' member' : ' members') : '') + '</div>' +
+          '<div class="actions" style="margin:6px 0 0">' + (S.staff.some(function (x) { return x.role === 'leader' && x.group_id === g.id && x.joined_app_at; })
+            ? '<span class="pill reached">📱 Leader on the app</span>' : '<button class="btn sm blue" data-invite-leader="' + g.id + '">✉️ Invite leader</button>') + '</div></div><span class="meta">Edit ›</span></div></div>';
       }).join('') +
       '<div class="actions"><button class="btn alt" data-act="new-group">+ Add a group</button></div>';
   }
@@ -518,6 +663,7 @@
       parts[0] === 'new-visitor' ? sheetNewVisitor() :
       parts[0] === 'new-prayer' ? sheetNewPrayer() :
       parts[0] === 'team' ? sheetTeam() :
+      parts[0] === 'leaderlink' ? sheetLeaderLink(parts[1]) :
       parts[0] === 'staff' ? sheetStaff(parts[1]) :
       parts[0] === 'new-staff' ? sheetStaff(null) :
       parts[0] === 'grp' ? sheetGroup(parts[1]) :
@@ -653,6 +799,34 @@
       act(d.group ? Store.update('groups', 'id', d.group, g) : Store.insert('groups', g), d.group ? 'Saved.' : g.name + ' added.').then(function (r) { if (r) openSheet('team'); });
     }
   });
+
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-invite-leader],[data-invite-one],[data-copy],[data-reset-link],[data-mg]');
+    if (!el) return;
+    e.preventDefault(); e.stopPropagation();
+    var d = el.dataset;
+    if (d.inviteLeader) openSheet('leaderlink:' + d.inviteLeader);
+    else if (d.mg) { S.groupId = d.mg; render(); }
+    else if (d.copy) {
+      var done = function () { Care.toast('Invite copied. Paste it in WhatsApp.'); };
+      try { navigator.clipboard.writeText(d.copy).then(done, function () { Care.toast('Press and hold the link to copy it.'); }); } catch (x) { Care.toast('Press and hold the link to copy it.'); }
+    } else if (d.resetLink) {
+      ask('Make a new join link? The old link will stop working for anyone who hasn\'t joined yet.', function () {
+        Store.resetInvite(d.resetLink).then(function (t) { S.links[d.resetLink] = t; Care.toast('New link ready.'); render(); }, fail);
+      });
+    } else if (d.inviteOne) {
+      var m = S.members.filter(function (x) { return x.id === d.inviteOne; })[0], g = group(m.group_id), t = S.links[m.group_id];
+      if (!t) return Care.toast('One moment, the link is still being made.');
+      window.open(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(g, t)), '_blank', 'noopener');
+    }
+  }, true);
+  document.addEventListener('submit', function (e) {
+    if (!('mprayer' in e.target.dataset)) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var body = $('mp-body').value.trim(), to = $('mp-to').value;
+    if (!body) return Care.toast('Please write your prayer request.');
+    Store.memberPrayer(body, to, S.groupId).then(function () { Care.toast(to === 'pastor' ? 'Sent to the pastor. 🙏' : 'Sent to your leader. 🙏'); reload(); }, fail);
+  }, true);
 
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.sheet) closeSheet(); });
   start();
