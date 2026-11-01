@@ -370,11 +370,11 @@ end $$;
 
 -- ---------- groups ----------
 insert into public.groups (id, name, tag, leader_name, sort) values
-  ('g1',   'Group 1',         'Archbishop Nicholas Duncan-Williams', 'Prophet Richmond Taku', 1),
-  ('g2',   'Group 2',         'David Oyedepo',                       'Elijah Antwi',          2),
-  ('g3',   'Group 3',         'Prophet Miracle Damoah',              'Prophet Elijah',        3),
-  ('g4',   'Group 4',         'Dr. Mike Murdock',                    'Mr. Owusu Erga',        4),
+  ('g1', 'Archbishop Nicholas Duncan-Williams', '', 'Prophet Richmond Taku', 1),
+  ('g2', 'David Oyedepo', '', 'Elijah Antwi',          2),
+  ('g3', 'Prophet Miracle Damoah', '', 'Prophet Elijah',        3),
+  ('g4', 'Dr. Mike Murdock', '', 'Mr. Owusu Erga',        4),
   ('wog',  'Women of Glory',  'Women''s Fellowship',                 'Madam Millicent',       5),
   ('sg',   'Stoic Gentleman', 'Men''s Fellowship',                   'Mr. Owusu Geoffery',    6),
   ('prov', 'The Providence',  'Church Choir',                        'Caljay Music',          7)
-on conflict (id) do nothing;
+on conflict (id) do update set name = excluded.name, tag = excluded.tag;

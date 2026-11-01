@@ -26,10 +26,10 @@ window.CARE_CONFIG = {
 
   // Used in demo mode and if the group list can't be loaded. The live list is in the database.
   groups: [
-    { id: 'g1', name: 'Group 1', tag: 'Archbishop Nicholas Duncan-Williams', leader_name: 'Prophet Richmond Taku' },
-    { id: 'g2', name: 'Group 2', tag: 'David Oyedepo', leader_name: 'Elijah Antwi' },
-    { id: 'g3', name: 'Group 3', tag: 'Prophet Miracle Damoah', leader_name: 'Prophet Elijah' },
-    { id: 'g4', name: 'Group 4', tag: 'Dr. Mike Murdock', leader_name: 'Mr. Owusu Erga' },
+    { id: 'g1', name: 'Archbishop Nicholas Duncan-Williams', tag: '', leader_name: 'Prophet Richmond Taku' },
+    { id: 'g2', name: 'David Oyedepo', tag: '', leader_name: 'Elijah Antwi' },
+    { id: 'g3', name: 'Prophet Miracle Damoah', tag: '', leader_name: 'Prophet Elijah' },
+    { id: 'g4', name: 'Dr. Mike Murdock', tag: '', leader_name: 'Mr. Owusu Erga' },
     { id: 'wog', name: 'Women of Glory', tag: "Women's Fellowship", leader_name: 'Madam Millicent' },
     { id: 'sg', name: 'Stoic Gentleman', tag: "Men's Fellowship", leader_name: 'Mr. Owusu Geoffery' },
     { id: 'prov', name: 'The Providence', tag: 'Church Choir', leader_name: 'Caljay Music' }
