@@ -13,6 +13,14 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/style.css">
+<script>
+/* Phones with Chrome's "Desktop site" on render at ~980px wide and look zoomed out. Scale back to the phone's real width. */
+(function () { try {
+  var sw = Math.min(screen.width, screen.height), iw = window.innerWidth;
+  if (sw && sw < 700 && iw > sw * 1.3) document.documentElement.style.zoom = (iw / sw).toFixed(3);
+} catch (e) {} })();
+</script>
+
 </head>
 <body>
 <div class="bar"><div class="wrap">
