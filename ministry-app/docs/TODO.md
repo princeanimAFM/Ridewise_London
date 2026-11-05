@@ -21,7 +21,8 @@ Ideas agreed with the owner, to build later. Nothing here is started or publishe
 - Preview approved by the pastor? Then: Supabase project, sign-in codes (WhatsApp via Twilio, or email), hosting at theafmchurch.org/welcome, QR code.
 
 ## Google Play account
-- Declare trader status in Play Console (Google requires it from November 2026, email of 29 October 2026). Owner to choose trader or non-trader.
+- Trader status declared 5 November 2026: **non-trader** (the developer account is personal, so trader status would publish a personal name and home address). To keep this true, the app does not show perfume prices or take orders; perfumes link to the House of Azanduna website.
+- Later: church organisation account (needs the church's D-U-N-S number, also needed for the Apple App Store). Move AFM HUB to it, then the church can declare as trader under its own name and prices can come back.
 
 ## Daily devotional
 - "Today's Devotional" card on Home next to the Verse of the Day.
