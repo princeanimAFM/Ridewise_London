@@ -27,6 +27,7 @@ LISTEN TO SERMONS
 
 WATCH LIVE SERVICES
 • Join live services and watch past broadcasts from YouTube without leaving the app
+• Comment during live services and send prayer requests to the ministry
 
 DAILY QUOTES
 • A new AFM quote every day, with an optional daily reminder
@@ -56,7 +57,7 @@ AFM ASSISTANT
 • Ask questions about the ministry and the app, and get help finding your way around
 
 HOUSE OF AZANDUNA
-• A first look at the upcoming Rabbi Azanduna fragrance collection
+• Browse the Rabbi Azanduna fragrance collection, with a link to the House of Azanduna website for prices and ordering
 
 Arise and shine. Welcome to the AFM Family.
 ```
@@ -73,7 +74,7 @@ Arise and shine. Welcome to the AFM Family.
 - **Category:** Lifestyle. Books & Reference would also fit.
 - **Tags:** Religion, Podcasts
 - **Email:** theafmfamily@gmail.com
-- **Website:** leave empty for now
+- **Website:** https://theafmchurch.org
 - **Phone:** leave empty
 
 ## App content (Policy → App content)
@@ -86,7 +87,7 @@ Arise and shine. Welcome to the AFM Family.
 
 **Target audience:** 18 and over. Selecting 13 and over also works. Don't include children under 13.
 
-**Content rating questionnaire:** Category *Reference, News, or Educational*. Answer **No** to violence, sexual content, profanity, drugs, gambling and similar questions. For "Can users interact or share content?" answer **No**, because users can't post anything visible to other users. The expected rating is Everyone or PEGI 3.
+**Content rating questionnaire:** Category *Reference, News, or Educational*. Answer **No** to violence, sexual content, profanity, drugs, gambling and similar questions. For "Can users interact or share content?" answer **Yes**: signed-in users can comment during live services and others see those comments. Comments are moderated (ministry staff can hide them). The expected rating is Everyone or PEGI 3.
 
 **News app:** No.
 
@@ -109,13 +110,16 @@ Arise and shine. Welcome to the AFM Family.
 | Personal info → Phone number | Yes | No | Optional | Account management, Developer communications (SMS) |
 | Device or other IDs | Yes (push notification token) | No | Optional | App functionality (announcement notifications) |
 | Photos and videos → Photos | Yes (optional profile photo) | No | Optional | App functionality (personalising your account) |
+| App activity → Other user-generated content | Yes (live-service comments) | No | Optional | App functionality |
+| Messages → Other in-app messages | Yes (prayer requests sent in the app) | No | Optional | App functionality |
 
-Answer **not collected** for: location, financial info, health, messages, videos, audio, files and docs, calendar, contacts, app activity, web browsing, and diagnostics.
+Answer **not collected** for: location, financial info, health, emails, SMS, videos, audio, files and docs, calendar, contacts, app interactions, in-app search history, installed apps, web browsing, and diagnostics.
 
 (Library files are uploaded by the ministry and only downloaded by users, so they don't count as data collected from users.)
 
 Notes behind these answers:
-- Prayer requests and contact messages open the person's own email app. The app doesn't store them.
+- Live comments and prayer requests are stored with the person's account (comments kept 90 days, prayer requests up to 24 months) and are deleted with the account.
+- The Store is a showcase only: perfume prices and ordering are on the House of Azanduna website, not in the app (the developer account is declared non-trader).
 - Payments happen in PayPal, Cash App or the person's bank or MoMo app, never inside this app.
 - AFM Assistant questions go to the assistant service only to generate a reply and aren't stored with any identity. If the online assistant is switched on later, re-check this form and add "App interactions".
 - The daily quote reminder is scheduled on the phone and needs no data.
