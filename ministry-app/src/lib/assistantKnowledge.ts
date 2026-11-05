@@ -80,7 +80,7 @@ export function buildKnowledge(): string {
   add(
     `## ${m.fragrances.brandName} (Store tab)`,
     m.fragrances.brandStory,
-    m.fragrances.launched ? 'The collection is available in the Store tab.' : 'The brand has not launched yet. There are no products, prices or ordering yet; people can ask to be told at launch from the Store tab.',
+    m.fragrances.launched ? `The collection can be seen in the Store tab; prices and ordering are on the ${m.fragrances.brandName} website${m.fragrances.shopUrl ? ` (${m.fragrances.shopUrl})` : ''}. The app itself does not take orders.` : 'The brand has not launched yet. There are no products, prices or ordering yet; people can ask to be told at launch from the Store tab.',
     m.fragrances.launched ? '' : `Sneak peek of the upcoming ${m.fragrances.collectionName} collection by ${m.fragrances.brandName} (the bottles are labelled "${m.fragrances.collectionName}"): ${[...new Set(m.fragrances.previewPhotos.map((p) => p.name))].join(', ')}. No prices or release date yet.`,
   );
 

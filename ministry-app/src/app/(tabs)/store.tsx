@@ -4,7 +4,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useContent } from '@/lib/liveContent';
 import { openLink } from '@/lib/links';
-import { priceSummary } from '@/lib/video';
 import { Artwork, Body, Button, Card, Chip, Screen, Title } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -62,7 +61,7 @@ export default function Store() {
                     <Text numberOfLines={1} style={{ color: t.textMuted, fontSize: 13 }}>
                       {f.tagline}
                     </Text>
-                    {f.price && <Text style={{ color: t.accent, fontWeight: '700', marginTop: 2 }}>{priceSummary(f.size, f.price)}</Text>}
+                    {f.size ? <Text numberOfLines={1} style={{ color: t.textMuted, fontSize: 12, marginTop: 2 }}>{f.size}</Text> : null}
                     {f.video ? (
                       <View style={styles.videoTag}>
                         <Ionicons name="play-circle" size={14} color={t.gold} />
@@ -102,7 +101,7 @@ export default function Store() {
             </View>
           )}
           {!!ministry.fragrances.shopUrl && (
-            <Button label="Visit the Shop" icon="bag-handle-outline" variant="gold" onPress={() => openLink(ministry.fragrances.shopUrl)} style={{ marginTop: space.lg }} />
+            <Button label={`Shop at ${ministry.fragrances.brandName}`} icon="open-outline" variant="gold" onPress={() => openLink(ministry.fragrances.shopUrl)} style={{ marginTop: space.lg }} />
           )}
         </>
       )}
