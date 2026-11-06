@@ -38,6 +38,23 @@ leaders see "said they came" and can untick it. Each person shows "Came 6 of the
 The Follow up tab lists who missed each of the last 4 Sundays, with a kind WhatsApp message ready, and anyone away
 3+ weeks. Home shows how many came last Sunday and a 4-Sunday table by group.
 
+**One person, more than one group:** someone in the choir and a fellowship has an entry in each group. They count as
+the same person when they share a sign-in or phone number: being marked present at a service (by either leader, or by
+checking in themselves) shows in all their groups, and church totals count them once. Group meetings stay with their group.
+
+**After the service:** Home shows a summary of the last few services. The pastor (and a PA with *Groups*) sees how many
+came, who checked themselves in, which groups haven't marked attendance yet, groups whose leader isn't on the app and
+members not on the app. A leader sees who came from their group, who wasn't marked (and who missed 2 in a row), and
+who isn't on the app yet. The **Growth** tab shows the church's growth month by month, for the whole church or a group.
+
+**Phone notifications:** the pastor, PA and leaders can tap *Turn on notifications* on Home. About 2 hours after each
+service they get a short update (Sunday 2 PM; Tuesday and Friday 9 PM; online prayer 10:30 PM if anyone was marked;
+special programs 10 PM each day). On iPhone the app must first be added to the home screen. Setup, once:
+1. Make a key pair (`npx web-push generate-vapid-keys`). Put the public key in `assets/config.js` (`pushKey`).
+2. Deploy `supabase/functions/care-after-service` with JWT checks off, with secrets `VAPID_PUBLIC_KEY`,
+   `VAPID_PRIVATE_KEY` and `CARE_CRON_SECRET` (any long random text).
+3. In Supabase Vault add `care_cron_secret` (the same random text) and `care_project_ref`, then run `supabase/cron.sql`.
+
 **Special programs:** the pastor (or a PA given "Special programs") adds conventions, Holy Ghost nights, thanksgiving
 services and other programs: name, first and last day, time, place and a short description. Upcoming programs show on
 the visitors' welcome page and in members' app; leaders mark who came, and each program shows who came by group.

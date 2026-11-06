@@ -285,7 +285,8 @@ create trigger note_author before insert on care.visitor_notes for each row exec
 
 create or replace function care.member_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
 begin
-  if care.my_role() = 'leader' then new.group_id := care.my_group(); end if;
+  -- a leader's own edits stay in their group (not updates the database makes for them, such as "last seen" in another group)
+  if care.my_role() = 'leader' and pg_trigger_depth() = 1 then new.group_id := care.my_group(); end if;
   new.name := btrim(new.name);
   return new;
 end $$;
@@ -361,6 +362,41 @@ begin
 end $$;
 drop trigger if exists update_last_seen on care.attendance;
 create trigger update_last_seen after insert or delete on care.attendance for each row execute function care.update_last_seen();
+
+-- One person can be in more than one group (the choir and a fellowship, say): each group has its own entry for them.
+-- They are the same person when they share a sign-in, or the same phone number.
+create or replace function care.person_key(m care.members) returns text language sql immutable as $$
+  select coalesce(m.login_phone, m.login_email, care.intl_phone(m.phone), m.id::text)
+$$;
+create or replace function care.same_person(p_member uuid) returns setof uuid language sql stable security definer set search_path = care, public as $$
+  select o.id from care.members m join care.members o on o.id <> m.id and care.person_key(o) = care.person_key(m) where m.id = p_member
+$$;
+revoke all on function care.same_person(uuid) from public, anon, authenticated;
+
+-- Being at a church service counts in all their groups. Group meetings stay with their own group.
+create or replace function care.attendance_everywhere() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if pg_trigger_depth() > 1 then return null; end if;
+  if tg_op = 'INSERT' and new.kind <> 'meeting' then
+    insert into care.attendance (member_id, seen_on, kind, program_id, by_self, marked_by)
+    select s, new.seen_on, new.kind, new.program_id, new.by_self, new.marked_by from care.same_person(new.member_id) s
+    on conflict do nothing;
+  elsif tg_op = 'DELETE' and old.kind <> 'meeting' then
+    delete from care.attendance where member_id in (select care.same_person(old.member_id)) and seen_on = old.seen_on
+      and kind = old.kind and program_id is not distinct from old.program_id and by_self = old.by_self;
+  end if;
+  return null;
+end $$;
+drop trigger if exists attendance_everywhere on care.attendance;
+create trigger attendance_everywhere after insert or delete on care.attendance for each row execute function care.attendance_everywhere();
+-- Fill in marks made before this rule existed (safe to run again).
+do $$ begin
+  perform set_config('care.member', '1', true);
+  insert into care.attendance (member_id, seen_on, kind, program_id, by_self, marked_by)
+  select s, a.seen_on, a.kind, a.program_id, a.by_self, a.marked_by from care.attendance a cross join lateral care.same_person(a.member_id) s
+  where a.kind <> 'meeting' on conflict do nothing;
+  perform set_config('care.member', '', true);
+end $$;
 
 -- ---------- access rules ----------
 alter table care.groups        enable row level security;
@@ -680,7 +716,7 @@ begin
   if r is null or r not in ('pastor', 'pa', 'leader') then raise exception 'You don''t have access to the growth figures'; end if;
   return jsonb_build_object(
     'scope', case when g is null then 'church' else 'group' end, 'group', g, 'today', current_date,
-    'members', coalesce((select jsonb_agg(jsonb_build_array(m.group_id, m.joined_at, m.joined_app_at is not null, m.last_seen))
+    'members', coalesce((select jsonb_agg(jsonb_build_array(m.group_id, m.joined_at, m.joined_app_at is not null, m.last_seen, left(md5(care.person_key(m)), 12)))
                          from care.members m where g is null or m.group_id = g), '[]'::jsonb),
     'visitors', coalesce((select jsonb_agg(jsonb_build_array(v.assigned_to, v.created_at::date, v.status, v.due, v.reached_at))
                           from care.visitors v where g is null or v.assigned_to = g), '[]'::jsonb),
@@ -688,6 +724,11 @@ begin
                               select m.group_id, a.seen_on, a.kind, count(*) as n from care.attendance a join care.members m on m.id = a.member_id
                               where a.seen_on >= since and a.kind in ('sunday', 'tuesday', 'friday', 'online') and (g is null or m.group_id = g)
                               group by 1, 2, 3) x), '[]'::jsonb),
+    -- the same, counting each person once however many groups they are in
+    'people_attendance', coalesce((select jsonb_agg(jsonb_build_array(x.seen_on, x.kind, x.n)) from (
+                              select a.seen_on, a.kind, count(distinct care.person_key(m)) as n from care.attendance a join care.members m on m.id = a.member_id
+                              where a.seen_on >= since and a.kind in ('sunday', 'tuesday', 'friday', 'online') and (g is null or m.group_id = g)
+                              group by 1, 2) x), '[]'::jsonb),
     'prayers', coalesce((select jsonb_agg(jsonb_build_array(p.assigned_to, p.to_pastor, p.created_at::date, p.status))
                          from care.prayers p where p.created_at >= since and (g is null or (p.assigned_to = g and not p.to_pastor))), '[]'::jsonb));
 end $$;
@@ -704,6 +745,103 @@ do $$ begin
   revoke all on function care.invite_info(text) from public;
   grant execute on function care.invite_info(text) to anon, authenticated;
 end $$;
+
+-- ---------- phone notifications after each service ----------
+-- A phone that said yes to notifications. Only the functions below touch this table.
+create table if not exists care.push_subs (
+  endpoint   text primary key check (char_length(endpoint) between 10 and 1000),
+  staff_id   uuid not null references care.staff(id) on delete cascade,
+  p256dh     text not null check (char_length(p256dh) <= 200),
+  auth       text not null check (char_length(auth) <= 100),
+  created_at timestamptz not null default now()
+);
+alter table care.push_subs enable row level security;
+revoke all on care.push_subs from anon, authenticated;
+
+create or replace function care.save_push(p_endpoint text, p_p256dh text, p_auth text) returns void language plpgsql security definer set search_path = care, public as $$
+begin
+  if care.my_role() is null or care.my_role() not in ('pastor', 'pa', 'leader') then raise exception 'Notifications are for the pastor, the PA and group leaders'; end if;
+  if p_endpoint !~ '^https://' then raise exception 'That notification address doesn''t look right'; end if;
+  insert into care.push_subs (endpoint, staff_id, p256dh, auth) values (p_endpoint, care.my_id(), p_p256dh, p_auth)
+  on conflict (endpoint) do update set staff_id = excluded.staff_id, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now();
+end $$;
+create or replace function care.drop_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
+  delete from care.push_subs where endpoint = p_endpoint and staff_id = care.my_id()
+$$;
+-- Used by the sender when a phone has switched notifications off.
+create or replace function care.forget_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
+  delete from care.push_subs where endpoint = p_endpoint
+$$;
+
+-- "a, b and 3 more"
+create or replace function care.name_list(names text[], n int default 3) returns text language sql immutable as $$
+  select case when coalesce(array_length(names, 1), 0) = 0 then ''
+    when array_length(names, 1) <= n then array_to_string(names, ', ')
+    else array_to_string(names[1:n], ', ') || ' and ' || (array_length(names, 1) - n) || ' more' end
+$$;
+
+-- One message per phone after a service: the church picture for the pastor and PA, the group's for a leader.
+-- p_kind: sunday, tuesday, friday, online, special (every program on today), or test.
+create or replace function care.service_push(p_kind text, p_day date default current_date)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare pr record; s record; lbl text; msg text; pres int; total int; missed text[]; unmarked text[]; noleader text[]; offapp int; newv int; todo int;
+begin
+  for pr in
+    select null::uuid as id, p_kind as kind,
+           case p_kind when 'sunday' then 'Sunday service' when 'tuesday' then 'Time with the Rabbi' when 'friday' then 'Friday Miracle Service'
+                       when 'online' then 'Online prayer' else 'Church Care' end as label
+    where p_kind in ('sunday', 'tuesday', 'friday', 'online', 'test')
+    union all
+    select p.id, 'special', p.title from care.programs p where p_kind = 'special' and p_day between p.starts_on and p.ends_on
+  loop
+    -- the online prayer only gets a message when someone was marked present
+    if pr.kind = 'online' and not exists (select 1 from care.attendance a where a.seen_on = p_day and a.kind = 'online') then continue; end if;
+    for s in select st.*, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id loop
+      if pr.kind = 'test' then
+        msg := 'Notifications are working. You''ll get a short update after each service.';
+      elsif s.role in ('pastor', 'pa') then
+        select count(distinct care.person_key(m)) into pres from care.attendance a join care.members m on m.id = a.member_id
+          where a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id;
+        select array_agg(g.name order by g.sort) into unmarked from care.groups g
+          where exists (select 1 from care.members m where m.group_id = g.id)
+            and not exists (select 1 from care.attendance a join care.members m on m.id = a.member_id
+                            where m.group_id = g.id and a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id);
+        select array_agg(g.name order by g.sort) into noleader from care.groups g
+          where not exists (select 1 from care.staff x where x.role = 'leader' and x.group_id = g.id and x.joined_app_at is not null);
+        select count(*) into offapp from care.members m where m.joined_app_at is null;
+        select count(*) into newv from care.visitors v where v.created_at::date = p_day;
+        msg := pres || case when pres = 1 then ' person' else ' people' end || ' marked present.'
+          || case when unmarked is not null then ' No one marked yet: ' || care.name_list(unmarked) || '.' else '' end
+          || case when newv > 0 then ' ' || newv || ' new visitor' || case when newv = 1 then '' else 's' end || '.' else '' end
+          || case when noleader is not null then ' Still to sign up: the leader of ' || care.name_list(noleader) || '.' else '' end
+          || case when offapp > 0 then ' ' || offapp || ' member' || case when offapp = 1 then '' else 's' end || ' not on the app yet.' else '' end;
+      elsif s.role = 'leader' then
+        select count(*) filter (where a.member_id is not null), count(*),
+               array_agg(m.name order by m.name) filter (where a.member_id is null)
+          into pres, total, missed
+          from care.members m left join care.attendance a on a.member_id = m.id and a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id
+          where m.group_id = s.group_id and (m.joined_at <= p_day or a.member_id is not null);
+        select count(*) into todo from care.visitors v where v.assigned_to = s.group_id and v.status = 'new';
+        msg := pres || ' of ' || total || ' from ' || coalesce((select name from care.groups where id = s.group_id), 'your group') || ' marked present.'
+          || case when missed is not null then ' Not marked: ' || care.name_list(missed) || '.' else '' end
+          || case when todo > 0 then ' ' || todo || ' visitor' || case when todo = 1 then '' else 's' end || ' to contact.' else '' end;
+      else
+        continue;
+      end if;
+      endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+      title := case when pr.kind = 'test' then 'Church Care' else pr.label || ', ' || to_char(p_day, 'FMDay FMDD Mon') end;
+      body := msg;
+      url := 'team.html' || case when pr.kind = 'test' then '' else '#after=' || pr.kind || '|' || p_day || coalesce('|' || pr.id, '') end;
+      return next;
+    end loop;
+  end loop;
+end $$;
+
+revoke all on function care.save_push(text, text, text), care.drop_push(text) from public, anon;
+grant execute on function care.save_push(text, text, text), care.drop_push(text) to authenticated;
+revoke all on function care.forget_push(text), care.service_push(text, date) from public, anon, authenticated;
+grant execute on function care.forget_push(text), care.service_push(text, date) to service_role;
 
 -- ---------- live updates ----------
 do $$
@@ -734,3 +872,5 @@ grant usage, select on all sequences in schema care to authenticated, service_ro
 revoke all on care.invites from authenticated;
 grant all on care.invites to service_role;
 grant select on care.groups, care.programs to anon;
+revoke all on care.push_subs from anon, authenticated;
+grant all on care.push_subs to service_role;
