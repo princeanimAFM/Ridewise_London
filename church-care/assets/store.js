@@ -80,6 +80,7 @@
       },
       memberCheckin: function (group, kind, day, here, program) { return sb.rpc('member_checkin', { p_group: group, p_kind: kind, p_day: day, p_here: here, p_program: program || null }).then(must); },
       myAttendance: function (group) { return sb.rpc('my_attendance', { p_group: group }).then(must); },
+      growth: function () { return sb.rpc('growth_data').then(must); },
       subscribe: function (cb) {
         var ch = sb.channel('care');
         TABLES.concat(['groups', 'attendance', 'programs']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: C.supabaseSchema || 'public', table: t }, cb); });
@@ -90,7 +91,7 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v6', listeners = [];
+    var KEY = 'care-demo-v7', listeners = [];
     var data = read();
     var role = 'pastor';
     try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
@@ -131,7 +132,7 @@
         ['Mensah Tetteh', 'g4', 2], ['Adwoa Frimpong', 'g4', 0], ['Kwabena Owusu', 'dia', 0], ['Akua Boakye', 'dia', 3]];
       names.forEach(function (n, i) {
         var phone = '024' + (1000000 + i * 7311), onApp = i % 3 !== 2;
-        d.members.push({ id: 'm' + i, name: n[0], phone: phone, group_id: n[1], joined_at: Care.addDays(t, -90), last_seen: Care.addDays(t, -n[2] * 7), created_at: now(),
+        d.members.push({ id: 'm' + i, name: n[0], phone: phone, group_id: n[1], joined_at: Care.addDays(t, -(20 + i * 24)), last_seen: Care.addDays(t, -n[2] * 7), created_at: now(),
           login: onApp ? Care.intl(phone) : null, joined_app_at: onApp ? Care.addDays(t, -10) + 'T10:00:00Z' : null });
       });
       d.invites = [];
@@ -155,11 +156,12 @@
         }
         m.last_seen = days.length ? days.sort()[days.length - 1] : null;
       });
-      var vs = [['Kwesi Ofori', -5, 'new', null, 'g2'], ['Maame Ama', -3, 'new', 'g2', null], ['Daniel Addo', -1, 'new', null, 'wog'], ['Grace Nartey', -8, 'reached', 'g1', null], ['Samuel Opoku', -12, 'joined', 'g3', null]];
+      var vs = [['Kwesi Ofori', -5, 'new', null, 'g2'], ['Maame Ama', -3, 'new', 'g2', null], ['Daniel Addo', -1, 'new', null, 'wog'], ['Grace Nartey', -8, 'reached', 'g1', null], ['Samuel Opoku', -12, 'joined', 'g3', null],
+        ['Felix Amoah', -40, 'joined', 'sg', null], ['Rita Agyei', -66, 'reached', 'wog', null], ['Joseph Antwi', -95, 'joined', 'g1', null], ['Linda Osei', -130, 'reached', 'g4', null], ['Peter Badu', -170, 'joined', 'dia', null]];
       vs.forEach(function (v, i) {
         var made = Care.addDays(t, v[1]);
         var o = { id: 'v' + i, name: v[0], phone: '055' + (2000000 + i * 9137), reason: C.reasons[i % 5], invited_by: i === 1 ? 'Ama Serwaa' : '', group_interest: v[4], assigned_to: v[3],
-          status: v[2], due: Care.addDays(made, C.followDays), reached_at: v[2] !== 'new' ? Care.addDays(made, 1) : null, seen_by_leader: v[2] !== 'new' || !v[3],
+          status: v[2], due: Care.addDays(made, C.followDays), reached_at: v[2] !== 'new' ? Care.addDays(made, i % 3 === 1 ? 4 : 1) : null, seen_by_leader: v[2] !== 'new' || !v[3],
           consent_at: made + 'T10:00:00Z', source: 'form', created_at: made + 'T10:00:00Z',
           welcomed_at: i === 0 || i === 2 ? null : made + 'T15:00:00Z', welcomed_by: i === 0 || i === 2 ? '' : 'Welcome team' };
         d.visitors.push(o);
@@ -412,6 +414,28 @@
         });
       },
       programs: function () { return Promise.resolve(data.programs.slice().sort(function (a, b) { return a.starts_on < b.starts_on ? -1 : 1; })); },
+      // Same shape as the database's growth_data(): numbers only, the whole church or the leader's group.
+      growth: function () {
+        return Promise.resolve().then(function () {
+          var m = me(), t = Care.today(), g = m.role === 'leader' ? m.group_id : null;
+          check(['pastor', 'pa', 'leader'].indexOf(m.role) >= 0);
+          var n0 = new Date(), since = Care.ymd(new Date(n0.getFullYear(), n0.getMonth() - 12, 1));
+          var gm = {}; data.members.forEach(function (x) { gm[x.id] = x.group_id; });
+          var att = {};
+          data.attendance.forEach(function (a) {
+            var grp = gm[a.member_id];
+            if (!grp || a.seen_on < since || ['sunday', 'tuesday', 'friday', 'online'].indexOf(a.kind) < 0 || (g && grp !== g)) return;
+            var k = grp + '|' + a.seen_on + '|' + a.kind; att[k] = (att[k] || 0) + 1;
+          });
+          return {
+            scope: g ? 'group' : 'church', group: g, today: t,
+            members: data.members.filter(function (x) { return !g || x.group_id === g; }).map(function (x) { return [x.group_id, x.joined_at || String(x.created_at).slice(0, 10), !!x.joined_app_at, x.last_seen]; }),
+            visitors: data.visitors.filter(function (v) { return !g || v.assigned_to === g; }).map(function (v) { return [v.assigned_to, String(v.created_at).slice(0, 10), v.status, v.due, v.reached_at]; }),
+            attendance: Object.keys(att).map(function (k) { var p = k.split('|'); return [p[0], p[1], p[2], att[k]]; }),
+            prayers: data.prayers.filter(function (p) { return String(p.created_at).slice(0, 10) >= since && (!g || (p.assigned_to === g && !p.to_pastor)); }).map(function (p) { return [p.assigned_to, p.to_pastor, String(p.created_at).slice(0, 10), p.status]; })
+          };
+        });
+      },
       present: function (memberId, day, kind, program) {
         kind = kind || 'sunday'; program = program || null;
         return Promise.resolve().then(function () {

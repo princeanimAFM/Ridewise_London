@@ -672,6 +672,28 @@ create or replace function care.my_attendance(p_group text) returns jsonb langua
     and ((m.login_phone is not null and m.login_phone = care.my_login_phone()) or (m.login_email is not null and m.login_email = care.my_login_email()))
 $$;
 
+-- Church growth figures. Pastor and PA: the whole church. Leader: their own group. Numbers only: no names,
+-- phone numbers, notes or prayer words, so a PA sees growth even without the private areas.
+create or replace function care.growth_data() returns jsonb language plpgsql stable security definer set search_path = care, public as $$
+declare r text := care.my_role(); g text := care.my_group(); since date := (date_trunc('month', current_date) - interval '12 months')::date;
+begin
+  if r is null or r not in ('pastor', 'pa', 'leader') then raise exception 'You don''t have access to the growth figures'; end if;
+  return jsonb_build_object(
+    'scope', case when g is null then 'church' else 'group' end, 'group', g, 'today', current_date,
+    'members', coalesce((select jsonb_agg(jsonb_build_array(m.group_id, m.joined_at, m.joined_app_at is not null, m.last_seen))
+                         from care.members m where g is null or m.group_id = g), '[]'::jsonb),
+    'visitors', coalesce((select jsonb_agg(jsonb_build_array(v.assigned_to, v.created_at::date, v.status, v.due, v.reached_at))
+                          from care.visitors v where g is null or v.assigned_to = g), '[]'::jsonb),
+    'attendance', coalesce((select jsonb_agg(jsonb_build_array(x.group_id, x.seen_on, x.kind, x.n)) from (
+                              select m.group_id, a.seen_on, a.kind, count(*) as n from care.attendance a join care.members m on m.id = a.member_id
+                              where a.seen_on >= since and a.kind in ('sunday', 'tuesday', 'friday', 'online') and (g is null or m.group_id = g)
+                              group by 1, 2, 3) x), '[]'::jsonb),
+    'prayers', coalesce((select jsonb_agg(jsonb_build_array(p.assigned_to, p.to_pastor, p.created_at::date, p.status))
+                         from care.prayers p where p.created_at >= since and (g is null or (p.assigned_to = g and not p.to_pastor))), '[]'::jsonb));
+end $$;
+revoke all on function care.growth_data() from public, anon;
+grant execute on function care.growth_data() to authenticated;
+
 do $$ begin
   revoke all on function care.member_checkin(text, text, date, boolean, uuid), care.my_attendance(text) from public, anon;
   grant execute on function care.member_checkin(text, text, date, boolean, uuid), care.my_attendance(text) to authenticated;
