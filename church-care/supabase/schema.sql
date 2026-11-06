@@ -685,7 +685,7 @@ begin
   select id into mid from care.members where group_id = p_group and id in (
     select id from care.members where (login_phone is not null and login_phone = care.my_login_phone()) or (login_email is not null and login_email = care.my_login_email()));
   if mid is null then raise exception 'You can only mark attendance in your own group'; end if;
-  if p_day is null or p_day > current_date or p_day < current_date - 2 then raise exception 'You can mark attendance for today or the last two days'; end if;
+  if p_day is null or p_day > current_date or p_day < current_date - 6 then raise exception 'You can mark attendance for the last week only'; end if;
   if p_kind in ('sunday', 'online') and extract(dow from p_day) <> 0 then raise exception 'That service is on Sundays'; end if;
   if p_kind = 'friday' and extract(dow from p_day) <> 5 then raise exception 'The Miracle Service is on Fridays'; end if;
   if p_kind = 'tuesday' and extract(dow from p_day) <> 2 then raise exception 'Time with the Rabbi is on Tuesdays'; end if;
@@ -750,23 +750,32 @@ end $$;
 -- A phone that said yes to notifications. Only the functions below touch this table.
 create table if not exists care.push_subs (
   endpoint   text primary key check (char_length(endpoint) between 10 and 1000),
-  staff_id   uuid not null references care.staff(id) on delete cascade,
+  staff_id   uuid references care.staff(id) on delete cascade,
   p256dh     text not null check (char_length(p256dh) <= 200),
   auth       text not null check (char_length(auth) <= 100),
   created_at timestamptz not null default now()
 );
+-- a member's phone: the WhatsApp number (international digits) or email they sign in with
+alter table care.push_subs alter column staff_id drop not null;
+alter table care.push_subs add column if not exists member_login text;
+alter table care.push_subs drop constraint if exists push_subs_who;
+alter table care.push_subs add constraint push_subs_who check ((staff_id is null) <> (member_login is null));
 alter table care.push_subs enable row level security;
 revoke all on care.push_subs from anon, authenticated;
 
 create or replace function care.save_push(p_endpoint text, p_p256dh text, p_auth text) returns void language plpgsql security definer set search_path = care, public as $$
+declare st uuid; ml text;
 begin
-  if care.my_role() is null or care.my_role() not in ('pastor', 'pa', 'leader') then raise exception 'Notifications are for the pastor, the PA and group leaders'; end if;
+  if care.my_role() in ('pastor', 'pa', 'leader') then st := care.my_id();
+  elsif exists (select care.my_member_groups()) then ml := coalesce(care.my_login_phone(), care.my_login_email());
+  else raise exception 'Please join your group first'; end if;
   if p_endpoint !~ '^https://' then raise exception 'That notification address doesn''t look right'; end if;
-  insert into care.push_subs (endpoint, staff_id, p256dh, auth) values (p_endpoint, care.my_id(), p_p256dh, p_auth)
-  on conflict (endpoint) do update set staff_id = excluded.staff_id, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now();
+  insert into care.push_subs (endpoint, staff_id, member_login, p256dh, auth) values (p_endpoint, st, ml, p_p256dh, p_auth)
+  on conflict (endpoint) do update set staff_id = excluded.staff_id, member_login = excluded.member_login, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now();
 end $$;
 create or replace function care.drop_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
-  delete from care.push_subs where endpoint = p_endpoint and staff_id = care.my_id()
+  delete from care.push_subs where endpoint = p_endpoint
+    and (staff_id = care.my_id() or member_login in (care.my_login_phone(), care.my_login_email()))
 $$;
 -- Used by the sender when a phone has switched notifications off.
 create or replace function care.forget_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
@@ -843,11 +852,131 @@ grant execute on function care.save_push(text, text, text), care.drop_push(text)
 revoke all on function care.forget_push(text), care.service_push(text, date) from public, anon, authenticated;
 grant execute on function care.forget_push(text), care.service_push(text, date) to service_role;
 
+-- ---------- "we missed you": members say why, or that they were there ----------
+-- One row per group entry (so each of their leaders sees it), per service.
+create table if not exists care.absences (
+  id         bigint generated always as identity primary key,
+  member_id  uuid not null references care.members(id) on delete cascade,
+  seen_on    date not null,
+  kind       text not null check (kind in ('sunday', 'tuesday', 'friday', 'online', 'special')),
+  program_id uuid references care.programs(id) on delete cascade,
+  reason     text not null check (reason in ('sick', 'travelling', 'work', 'family', 'transport', 'other')),
+  note       text not null default '' check (char_length(note) <= 300),
+  created_at timestamptz not null default now(),
+  check ((kind = 'special') = (program_id is not null))
+);
+create unique index if not exists absences_one on care.absences (member_id, seen_on, kind, coalesce(program_id, '00000000-0000-0000-0000-000000000000'::uuid));
+alter table care.absences enable row level security;
+revoke all on care.absences from anon;
+drop policy if exists absences_read on care.absences;
+-- whoever can see the member (their leader, the pastor, a PA with Groups) can read why they missed
+create policy absences_read on care.absences for select to authenticated using (exists (select 1 from care.members m where m.id = member_id));
+
+-- Marked present after all: the reason no longer applies.
+create or replace function care.absence_cleared() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  delete from care.absences where member_id = new.member_id and seen_on = new.seen_on and kind = new.kind and program_id is not distinct from new.program_id;
+  return null;
+end $$;
+drop trigger if exists absence_cleared on care.attendance;
+create trigger absence_cleared after insert on care.attendance for each row execute function care.absence_cleared();
+
+-- The services a member is asked about: Sunday service and special programs, in the last week,
+-- that they weren't marked present at and haven't given a reason for.
+create or replace function care.missed_for(p_login text, p_from date, p_to date)
+returns table (kind text, seen_on date, program_id uuid, label text) language sql stable security definer set search_path = care, public as $$
+  with mine as (select * from care.members m where m.login_phone = p_login or m.login_email = p_login),
+  svc as (
+    select 'sunday'::text as kind, d::date as seen_on, null::uuid as program_id, 'Sunday service'::text as label
+      from generate_series(p_from, p_to, interval '1 day') d where extract(dow from d) = 0 and (d::date < current_date or now()::time > '14:00')
+    union all
+    select 'special', d::date, p.id, p.title from care.programs p cross join generate_series(greatest(p.starts_on, p_from), least(p.ends_on, p_to), interval '1 day') d
+      where d::date < current_date or now()::time > '22:00')
+  select s.kind, s.seen_on, s.program_id, s.label from svc s
+  where exists (select 1 from mine m where m.joined_at <= s.seen_on)
+    and not exists (select 1 from care.attendance a join mine m on m.id = a.member_id where a.seen_on = s.seen_on and a.kind = s.kind and a.program_id is not distinct from s.program_id)
+    and not exists (select 1 from care.absences x join mine m on m.id = x.member_id where x.seen_on = s.seen_on and x.kind = s.kind and x.program_id is not distinct from s.program_id)
+  order by s.seen_on desc
+$$;
+revoke all on function care.missed_for(text, date, date) from public, anon, authenticated;
+
+create or replace function care.my_missed() returns jsonb language sql stable security definer set search_path = care, public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('kind', x.kind, 'seen_on', x.seen_on, 'program_id', x.program_id, 'label', x.label)), '[]'::jsonb)
+  from care.missed_for(coalesce(care.my_login_phone(), care.my_login_email()), current_date - 6, current_date) x
+$$;
+
+create or replace function care.member_absence(p_kind text, p_day date, p_program uuid, p_reason text, p_note text) returns void language plpgsql security definer set search_path = care, public as $$
+declare lg text := coalesce(care.my_login_phone(), care.my_login_email()); n int;
+begin
+  if lg is null or not exists (select care.my_member_groups()) then raise exception 'Please join your group first'; end if;
+  if p_day is null or p_day > current_date or p_day < current_date - 6 then raise exception 'You can only answer for the last week'; end if;
+  if p_kind <> 'special' then p_program := null; end if;
+  insert into care.absences (member_id, seen_on, kind, program_id, reason, note)
+  select m.id, p_day, p_kind, p_program, p_reason, left(btrim(coalesce(p_note, '')), 300) from care.members m
+   where (m.login_phone = lg or m.login_email = lg)
+     and not exists (select 1 from care.attendance a where a.member_id = m.id and a.seen_on = p_day and a.kind = p_kind and a.program_id is not distinct from p_program)
+  on conflict (member_id, seen_on, kind, coalesce(program_id, '00000000-0000-0000-0000-000000000000'::uuid)) do update set reason = excluded.reason, note = excluded.note, created_at = now();
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'You''re already marked present for that service'; end if;
+end $$;
+
+create or replace function care.reason_text(r text) returns text language sql immutable as $$
+  select case r when 'sick' then 'sick' when 'travelling' then 'travelling' when 'work' then 'work' when 'family' then 'family matter'
+    when 'transport' then 'transport' else 'other' end
+$$;
+
+-- Next morning: a gentle note to members who weren't marked present (one per person, however many groups).
+create or replace function care.missed_push(p_day date default current_date - 1)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare s record; x record;
+begin
+  for s in select ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2, ps.member_login as lg from care.push_subs ps where ps.member_login is not null loop
+    for x in select * from care.missed_for(s.lg, p_day, p_day) loop
+      endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+      title := 'We missed you at ' || case when x.kind = 'special' then x.label else 'church' end || ' 💛';
+      body := x.label || ', ' || to_char(x.seen_on, 'FMDay FMDD Mon') || '. If you were there, tap to let your leader know. If you couldn''t come, you can tell them why.';
+      url := 'team.html#missed=' || x.kind || '|' || x.seen_on || coalesce('|' || x.program_id, '');
+      return next;
+    end loop;
+  end loop;
+end $$;
+
+-- Evening after: each leader hears who told them why they missed, and who said they came.
+create or replace function care.reasons_push(p_day date default current_date - 1)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare s record; pr record; why text[]; came text[];
+begin
+  for pr in select k.kind, null::uuid as id, 'Sunday service' as label from (select 'sunday' as kind) k where extract(dow from p_day) = 0
+            union all select 'special', p.id, p.title from care.programs p where p_day between p.starts_on and p.ends_on loop
+    for s in select st.group_id, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id where st.role = 'leader' loop
+      select array_agg(m.name || ' (' || care.reason_text(x.reason) || ')' order by m.name) into why from care.absences x join care.members m on m.id = x.member_id
+        where m.group_id = s.group_id and x.seen_on = p_day and x.kind = pr.kind and x.program_id is not distinct from pr.id;
+      select array_agg(m.name order by m.name) into came from care.attendance a join care.members m on m.id = a.member_id
+        where m.group_id = s.group_id and a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id and a.by_self;
+      if why is null and came is null then continue; end if;
+      endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+      title := pr.label || ', ' || to_char(p_day, 'FMDay FMDD Mon') || ': members replied';
+      body := case when why is not null then 'Couldn''t come: ' || care.name_list(why) || '.' else '' end
+           || case when why is not null and came is not null then ' ' else '' end
+           || case when came is not null then 'Said they came: ' || care.name_list(came) || '. Please check and mark them present if they were there.' else '' end;
+      url := 'team.html#after=' || pr.kind || '|' || p_day || coalesce('|' || pr.id, '');
+      return next;
+    end loop;
+  end loop;
+end $$;
+
+revoke all on function care.my_missed(), care.member_absence(text, date, uuid, text, text) from public, anon;
+grant execute on function care.my_missed(), care.member_absence(text, date, uuid, text, text) to authenticated;
+revoke all on function care.missed_push(date), care.reasons_push(date) from public, anon, authenticated;
+grant execute on function care.missed_push(date), care.reasons_push(date) to service_role;
+
 -- ---------- live updates ----------
 do $$
 declare t text;
 begin
-  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance', 'programs'] loop
+  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance', 'programs', 'absences'] loop
     if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'care' and tablename = t) then
       execute format('alter publication supabase_realtime add table care.%I', t);
     end if;

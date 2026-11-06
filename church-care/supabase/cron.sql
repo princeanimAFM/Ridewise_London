@@ -20,3 +20,6 @@ select cron.schedule('care-after-online',  '30 22 * * 0', $$select care.send_aft
 select cron.schedule('care-after-tuesday', '0 21 * * 2',  $$select care.send_after_service('tuesday')$$);
 select cron.schedule('care-after-friday',  '0 21 * * 5',  $$select care.send_after_service('friday')$$);
 select cron.schedule('care-after-special', '0 22 * * *',  $$select care.send_after_service('special')$$);
+-- Members not marked present at yesterday's Sunday service or program: 10 AM. Their leaders hear the replies: 8 PM.
+select cron.schedule('care-missed-you',    '0 10 * * *',  $$select care.send_after_service('missed')$$);
+select cron.schedule('care-replies',       '0 20 * * *',  $$select care.send_after_service('reasons')$$);

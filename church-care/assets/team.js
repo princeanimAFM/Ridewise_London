@@ -45,6 +45,11 @@
   function lastServices(kind, n) { var s0 = serviceDay(kind), out = []; for (var i = 0; i < n; i++) out.push(Care.addDays(s0, -7 * i)); return out; }
   function lastSundays(n) { return lastServices('sunday', n); }
   function attended(mid, day, kind, prog) { return S.attMap[mid + '|' + day + '|' + kind + '|' + (prog || '')]; }
+  /** The reason a member gave for missing a service, if they did. */
+  function absence(mid, day, kind, prog) { return (S.absMap || {})[mid + '|' + day + '|' + kind + '|' + (prog || '')]; }
+  var REASONS = [['sick', '🤒 I was sick'], ['travelling', '🧳 I was travelling'], ['work', '💼 Work'], ['family', '🏠 A family matter'], ['transport', '🚌 Transport'], ['other', '✏️ Something else']];
+  function reasonText(r) { return { sick: 'sick', travelling: 'travelling', work: 'work', family: 'family matter', transport: 'transport', other: 'other reason' }[r] || r; }
+  function reasonLine(a) { return a ? '💬 Couldn\'t come: <b>' + esc(reasonText(a.reason)) + '</b>' + (a.note ? ' · “' + esc(a.note) + '”' : '') : ''; }
   function sundayStats(m, kind) {
     kind = kind || 'sunday';
     var joined = m.joined_at || day(m.created_at) || '2000-01-01';
@@ -114,6 +119,7 @@
         S.groups = d.groups; S.staff = d.staff; S.visitors = d.visitors; S.notes = d.visitor_notes; S.members = d.members; S.prayers = d.prayers;
         S.programs = d.programs || [];
         S.attMap = {}; (d.attendance || []).forEach(function (a) { S.attMap[a.member_id + '|' + a.seen_on + '|' + a.kind + '|' + (a.program_id || '')] = a; });
+        S.absMap = {}; (d.absences || []).forEach(function (a) { S.absMap[a.member_id + '|' + a.seen_on + '|' + a.kind + '|' + (a.program_id || '')] = a; });
         S.loaded = true;
         if (Store.mode === 'demo') demoRoles();
         render();
@@ -135,7 +141,7 @@
       $('banner').innerHTML = '<div class="banner"><b>Preview</b> with sample people. Nothing leaves this phone. <button class="back" id="reset">Reset</button> · <a href="team.html?signin=1">See the sign-in screen</a></div>';
       $('reset').onclick = function () { Store.reset(); Care.toast('Sample data reset.'); };
       demoRoles();
-      $('role').onchange = function () { Store.setRole(this.value); S.tab = 'overview'; S.groupId = null; signedIn(); };
+      $('role').onchange = function () { Store.setRole(this.value); S.tab = 'overview'; S.groupId = null; S.missed = null; closeSheet(); signedIn(); };
       Store.subscribe(reload);
       if (inviteToken()) { $('demo-roles').hidden = true; $('banner').innerHTML = '<div class="banner"><b>Preview</b> of an invite link. No real code is sent; type any 6 digits.</div>'; return inviteFlow(inviteToken()); }
       if (/[?&]signin/.test(location.search)) { $('demo-roles').hidden = true; return signInScreen(); }
@@ -229,6 +235,7 @@
       $('nav').hidden = false;
       if (isLeader()) S.groupId = m.group_id;
       openFromLink();
+      S.missedLink = missedLink();
       checkPush();
       reload();
     });
@@ -242,7 +249,11 @@
     history.replaceState(null, '', location.pathname + location.search);
     setTimeout(function () { var el = $('after'); if (el) el.scrollIntoView({ block: 'start' }); }, 700);
   }
-  window.addEventListener('hashchange', function () { if (S.me && /#after=/.test(location.hash)) { openFromLink(); render(); } });
+  window.addEventListener('hashchange', function () {
+    if (S.me && /#after=/.test(location.hash)) { openFromLink(); render(); }
+    if (S.me && /#missed=/.test(location.hash)) { var id = missedLink(); if (S.missed) askMissed(id); else S.missedLink = id; }
+  });
+  function missedLink() { var m = /#missed=([^&]+)/.exec(location.hash); if (!m) return null; history.replaceState(null, '', location.pathname + location.search); return decodeURIComponent(m[1]); }
 
   /* ---------- layout ---------- */
   function tabs() {
@@ -306,7 +317,7 @@
     return out;
   }
   function checkPush() {
-    if (!(isPastor() || isLeader() || role() === 'pa')) { S.push = 'none'; return; }
+    if (!(isPastor() || isLeader() || isMember() || role() === 'pa')) { S.push = 'none'; return; }
     if (Store.mode === 'demo') { S.push = S.push === 'on' ? 'on' : 'off'; return; }
     if (!C.pushKey) { S.push = 'none'; return; }
     if (!pushReady()) { S.push = isIOS() && !standalone() ? 'ios' : 'unsupported'; render(); return; }
@@ -323,7 +334,7 @@
         var j = sub.toJSON();
         return Store.savePush(j.endpoint, j.keys.p256dh, j.keys.auth).then(function () {
           S.push = 'on'; render();
-          reg.showNotification('Church Care', { body: 'Notifications are on. You\'ll get a short update after each service.', icon: 'assets/icon-192.png' });
+          reg.showNotification('Church Care', { body: isMember() ? 'Reminders are on. God bless you!' : 'Notifications are on. You\'ll get a short update after each service.', icon: 'assets/icon-192.png' });
         });
       });
     }).catch(fail);
@@ -336,11 +347,14 @@
     }).then(function () { S.push = 'off'; Care.toast('Notifications are off on this phone.'); render(); }, fail);
   }
   function pushCard() {
-    var who = isLeader() ? 'who came from your group and who to follow up' : 'how many came, which groups haven\'t marked attendance, and who still needs to sign up';
+    var who = isLeader() ? 'who came from your group, who to follow up, and why members missed' : 'how many came, which groups haven\'t marked attendance, and who still needs to sign up';
+    if (S.push === 'off' && isMember()) return '<div class="card top sky" style="margin-top:12px"><div class="name">🔔 Turn on church reminders</div>' +
+      '<div class="meta">If you\'re not marked present at a Sunday service or program, we\'ll check on you the next morning. You can tell your leader you were there, or why you couldn\'t come.</div>' +
+      '<div class="actions" style="margin-bottom:0"><button class="btn sm blue" data-push="on">Turn on</button></div></div>';
     if (S.push === 'off') return '<div class="card top sky"><div class="row"><div class="grow"><div class="name">🔔 Get an update after each service</div>' +
       '<div class="meta">A notification on this phone about 2 hours after each service: ' + who + '.</div></div></div>' +
       '<div class="actions" style="margin-bottom:0"><button class="btn sm blue" data-push="on">Turn on notifications</button></div></div>';
-    if (S.push === 'on') return '<p class="meta" style="margin:8px 0 0">🔔 Updates after each service are on for this phone · <button class="back" data-push="off" style="font-size:inherit;padding:0">Turn off</button></p>';
+    if (S.push === 'on') return '<p class="meta" style="margin:8px 0 0">🔔 ' + (isMember() ? 'Church reminders are' : 'Updates after each service are') + ' on for this phone · <button class="back" data-push="off" style="font-size:inherit;padding:0">Turn off</button></p>';
     if (S.push === 'ios') return '<div class="banner">🔔 To get an update after each service on iPhone: tap <b>Share</b> → <b>Add to Home Screen</b>, then open Church Care from your home screen.</div>';
     if (S.push === 'blocked') return '<div class="banner">🔔 Notifications are blocked for Church Care on this phone. To get updates after each service, allow notifications for this site in your browser settings.</div>';
     return '';
@@ -367,11 +381,19 @@
     var here = function (m) { return attended(m.id, d, k, pid); };
     var pool = S.members.filter(function (m) { return (m.joined_at || '2000-01-01') <= d || here(m); });
     if (isLeader()) {
-      var came = pool.filter(here), missed = pool.filter(function (m) { return !here(m); });
+      var came = pool.filter(here), missedAll = pool.filter(function (m) { return !here(m); });
+      var why = missedAll.filter(function (m) { return absence(m.id, d, k, pid); }), missed = missedAll.filter(function (m) { return !absence(m.id, d, k, pid); });
+      var said = came.filter(function (m) { var a = here(m); return a && a.by_self; });
       var twice = k in WEEKLY ? missed.filter(function (m) { return sundayStats(m, k).row >= 2; }) : [];
       var off = S.members.filter(function (m) { return !m.joined_app_at; });
       h += '<div class="card top green"><div class="name">' + came.length + ' of ' + pool.length + ' came</div>' +
         (came.length ? '<div class="meta">' + esc(came.map(function (m) { return m.name; }).join(', ')) + '</div>' : '<div class="meta">No one is marked present yet. Mark who came in My group, or ask members to tap "I was in church".</div>') + '</div>';
+      if (said.length) h += '<div class="card top sky"><div class="name">Said they came (' + said.length + ')</div><div class="meta">' + esc(said.map(function (m) { return m.name; }).join(', ')) +
+        '</div><div class="meta" style="margin-top:4px">They marked themselves present. If you didn\'t see them, have a quick word.</div></div>';
+      if (why.length) h += '<div class="card top red"><div class="name">Told you why they missed (' + why.length + ')</div>' + why.map(function (m) {
+        return '<div class="row" style="padding:6px 0;border-top:1px solid var(--line)"><div class="grow"><div class="name">' + esc(m.name) + '</div><div class="meta">' + reasonLine(absence(m.id, d, k, pid)) + '</div></div>' +
+          (contactButtons(m.phone, 'Hello ' + Care.first(m.name) + ', this is ' + S.me.name + ' from ' + C.church + '. Thank you for letting us know. We are praying for you. God bless you.') || '') + '</div>';
+      }).join('') + '</div>';
       if (missed.length) h += '<div class="card top gold"><div class="name">Not marked present (' + missed.length + ')</div><div class="meta">' + esc(missed.map(function (m) { return m.name; }).join(', ')) + '</div>' +
         (twice.length ? '<div class="meta" style="margin-top:4px"><b style="color:var(--red)">Missed 2 or more in a row:</b> ' + esc(twice.map(function (m) { return m.name; }).join(', ')) + '</div>' : '') +
         (k in WEEKLY ? '<div class="actions" style="margin-bottom:0"><button class="btn sm alt" data-tab="away">💛 Send them a message</button></div>' : '') + '</div>';
@@ -381,7 +403,8 @@
     }
     var all = pool.filter(here), self = all.filter(function (m) { var a = here(m); return a && a.by_self; });
     var newv = S.visitors.filter(function (v) { return day(v.created_at) === d; }).length;
-    h += '<div class="tiles">' + tile(people(all), 'People marked present') + tile(people(self), 'Checked themselves in') + tile(newv, 'New visitors that day') +
+    var gave = people(pool.filter(function (m) { return !here(m) && absence(m.id, d, k, pid); }));
+    h += '<div class="tiles">' + tile(people(all), 'People marked present') + tile(people(self), 'Checked themselves in') + tile(gave, 'Told their leader why they missed') + tile(newv, 'New visitors that day') +
       tile(people(S.members.filter(function (m) { return !m.joined_app_at; })), 'Members not on the app yet') + '</div>';
     var noLeader = isPastor() ? S.groups.filter(function (g) { return !S.staff.some(function (x) { return x.role === 'leader' && x.group_id === g.id && x.joined_app_at; }); }) : [];
     h += '<div class="card scroll"><table class="table"><thead><tr><th>Group</th><th class="n">Came</th><th class="n">Not on app</th></tr></thead><tbody>' + S.groups.map(function (g) {
@@ -674,13 +697,40 @@
   function loadMember() {
     var gs = S.me.groups || [{ group_id: S.me.group_id }];
     if (!S.groupId || !gs.some(function (g) { return g.group_id === S.groupId; })) S.groupId = gs[0].group_id;
-    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups(), Store.myAttendance(S.groupId), Store.programs()])).then(function (r) {
+    Promise.all(gs.map(function (g) { return Store.groupView(g.group_id); }).concat([Store.myPrayers(), Store.groups(), Store.myAttendance(S.groupId), Store.programs(), Store.myMissed().catch(function () { return []; })])).then(function (r) {
+      S.missed = r[gs.length + 4] || [];
       S.mview = {}; gs.forEach(function (g, i) { S.mview[g.group_id] = r[i]; });
       S.myPrayers = r[gs.length]; S.groups = r[gs.length + 1]; S.myAtt = r[gs.length + 2]; S.programs = r[gs.length + 3] || [];
+      var ml = S.missedLink; S.missedLink = null;
+      setTimeout(function () { askMissed(ml); }, 300);
       S.loaded = true;
       if (Store.mode === 'demo') demoRoles();
       render();
     }, fail);
+  }
+  /* ---------- "we missed you" ---------- */
+  function missedId(x) { return x.kind + '|' + x.seen_on + '|' + (x.program_id || ''); }
+  function dismissed() { try { return JSON.parse(localStorage.getItem('care-missed-later') || '{}'); } catch (e) { return {}; } }
+  /** After a service a member wasn't marked present at, ask them once (or when they tap the notification). */
+  function askMissed(id) {
+    if (!isMember() || S.sheet) return;
+    var list = S.missed || [], d = dismissed();
+    var x = id ? list.filter(function (y) { return missedId(y) === id; })[0] : list.filter(function (y) { return !d[missedId(y)]; })[0];
+    if (id && !x) return Care.toast('Thank you, you\'ve already answered for that service. 🙏');
+    if (x) openSheet('missed:' + missedId(x));
+  }
+  function sheetMissed(id) {
+    var x = (S.missed || []).filter(function (y) { return missedId(y) === id; })[0];
+    if (!x) return null;
+    var when = Care.parse(x.seen_on).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+    return '<div class="kicker" style="margin-top:6px">We missed you 💛</div><h2>' + esc(x.label) + '</h2><p class="meta" style="margin-top:2px">' + esc(when) + '</p>' +
+      '<p>We didn\'t see you marked present. We care about you, and your leader would love to know how you are.</p>' +
+      '<div class="actions"><button class="btn green" data-was="' + esc(id) + '">✓ I was there (I forgot to mark)</button></div>' +
+      '<h2 class="sec">I couldn\'t come</h2><form data-absent="' + esc(id) + '"><div class="chips" style="flex-wrap:wrap">' + REASONS.map(function (r, i) {
+        return '<label class="chip"><input type="radio" name="why" value="' + r[0] + '"' + (i === 0 ? ' required' : '') + ' style="margin-right:6px">' + r[1] + '</label>';
+      }).join('') + '</div><div class="field"><label for="why-note">Anything else? (optional, only your leader and the pastor see it)</label><textarea id="why-note" maxlength="300" placeholder="e.g. My child was unwell. Please pray for us."></textarea></div>' +
+      '<button class="btn blue" type="submit">Send to my leader</button></form>' +
+      '<div class="actions" style="margin-top:14px"><button class="back" data-later="' + esc(id) + '">Not now</button></div>';
   }
   function viewMemberHome() {
     var v = S.mview[S.groupId], g = v.group, ppl = v.people || [], h = '';
@@ -691,6 +741,7 @@
       '<div class="meta">Leader: <b>' + esc(g.leader_name || 'not set yet') + '</b></div>' +
       '<div class="actions">' + (v.leader_phone ? '<a class="btn sm wa" href="' + esc(Care.waLink(v.leader_phone, 'Hello ' + (g.leader_name || '') + ', this is ' + S.me.name + ' from ' + g.name + '.')) + '" target="_blank" rel="noopener">💬 Message my leader</a>' : '') +
       '<button class="btn sm blue" data-tab="prayer">🙏 Send a prayer request</button></div></div>';
+    h += pushCard();
     h += checkinCard();
     var on = ppl.filter(function (p) { return p.on_app; }).length;
     h += '<h2 class="sec">Our group</h2><p class="meta" style="margin-top:-4px">' + ppl.length + ' members · ' + on + ' on the app</p>' +
@@ -790,7 +841,7 @@
       h += '<p class="meta" style="margin-top:-4px">' + missed.length + ' of ' + pool.length + ' were not marked present on ' + Care.fmt(d) + '. A kind message is ready in WhatsApp.</p>';
       h += missed.map(function (m) {
         return '<div class="card top ' + (sundayStats(m, fk).row >= 2 ? 'red' : 'gold') + '"><div class="row">' + avatar(m.name) + '<div class="grow"><div class="name">' + esc(m.name) + '</div>' +
-          '<div class="meta">' + (!isLeader() ? esc(groupName(m.group_id)) + ' · ' : '') + statsText(m, fk) + '</div></div></div>' +
+          '<div class="meta">' + (!isLeader() ? esc(groupName(m.group_id)) + ' · ' : '') + statsText(m, fk) + '</div>' + (absence(m.id, d, fk) ? '<div class="meta">' + reasonLine(absence(m.id, d, fk)) + '</div>' : '') + '</div></div>' +
           '<div class="actions">' + (contactButtons(m.phone, missedMsg(m, d, fk)) || '<span class="meta">No number saved.</span>') + '</div></div>';
       }).join('');
     }
@@ -1058,7 +1109,8 @@
       parts[0] === 'new-staff' ? sheetStaff(null) :
       parts[0] === 'grp' ? sheetGroup(parts[1]) :
       parts[0] === 'new-group' ? sheetGroup(null) :
-      parts[0] === 'qr' ? sheetQr() : null;
+      parts[0] === 'qr' ? sheetQr() :
+      parts[0] === 'missed' ? sheetMissed(key.slice(7)) : null;
     if (html === null) return closeSheet();
     var sh = $('sheet');
     var f = document.activeElement;
@@ -1228,6 +1280,14 @@
       Store.memberCheckin(S.groupId, c[0], c[1], c[2] === 'here', c[3] || null).then(function () { Care.toast(c[2] === 'here' ? 'Thank you! Your leader can see you were there. 🙏' : 'Removed.'); reload(); }, fail);
       return;
     }
+    var ms = e.target.closest('[data-was],[data-later]');
+    if (ms) {
+      e.preventDefault(); e.stopPropagation();
+      if (ms.dataset.later) { var dl = dismissed(); dl[ms.dataset.later] = 1; try { localStorage.setItem('care-missed-later', JSON.stringify(dl)); } catch (x) { /* not kept */ } closeSheet(); return; }
+      var w = ms.dataset.was.split('|');
+      Store.memberCheckin(S.groupId, w[0], w[1], true, w[2] || null).then(function () { closeSheet(); Care.toast('Thank you! Your leader can see you were there. 🙏'); reload(); }, fail);
+      return;
+    }
     var ab = e.target.closest('[data-after],[data-push]');
     if (ab) {
       e.preventDefault(); e.stopPropagation();
@@ -1258,6 +1318,13 @@
       if (!t) return Care.toast('One moment, the link is still being made.');
       window.open(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(g, t)), '_blank', 'noopener');
     }
+  }, true);
+  document.addEventListener('submit', function (e) {
+    if (!('absent' in e.target.dataset)) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    var a = e.target.dataset.absent.split('|'), r = e.target.querySelector('input[name=why]:checked');
+    if (!r) return Care.toast('Please choose why you couldn\'t come.');
+    Store.memberAbsence(a[0], a[1], a[2] || null, r.value, $('why-note').value).then(function () { closeSheet(); Care.toast('Sent to your leader. We\'re praying for you. 🙏'); reload(); }, fail);
   }, true);
   document.addEventListener('submit', function (e) {
     if (!('mprayer' in e.target.dataset)) return;

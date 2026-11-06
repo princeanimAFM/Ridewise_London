@@ -58,9 +58,10 @@
           sb.from('members').select('*').order('name').then(must),
           sb.from('prayers').select('*').order('created_at', { ascending: false }).then(must),
           sb.from('attendance').select('member_id, seen_on, kind, program_id, by_self').gte('seen_on', Care.addDays(Care.today(), -120)).then(must),
-          this.programs()
+          this.programs(),
+          sb.from('absences').select('member_id, seen_on, kind, program_id, reason, note, created_at').gte('seen_on', Care.addDays(Care.today(), -120)).then(function (r) { return r.error ? [] : r.data; })
         ]).then(function (a) {
-          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6], programs: a[7] };
+          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6], programs: a[7], absences: a[8] };
         });
       },
       // Prayer requests are saved without reading them back: the welcome team may add one but not read it.
@@ -81,11 +82,13 @@
       memberCheckin: function (group, kind, day, here, program) { return sb.rpc('member_checkin', { p_group: group, p_kind: kind, p_day: day, p_here: here, p_program: program || null }).then(must); },
       myAttendance: function (group) { return sb.rpc('my_attendance', { p_group: group }).then(must); },
       growth: function () { return sb.rpc('growth_data').then(must); },
+      myMissed: function () { return sb.rpc('my_missed').then(must); },
+      memberAbsence: function (kind, day, program, reason, note) { return sb.rpc('member_absence', { p_kind: kind, p_day: day, p_program: program || null, p_reason: reason, p_note: note || '' }).then(must); },
       savePush: function (endpoint, p256dh, auth) { return sb.rpc('save_push', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth }).then(must); },
       dropPush: function (endpoint) { return sb.rpc('drop_push', { p_endpoint: endpoint }).then(must); },
       subscribe: function (cb) {
         var ch = sb.channel('care');
-        TABLES.concat(['groups', 'attendance', 'programs']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: C.supabaseSchema || 'public', table: t }, cb); });
+        TABLES.concat(['groups', 'attendance', 'programs', 'absences']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: C.supabaseSchema || 'public', table: t }, cb); });
         ch.subscribe();
       }
     };
@@ -93,7 +96,7 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v8', listeners = [];
+    var KEY = 'care-demo-v9', listeners = [];
     var data = read();
     var role = 'pastor';
     try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
@@ -164,6 +167,11 @@
         d.members.push(Object.assign({}, esi, { id: 'm-esi-wog', group_id: 'wog' }));
         d.attendance.filter(function (a) { return a.member_id === esi.id && a.kind !== 'meeting'; }).forEach(function (a) { d.attendance.push(Object.assign({}, a, { member_id: 'm-esi-wog' })); });
       }
+      d.absences = [];
+      d.members.forEach(function (m) {
+        if (['Akosua Adjei', 'Kojo Darko'].indexOf(m.name) < 0 || d.attendance.some(function (a) { return a.member_id === m.id && a.seen_on === lastSun && a.kind === 'sunday'; })) return;
+        d.absences.push({ member_id: m.id, seen_on: lastSun, kind: 'sunday', program_id: null, reason: m.name === 'Akosua Adjei' ? 'sick' : 'travelling', note: m.name === 'Akosua Adjei' ? 'Malaria, getting better. Please pray for me.' : 'Visiting family in Kumasi', created_at: now() });
+      });
       var vs = [['Kwesi Ofori', -5, 'new', null, 'g2'], ['Maame Ama', -3, 'new', 'g2', null], ['Daniel Addo', -1, 'new', null, 'wog'], ['Grace Nartey', -8, 'reached', 'g1', null], ['Samuel Opoku', -12, 'joined', 'g3', null],
         ['Felix Amoah', -40, 'joined', 'sg', null], ['Rita Agyei', -66, 'reached', 'wog', null], ['Joseph Antwi', -95, 'joined', 'g1', null], ['Linda Osei', -130, 'reached', 'g4', null], ['Peter Badu', -170, 'joined', 'dia', null]];
       vs.forEach(function (v, i) {
@@ -241,6 +249,7 @@
           out.groups = gs;
           TABLES.forEach(function (t) { out[t] = data[t].filter(function (r) { return canSee(t, r, m); }).map(function (r) { return Object.assign({}, r); }); });
           out.programs = data.programs.slice().sort(function (a, b) { return a.starts_on < b.starts_on ? -1 : 1; });
+          out.absences = (data.absences || []).filter(function (a) { var mm = find('members', 'id', a.member_id); return mm && canSee('members', mm, m); }).map(function (a) { return Object.assign({}, a); });
           out.attendance = data.attendance.filter(function (a) { var mm = find('members', 'id', a.member_id); return mm && canSee('members', mm, m); }).map(function (a) { return Object.assign({}, a); });
           return out;
         });
@@ -400,7 +409,7 @@
         return Promise.resolve().then(function () {
           var mm = myMembers().filter(function (x) { return x.group_id === group; })[0];
           check(mm);
-          if (day > Care.today() || day < Care.addDays(Care.today(), -2)) throw new Error('You can mark attendance for today or the last two days');
+          if (day > Care.today() || day < Care.addDays(Care.today(), -6)) throw new Error('You can mark attendance for the last week only');
           var dow = Care.parse(day).getDay();
           if ((kind === 'sunday' || kind === 'online') && dow !== 0) throw new Error('That service is on Sundays');
           if (kind === 'friday' && dow !== 5) throw new Error('The Miracle Service is on Fridays');
@@ -408,6 +417,7 @@
           (kind === 'meeting' ? [mm] : sameMember(mm.id)).forEach(function (x) {
             var ex = data.attendance.filter(function (a) { return a.member_id === x.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program; })[0];
             if (here && !ex) data.attendance.push({ member_id: x.id, seen_on: day, kind: kind, program_id: program, by_self: true });
+            if (here) data.absences = (data.absences || []).filter(function (a) { return !(a.member_id === x.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program); });
             if (!here && ex && ex.by_self) data.attendance = data.attendance.filter(function (a) { return a !== ex; });
             lastSeen(x);
           });
@@ -417,6 +427,36 @@
       myAttendance: function (group) {
         var ids = myMembers().filter(function (x) { return x.group_id === group; }).map(function (x) { return x.id; });
         return Promise.resolve(data.attendance.filter(function (a) { return ids.indexOf(a.member_id) >= 0; }));
+      },
+      myMissed: function () {
+        return Promise.resolve().then(function () {
+          var mine = myMembers(), t = Care.today(), out = [];
+          if (!mine.length) return out;
+          var joined = mine.map(function (x) { return x.joined_at || t; }).sort()[0], ids = mine.map(function (x) { return x.id; });
+          var svc = [];
+          for (var i = 0; i <= 6; i++) { var dd = Care.addDays(t, -i); if (Care.parse(dd).getDay() === 0 && (i > 0 || new Date().getHours() >= 14)) svc.push(['sunday', dd, null, 'Sunday service']); }
+          data.programs.forEach(function (p) { for (var j = 0; j <= 6; j++) { var d2 = Care.addDays(t, -j); if (d2 >= p.starts_on && d2 <= p.ends_on && (j > 0 || new Date().getHours() >= 22)) svc.push(['special', d2, p.id, p.title]); } });
+          svc.forEach(function (x) {
+            if (x[1] < joined) return;
+            var same = function (a) { return ids.indexOf(a.member_id) >= 0 && a.seen_on === x[1] && a.kind === x[0] && (a.program_id || null) === x[2]; };
+            if (data.attendance.some(same) || (data.absences || []).some(same)) return;
+            out.push({ kind: x[0], seen_on: x[1], program_id: x[2], label: x[3] });
+          });
+          return out.sort(function (a, b) { return a.seen_on < b.seen_on ? 1 : -1; });
+        });
+      },
+      memberAbsence: function (kind, day, program, reason, note) {
+        return Promise.resolve().then(function () {
+          var mine = myMembers(); check(mine.length);
+          program = kind === 'special' ? program || null : null;
+          data.absences = data.absences || [];
+          mine.forEach(function (x) {
+            if (data.attendance.some(function (a) { return a.member_id === x.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program; })) return;
+            data.absences = data.absences.filter(function (a) { return !(a.member_id === x.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program); });
+            data.absences.push({ member_id: x.id, seen_on: day, kind: kind, program_id: program, reason: reason, note: (note || '').trim().slice(0, 300), created_at: now() });
+          });
+          save();
+        });
       },
       savePush: function () { return Promise.resolve(); },
       dropPush: function () { return Promise.resolve(); },
@@ -469,6 +509,7 @@
           if (program) { var pr = find('programs', 'id', program); if (!pr || day < pr.starts_on || day > pr.ends_on) throw new Error('That date is not part of the program'); }
           (kind === 'meeting' ? [row] : sameMember(memberId)).forEach(function (x) {
             if (!data.attendance.some(function (a) { return a.member_id === x.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program; })) data.attendance.push({ member_id: x.id, seen_on: day, kind: kind, program_id: program, by_self: false });
+            data.absences = (data.absences || []).filter(function (a) { return !(a.member_id === x.id && a.seen_on === day && a.kind === kind && (a.program_id || null) === program); });
             if (!x.last_seen || x.last_seen < day) x.last_seen = day;
           });
           save();

@@ -47,6 +47,13 @@ came, who checked themselves in, which groups haven't marked attendance yet, gro
 members not on the app. A leader sees who came from their group, who wasn't marked (and who missed 2 in a row), and
 who isn't on the app yet. The **Growth** tab shows the church's growth month by month, for the whole church or a group.
 
+**"We missed you":** a member who wasn't marked present at a Sunday service or special program is asked, when they next
+open the app (and by a notification at 10 AM the next day, if they turned reminders on). They can tap *I was there* (their
+leader sees "said they came") or say why they couldn't come (sick, travelling, work, family, transport, other) with an
+optional note. The reason goes to the leader of each of their groups (and the pastor), shows in the leader's
+after-service summary and Follow up list, and leaders get an 8 PM notification listing the replies. Members can answer
+for the last week. A leader marking them present clears the reason.
+
 **Phone notifications:** the pastor, PA and leaders can tap *Turn on notifications* on Home. About 2 hours after each
 service they get a short update (Sunday 2 PM; Tuesday and Friday 9 PM; online prayer 10:30 PM if anyone was marked;
 special programs 10 PM each day). On iPhone the app must first be added to the home screen. Setup, once:
