@@ -881,14 +881,16 @@ end $$;
 drop trigger if exists absence_cleared on care.attendance;
 create trigger absence_cleared after insert on care.attendance for each row execute function care.absence_cleared();
 
--- The services a member is asked about: Sunday service and special programs, in the last week,
+-- The services a member is asked about: Sunday service, Time with the Rabbi, the Friday Miracle Service and special programs, in the last week,
 -- that they weren't marked present at and haven't given a reason for.
 create or replace function care.missed_for(p_login text, p_from date, p_to date)
 returns table (kind text, seen_on date, program_id uuid, label text) language sql stable security definer set search_path = care, public as $$
   with mine as (select * from care.members m where m.login_phone = p_login or m.login_email = p_login),
   svc as (
-    select 'sunday'::text as kind, d::date as seen_on, null::uuid as program_id, 'Sunday service'::text as label
-      from generate_series(p_from, p_to, interval '1 day') d where extract(dow from d) = 0 and (d::date < current_date or now()::time > '14:00')
+    select case extract(dow from d) when 0 then 'sunday' when 2 then 'tuesday' else 'friday' end as kind, d::date as seen_on, null::uuid as program_id,
+           case extract(dow from d) when 0 then 'Sunday service' when 2 then 'Time with the Rabbi' else 'Friday Miracle Service' end as label
+      from generate_series(p_from, p_to, interval '1 day') d
+      where (extract(dow from d) = 0 and (d::date < current_date or now()::time > '14:00')) or (extract(dow from d) in (2, 5) and d::date < current_date)
     union all
     select 'special', d::date, p.id, p.title from care.programs p cross join generate_series(greatest(p.starts_on, p_from), least(p.ends_on, p_to), interval '1 day') d
       where d::date < current_date or now()::time > '22:00')
@@ -934,7 +936,7 @@ begin
   for s in select ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2, ps.member_login as lg from care.push_subs ps where ps.member_login is not null loop
     for x in select * from care.missed_for(s.lg, p_day, p_day) loop
       endpoint := s.ep; p256dh := s.k1; auth := s.k2;
-      title := 'We missed you at ' || case when x.kind = 'special' then x.label else 'church' end || ' 💛';
+      title := 'We missed you at ' || case when x.kind = 'sunday' then 'church' else x.label end || ' 💛';
       body := x.label || ', ' || to_char(x.seen_on, 'FMDay FMDD Mon') || '. If you were there, tap to let your leader know. If you couldn''t come, you can tell them why.';
       url := 'team.html#missed=' || x.kind || '|' || x.seen_on || coalesce('|' || x.program_id, '');
       return next;
@@ -948,7 +950,9 @@ returns table (endpoint text, p256dh text, auth text, title text, body text, url
 language plpgsql stable security definer set search_path = care, public as $$
 declare s record; pr record; why text[]; came text[];
 begin
-  for pr in select k.kind, null::uuid as id, 'Sunday service' as label from (select 'sunday' as kind) k where extract(dow from p_day) = 0
+  for pr in select case extract(dow from p_day) when 0 then 'sunday' when 2 then 'tuesday' else 'friday' end as kind, null::uuid as id,
+                   case extract(dow from p_day) when 0 then 'Sunday service' when 2 then 'Time with the Rabbi' else 'Friday Miracle Service' end as label
+            where extract(dow from p_day) in (0, 2, 5)
             union all select 'special', p.id, p.title from care.programs p where p_day between p.starts_on and p.ends_on loop
     for s in select st.group_id, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id where st.role = 'leader' loop
       select array_agg(m.name || ' (' || care.reason_text(x.reason) || ')' order by m.name) into why from care.absences x join care.members m on m.id = x.member_id
@@ -972,11 +976,73 @@ grant execute on function care.my_missed(), care.member_absence(text, date, uuid
 revoke all on function care.missed_push(date), care.reasons_push(date) from public, anon, authenticated;
 grant execute on function care.missed_push(date), care.reasons_push(date) to service_role;
 
+-- ---------- monthly group reports ----------
+-- Each leader sends the pastor a report for their group each month: the app's figures plus their own words.
+create table if not exists care.reports (
+  id         uuid primary key default gen_random_uuid(),
+  group_id   text not null references care.groups(id) on delete cascade,
+  month      date not null check (extract(day from month) = 1),
+  figures    jsonb not null default '{}'::jsonb check (pg_column_size(figures) < 20000),
+  highlights text not null default '' check (char_length(highlights) <= 1500),
+  needs      text not null default '' check (char_length(needs) <= 1500),
+  prayer     text not null default '' check (char_length(prayer) <= 1500),
+  sent_by    text not null default '',
+  sent_at    timestamptz not null default now(),
+  unique (group_id, month)
+);
+alter table care.reports enable row level security;
+revoke all on care.reports from anon;
+drop policy if exists reports_read on care.reports;
+create policy reports_read on care.reports for select to authenticated
+  using (care.has_area('groups') or (care.my_role() = 'leader' and group_id = care.my_group()));
+drop policy if exists reports_add on care.reports;
+create policy reports_add on care.reports for insert to authenticated with check (care.my_role() = 'leader' and group_id = care.my_group());
+drop policy if exists reports_edit on care.reports;
+create policy reports_edit on care.reports for update to authenticated
+  using (care.my_role() = 'leader' and group_id = care.my_group()) with check (care.my_role() = 'leader' and group_id = care.my_group());
+create or replace function care.report_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if new.month > date_trunc('month', current_date)::date then raise exception 'That month hasn''t started yet'; end if;
+  new.sent_by := coalesce(care.my_name(), ''); new.sent_at := now();
+  return new;
+end $$;
+drop trigger if exists report_rules on care.reports;
+create trigger report_rules before insert or update on care.reports for each row execute function care.report_rules();
+
+-- 'due' (the 1st): leaders whose group hasn't sent last month's report.  'check' (the 8th): the pastor and PA hear who has.
+create or replace function care.report_push(p_what text)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare mo date := (date_trunc('month', current_date) - interval '1 month')::date; s record; sent int; total int; missing text[];
+begin
+  for s in select st.role, st.group_id, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id loop
+    if p_what = 'due' and s.role = 'leader' then
+      if exists (select 1 from care.reports r where r.group_id = s.group_id and r.month = mo) then continue; end if;
+      title := 'Your ' || to_char(mo, 'FMMonth') || ' report';
+      body := 'Time to send the pastor ' || coalesce((select name from care.groups where id = s.group_id), 'your group') || '''s report for ' || to_char(mo, 'FMMonth') || '. The figures are ready; just add a few words.';
+      url := 'team.html#report=' || to_char(mo, 'YYYY-MM');
+    elsif p_what = 'check' and s.role in ('pastor', 'pa') then
+      select count(*) filter (where r.id is not null), count(*), array_agg(g.name order by g.sort) filter (where r.id is null)
+        into sent, total, missing
+        from care.groups g left join care.reports r on r.group_id = g.id and r.month = mo;
+      title := to_char(mo, 'FMMonth') || ' group reports';
+      body := sent || ' of ' || total || ' groups have sent their report.' || case when missing is not null then ' Still to come: ' || care.name_list(missing) || '.' else ' All in. 🙌' end;
+      url := 'team.html#reports';
+    else
+      continue;
+    end if;
+    endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+    return next;
+  end loop;
+end $$;
+revoke all on function care.report_push(text) from public, anon, authenticated;
+grant execute on function care.report_push(text) to service_role;
+
 -- ---------- live updates ----------
 do $$
 declare t text;
 begin
-  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance', 'programs', 'absences'] loop
+  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance', 'programs', 'absences', 'reports'] loop
     if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'care' and tablename = t) then
       execute format('alter publication supabase_realtime add table care.%I', t);
     end if;

@@ -47,16 +47,23 @@ came, who checked themselves in, which groups haven't marked attendance yet, gro
 members not on the app. A leader sees who came from their group, who wasn't marked (and who missed 2 in a row), and
 who isn't on the app yet. The **Growth** tab shows the church's growth month by month, for the whole church or a group.
 
-**"We missed you":** a member who wasn't marked present at a Sunday service or special program is asked, when they next
+**"We missed you":** a member who wasn't marked present at a Sunday service, Time with the Rabbi, the Friday Miracle
+Service or a special program is asked, when they next
 open the app (and by a notification at 10 AM the next day, if they turned reminders on). They can tap *I was there* (their
 leader sees "said they came") or say why they couldn't come (sick, travelling, work, family, transport, other) with an
 optional note. The reason goes to the leader of each of their groups (and the pastor), shows in the leader's
 after-service summary and Follow up list, and leaders get an 8 PM notification listing the replies. Members can answer
 for the last week. A leader marking them present clears the reason.
 
+**Monthly reports:** from the 1st of each month a leader's Home shows "Your report is due" (and a notification at 8 AM
+on the 1st). The report has the month's figures, worked out by the app (members, new members, average attendance at each
+service, visitors, follow-up, reasons given, prayer requests), plus the leader's words: highlights, needs and prayer
+points. The pastor (and a PA with *Groups*) opens Home → *Monthly reports* to see who has sent and read each one, and gets
+a notification on the 8th saying which groups haven't sent yet.
+
 **Phone notifications:** the pastor, PA and leaders can tap *Turn on notifications* on Home. About 2 hours after each
-service they get a short update (Sunday 2 PM; Tuesday and Friday 9 PM; online prayer 10:30 PM if anyone was marked;
-special programs 10 PM each day). On iPhone the app must first be added to the home screen. Setup, once:
+service they get a short update: Sunday service at 2 PM the same day; Time with the Rabbi, the Friday Miracle Service,
+online prayer (if anyone was marked) and special programs at 8 AM the next morning. On iPhone the app must first be added to the home screen. Setup, once:
 1. Make a key pair (`npx web-push generate-vapid-keys`). Put the public key in `assets/config.js` (`pushKey`).
 2. Deploy `supabase/functions/care-after-service` with JWT checks off, with secrets `VAPID_PUBLIC_KEY`,
    `VAPID_PRIVATE_KEY` and `CARE_CRON_SECRET` (any long random text).

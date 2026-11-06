@@ -59,9 +59,10 @@
           sb.from('prayers').select('*').order('created_at', { ascending: false }).then(must),
           sb.from('attendance').select('member_id, seen_on, kind, program_id, by_self').gte('seen_on', Care.addDays(Care.today(), -120)).then(must),
           this.programs(),
-          sb.from('absences').select('member_id, seen_on, kind, program_id, reason, note, created_at').gte('seen_on', Care.addDays(Care.today(), -120)).then(function (r) { return r.error ? [] : r.data; })
+          sb.from('absences').select('member_id, seen_on, kind, program_id, reason, note, created_at').gte('seen_on', Care.addDays(Care.today(), -120)).then(function (r) { return r.error ? [] : r.data; }),
+          sb.from('reports').select('*').order('month', { ascending: false }).limit(200).then(function (r) { return r.error ? [] : r.data; })
         ]).then(function (a) {
-          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6], programs: a[7], absences: a[8] };
+          return { groups: a[0], staff: a[1], visitors: a[2], visitor_notes: a[3], members: a[4], prayers: a[5], attendance: a[6], programs: a[7], absences: a[8], reports: a[9] };
         });
       },
       // Prayer requests are saved without reading them back: the welcome team may add one but not read it.
@@ -83,12 +84,14 @@
       myAttendance: function (group) { return sb.rpc('my_attendance', { p_group: group }).then(must); },
       growth: function () { return sb.rpc('growth_data').then(must); },
       myMissed: function () { return sb.rpc('my_missed').then(must); },
+      // Saves (or updates) this month's report for the leader's group.
+      saveReport: function (r) { return sb.from('reports').upsert(r, { onConflict: 'group_id,month' }).select().single().then(must); },
       memberAbsence: function (kind, day, program, reason, note) { return sb.rpc('member_absence', { p_kind: kind, p_day: day, p_program: program || null, p_reason: reason, p_note: note || '' }).then(must); },
       savePush: function (endpoint, p256dh, auth) { return sb.rpc('save_push', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth }).then(must); },
       dropPush: function (endpoint) { return sb.rpc('drop_push', { p_endpoint: endpoint }).then(must); },
       subscribe: function (cb) {
         var ch = sb.channel('care');
-        TABLES.concat(['groups', 'attendance', 'programs', 'absences']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: C.supabaseSchema || 'public', table: t }, cb); });
+        TABLES.concat(['groups', 'attendance', 'programs', 'absences', 'reports']).forEach(function (t) { ch = ch.on('postgres_changes', { event: '*', schema: C.supabaseSchema || 'public', table: t }, cb); });
         ch.subscribe();
       }
     };
@@ -96,7 +99,7 @@
 
   /* ---------------- demo ---------------- */
   function demo() {
-    var KEY = 'care-demo-v9', listeners = [];
+    var KEY = 'care-demo-v10', listeners = [];
     var data = read();
     var role = 'pastor';
     try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
@@ -167,6 +170,10 @@
         d.members.push(Object.assign({}, esi, { id: 'm-esi-wog', group_id: 'wog' }));
         d.attendance.filter(function (a) { return a.member_id === esi.id && a.kind !== 'meeting'; }).forEach(function (a) { d.attendance.push(Object.assign({}, a, { member_id: 'm-esi-wog' })); });
       }
+      var lm = new Date(); lm = Care.ymd(new Date(lm.getFullYear(), lm.getMonth() - 1, 1));
+      d.reports = [{ id: 'r1', group_id: 'prov', month: lm, sent_by: 'Caljay Music', sent_at: Care.addDays(t, -3) + 'T19:00:00Z',
+        figures: { members: 2, new_members: 0, services: { sunday: { held: 4, avg: 2 }, tuesday: { held: 4, avg: 1 }, friday: { held: 5, avg: 1 } }, visitors: 0, contacted_on_time: 0, joined: 0, reasons: 0, prayers: 1, prayed: 1 },
+        highlights: 'The choir led worship at the Holy Ghost Night. Two new voices are learning the songs.', needs: 'We need a keyboard stand and two microphones.', prayer: 'Unity, strength and fresh songs for the convention.' }];
       d.absences = [];
       d.members.forEach(function (m) {
         if (['Akosua Adjei', 'Kojo Darko'].indexOf(m.name) < 0 || d.attendance.some(function (a) { return a.member_id === m.id && a.seen_on === lastSun && a.kind === 'sunday'; })) return;
@@ -249,6 +256,7 @@
           out.groups = gs;
           TABLES.forEach(function (t) { out[t] = data[t].filter(function (r) { return canSee(t, r, m); }).map(function (r) { return Object.assign({}, r); }); });
           out.programs = data.programs.slice().sort(function (a, b) { return a.starts_on < b.starts_on ? -1 : 1; });
+          out.reports = (data.reports || []).filter(function (r) { return has(m, 'groups') || (m.role === 'leader' && r.group_id === m.group_id); }).map(function (r) { return Object.assign({}, r); });
           out.absences = (data.absences || []).filter(function (a) { var mm = find('members', 'id', a.member_id); return mm && canSee('members', mm, m); }).map(function (a) { return Object.assign({}, a); });
           out.attendance = data.attendance.filter(function (a) { var mm = find('members', 'id', a.member_id); return mm && canSee('members', mm, m); }).map(function (a) { return Object.assign({}, a); });
           return out;
@@ -456,6 +464,14 @@
             data.absences.push({ member_id: x.id, seen_on: day, kind: kind, program_id: program, reason: reason, note: (note || '').trim().slice(0, 300), created_at: now() });
           });
           save();
+        });
+      },
+      saveReport: function (r) {
+        return Promise.resolve().then(function () {
+          var m = me(); check(m.role === 'leader' && r.group_id === m.group_id);
+          data.reports = (data.reports || []).filter(function (x) { return !(x.group_id === r.group_id && x.month === r.month); });
+          var row = Object.assign({ id: uid() }, r, { sent_by: m.name, sent_at: now() }); data.reports.push(row); save();
+          return row;
         });
       },
       savePush: function () { return Promise.resolve(); },

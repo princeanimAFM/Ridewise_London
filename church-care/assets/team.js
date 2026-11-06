@@ -119,10 +119,12 @@
         S.groups = d.groups; S.staff = d.staff; S.visitors = d.visitors; S.notes = d.visitor_notes; S.members = d.members; S.prayers = d.prayers;
         S.programs = d.programs || [];
         S.attMap = {}; (d.attendance || []).forEach(function (a) { S.attMap[a.member_id + '|' + a.seen_on + '|' + a.kind + '|' + (a.program_id || '')] = a; });
+        S.reports = d.reports || [];
         S.absMap = {}; (d.absences || []).forEach(function (a) { S.absMap[a.member_id + '|' + a.seen_on + '|' + a.kind + '|' + (a.program_id || '')] = a; });
         S.loaded = true;
         if (Store.mode === 'demo') demoRoles();
         render();
+        if (S.openAfterLoad) { var k = S.openAfterLoad; S.openAfterLoad = null; openSheet(k); }
       }, fail);
     }, 150);
   }
@@ -243,6 +245,12 @@
 
   /** A notification opens team.html#after=kind|day|program: show that service's summary on Home. */
   function openFromLink() {
+    var rp = /#report=(\d{4}-\d\d)/.exec(location.hash);
+    if (rp || /#reports/.test(location.hash)) {
+      var key = rp ? 'report:' + rp[1] + '-01' : 'reports';
+      history.replaceState(null, '', location.pathname + location.search);
+      S.openAfterLoad = key; return;
+    }
     var m = /#after=([a-z]+)\|(\d{4}-\d\d-\d\d)\|?([0-9a-z-]*)/i.exec(location.hash);
     if (!m) return;
     S.after = { kind: m[1], day: m[2], prog: m[3] || '' }; S.tab = 'overview';
@@ -250,7 +258,7 @@
     setTimeout(function () { var el = $('after'); if (el) el.scrollIntoView({ block: 'start' }); }, 700);
   }
   window.addEventListener('hashchange', function () {
-    if (S.me && /#after=/.test(location.hash)) { openFromLink(); render(); }
+    if (S.me && /#(after|report)/.test(location.hash)) { openFromLink(); render(); if (S.openAfterLoad && S.loaded) { var k = S.openAfterLoad; S.openAfterLoad = null; openSheet(k); } }
     if (S.me && /#missed=/.test(location.hash)) { var id = missedLink(); if (S.missed) askMissed(id); else S.missedLink = id; }
   });
   function missedLink() { var m = /#missed=([^&]+)/.exec(location.hash); if (!m) return null; history.replaceState(null, '', location.pathname + location.search); return decodeURIComponent(m[1]); }
@@ -431,7 +439,9 @@
     var h = '';
     if (role() === 'pa') h += '<div class="banner ok">You are the pastor\'s PA. You can see: ' + esc(AREAS.filter(function (a) { return can(a[0]); }).map(function (a) { return a[1]; }).join(', ') || 'nothing yet') + '.</div>';
     h += pushCard();
-    if (isPastor()) h += '<div class="actions"><button class="btn sm alt" data-act="team">👥 Team & groups (' + S.staff.length + ')</button><button class="btn sm alt" data-act="qr">QR code page</button></div>';
+    if (isPastor()) h += '<div class="actions"><button class="btn sm alt" data-act="team">👥 Team & groups (' + S.staff.length + ')</button><button class="btn sm alt" data-act="reports">📝 Monthly reports</button><button class="btn sm alt" data-act="qr">QR code page</button></div>';
+    else if (can('groups')) h += '<div class="actions"><button class="btn sm alt" data-act="reports">📝 Monthly reports</button></div>';
+    h += reportDueCard();
     h += '<div class="tiles">' +
       tile(recent.length, 'New visitors, last 30 days') +
       tile(recent.length ? Math.round(reached / recent.length * 100) + '%' : '–', 'Reached (of those)') +
@@ -708,6 +718,90 @@
       render();
     }, fail);
   }
+  /* ---------- monthly reports ---------- */
+  function lastMonth() { var n = new Date(); return Care.ymd(new Date(n.getFullYear(), n.getMonth() - 1, 1)); }
+  function monthLabel(mo) { return Care.parse(mo).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' }); }
+  function reportOf(gid, mo) { return (S.reports || []).filter(function (r) { return r.group_id === gid && String(r.month).slice(0, 10) === mo; })[0]; }
+  /** The month's figures for a group, worked out from what the app already knows. */
+  function monthFigures(gid, mo) {
+    var p = Care.parse(mo), end = Care.ymd(new Date(p.getFullYear(), p.getMonth() + 1, 0)), t = Care.today(), last = end < t ? end : t;
+    var gm = S.members.filter(function (m) { return m.group_id === gid; }), inMonth = function (d) { return d >= mo && d <= end; };
+    var services = {};
+    [['sunday', 0], ['tuesday', 2], ['friday', 5]].forEach(function (k) {
+      var counts = [];
+      for (var d = mo; d <= last; d = Care.addDays(d, 1)) if (Care.parse(d).getDay() === k[1]) {
+        var c = gm.filter(function (m) { return attended(m.id, d, k[0]); }).length;
+        if (c) counts.push(c);
+      }
+      services[k[0]] = { held: counts.length, avg: counts.length ? Math.round(counts.reduce(function (a, b) { return a + b; }, 0) / counts.length) : 0 };
+    });
+    var vs = S.visitors.filter(function (v) { return v.assigned_to === gid && inMonth(day(v.created_at)); });
+    var ps = S.prayers.filter(function (x) { return x.assigned_to === gid && !x.to_pastor && inMonth(day(x.created_at)); });
+    var reasons = Object.keys(S.absMap || {}).filter(function (k) { var a = S.absMap[k]; return inMonth(a.seen_on) && gm.some(function (m) { return m.id === a.member_id; }); }).length;
+    return {
+      members: gm.filter(function (m) { return (m.joined_at || day(m.created_at)) <= end; }).length,
+      new_members: gm.filter(function (m) { return inMonth(m.joined_at || day(m.created_at)); }).length,
+      on_app: gm.filter(function (m) { return m.joined_app_at; }).length,
+      away: gm.filter(isAway).length,
+      services: services, visitors: vs.length, contacted_on_time: vs.filter(function (v) { return v.reached_at && v.due && v.reached_at <= v.due; }).length,
+      joined: vs.filter(function (v) { return v.status === 'joined'; }).length, reasons: reasons, prayers: ps.length, prayed: ps.filter(function (x) { return x.status === 'prayed'; }).length
+    };
+  }
+  function figuresTable(f) {
+    var sv = f.services || {}, row = function (label, v) { return '<tr><td>' + label + '</td><td class="n"><b>' + v + '</b></td></tr>'; };
+    var svc = function (k, label) { var x = sv[k] || {}; return row(label, x.held ? x.avg + ' <span class="meta">average, ' + x.held + ' service' + (x.held === 1 ? '' : 's') + ' marked</span>' : '<span class="meta">not marked</span>'); };
+    return '<div class="card"><table class="table"><tbody>' + row('Members at the end of the month', f.members) + row('New members', f.new_members) +
+      (f.on_app != null ? row('On the app', f.on_app) : '') + svc('sunday', 'Sunday service') + svc('tuesday', 'Time with the Rabbi') + svc('friday', 'Friday Miracle Service') +
+      row('New visitors given to the group', f.visitors) + row('Contacted on time', f.contacted_on_time) + row('Visitors who joined', f.joined) +
+      row('Members who said why they missed', f.reasons) + row('Prayer requests', f.prayers + (f.prayers ? ' <span class="meta">(' + f.prayed + ' prayed for)</span>' : '')) +
+      (f.away != null ? row('Away ' + C.awayWeeks + '+ weeks (at sending)', f.away) : '') + '</tbody></table></div>';
+  }
+  function reportDueCard() {
+    if (!isLeader()) return '';
+    var mo = lastMonth(), r = reportOf(S.me.group_id, mo);
+    if (r) return '<p class="meta" style="margin:8px 0 0">📝 Your ' + esc(monthLabel(mo)) + ' report was sent to the pastor · <button class="back" data-open="report:' + mo + '" style="font-size:inherit;padding:0">View or update</button></p>';
+    return '<div class="card top gold"><div class="name">📝 Your ' + esc(monthLabel(mo)) + ' report is due</div><div class="meta">The figures for ' + esc(groupName(S.me.group_id)) +
+      ' are ready. Add a few words on how the month went, then send it to the pastor.</div><div class="actions" style="margin-bottom:0"><button class="btn sm blue" data-open="report:' + mo + '">Write the report</button></div></div>';
+  }
+  function sheetReport(mo) {
+    if (!isLeader() || !/^\d{4}-\d\d-01$/.test(mo)) return null;
+    var gid = S.me.group_id, r = reportOf(gid, mo), f = monthFigures(gid, mo);
+    var prev = []; for (var i = 1; i <= 6; i++) { var n = Care.parse(lastMonth()); prev.push(Care.ymd(new Date(n.getFullYear(), n.getMonth() + 1 - i, 1))); }
+    return '<div class="kicker" style="margin-top:6px">Monthly report</div><h2>' + esc(groupName(gid)) + ', ' + esc(monthLabel(mo)) + '</h2>' +
+      '<div class="chips">' + prev.map(function (m) { return '<button class="chip" data-open="report:' + m + '" aria-pressed="' + (m === mo) + '">' + esc(Care.parse(m).toLocaleDateString('en-GB', { month: 'short' })) + (reportOf(gid, m) ? ' ✓' : '') + '</button>'; }).join('') + '</div>' +
+      (r ? '<div class="banner ok">Sent to the pastor on ' + Care.fmt(day(r.sent_at)) + '. You can update it and send again.</div>' : '') +
+      '<h2 class="sec">The figures</h2><p class="meta" style="margin-top:-4px">Worked out by the app from attendance, visitors and prayer requests.</p>' + figuresTable(f) +
+      '<h2 class="sec">In your words</h2><form data-report="' + mo + '">' +
+      '<div class="field"><label for="rp-high">How did the month go? Highlights and testimonies</label><textarea id="rp-high" maxlength="1500">' + esc(r ? r.highlights : '') + '</textarea></div>' +
+      '<div class="field"><label for="rp-needs">Challenges or needs</label><textarea id="rp-needs" maxlength="1500">' + esc(r ? r.needs : '') + '</textarea></div>' +
+      '<div class="field"><label for="rp-prayer">Prayer points for the group</label><textarea id="rp-prayer" maxlength="1500">' + esc(r ? r.prayer : '') + '</textarea></div>' +
+      '<button class="btn blue" type="submit">' + (r ? 'Update and send again' : 'Send to the pastor') + '</button></form>';
+  }
+  /** The pastor's (and a PA's) list: who has sent, month by month. */
+  function sheetReports() {
+    if (!can('groups')) return null;
+    var mo = S.repMonth || lastMonth(), months = [];
+    for (var i = 0; i < 6; i++) { var n = Care.parse(lastMonth()); months.push(Care.ymd(new Date(n.getFullYear(), n.getMonth() - i, 1))); }
+    var sent = S.groups.filter(function (g) { return reportOf(g.id, mo); }).length;
+    return '<h2>Monthly reports</h2><p class="meta">Each group leader sends a report at the start of the month: the app\'s figures plus their own words.</p>' +
+      '<div class="chips">' + months.map(function (m) { return '<button class="chip" data-repmonth="' + m + '" aria-pressed="' + (m === mo) + '">' + esc(monthLabel(m)) + '</button>'; }).join('') + '</div>' +
+      '<p><b>' + sent + ' of ' + S.groups.length + '</b> groups have sent their ' + esc(monthLabel(mo)) + ' report.</p>' +
+      S.groups.map(function (g) {
+        var r = reportOf(g.id, mo);
+        return '<div class="card' + (r ? ' tap' : '') + '"' + (r ? ' data-open="rview:' + r.id + '"' : '') + '><div class="row"><div class="grow"><div class="name">' + esc(g.name) + '</div><div class="meta">' + esc(g.leader_name || '') +
+          (r ? ' · sent ' + Care.fmt(day(r.sent_at)) : '') + '</div></div>' + (r ? '<span class="pill reached">Sent · Read ›</span>' : '<span class="pill new">Not yet</span>') + '</div></div>';
+      }).join('');
+  }
+  function sheetReportView(id) {
+    var r = (S.reports || []).filter(function (x) { return x.id === id; })[0];
+    if (!r) return null;
+    var para = function (label, txt) { return txt ? '<h2 class="sec">' + label + '</h2><div class="card"><p style="margin:0;white-space:pre-wrap">' + esc(txt) + '</p></div>' : ''; };
+    return '<button class="back" data-open="reports">‹ Monthly reports</button><div class="kicker" style="margin-top:6px">Monthly report</div><h2>' + esc(groupName(r.group_id)) + ', ' + esc(monthLabel(String(r.month).slice(0, 10))) + '</h2>' +
+      '<p class="meta">Sent by ' + esc(r.sent_by || 'the leader') + ' on ' + Care.fmt(day(r.sent_at)) + '</p>' +
+      para('Highlights and testimonies', r.highlights) + para('Challenges or needs', r.needs) + para('Prayer points', r.prayer) +
+      '<h2 class="sec">The figures</h2>' + figuresTable(r.figures || {});
+  }
+
   /* ---------- "we missed you" ---------- */
   function missedId(x) { return x.kind + '|' + x.seen_on + '|' + (x.program_id || ''); }
   function dismissed() { try { return JSON.parse(localStorage.getItem('care-missed-later') || '{}'); } catch (e) { return {}; } }
@@ -1110,7 +1204,10 @@
       parts[0] === 'grp' ? sheetGroup(parts[1]) :
       parts[0] === 'new-group' ? sheetGroup(null) :
       parts[0] === 'qr' ? sheetQr() :
-      parts[0] === 'missed' ? sheetMissed(key.slice(7)) : null;
+      parts[0] === 'missed' ? sheetMissed(key.slice(7)) :
+      parts[0] === 'report' ? sheetReport(parts[1]) :
+      parts[0] === 'reports' ? sheetReports() :
+      parts[0] === 'rview' ? sheetReportView(parts[1]) : null;
     if (html === null) return closeSheet();
     var sh = $('sheet');
     var f = document.activeElement;
@@ -1280,6 +1377,8 @@
       Store.memberCheckin(S.groupId, c[0], c[1], c[2] === 'here', c[3] || null).then(function () { Care.toast(c[2] === 'here' ? 'Thank you! Your leader can see you were there. 🙏' : 'Removed.'); reload(); }, fail);
       return;
     }
+    var rm = e.target.closest('[data-repmonth]');
+    if (rm) { e.preventDefault(); e.stopPropagation(); S.repMonth = rm.dataset.repmonth; openSheet('reports', true); return; }
     var ms = e.target.closest('[data-was],[data-later]');
     if (ms) {
       e.preventDefault(); e.stopPropagation();
@@ -1320,6 +1419,14 @@
     }
   }, true);
   document.addEventListener('submit', function (e) {
+    if ('report' in e.target.dataset) {
+      e.preventDefault(); e.stopImmediatePropagation();
+      var mo = e.target.dataset.report, gid = S.me.group_id;
+      var row = { group_id: gid, month: mo, figures: monthFigures(gid, mo), highlights: $('rp-high').value.trim(), needs: $('rp-needs').value.trim(), prayer: $('rp-prayer').value.trim() };
+      if (!row.highlights && !row.needs && !row.prayer) return Care.toast('Please add a few words about the month.');
+      Store.saveReport(row).then(function () { closeSheet(); Care.toast('Report sent to the pastor. Thank you! 🙏'); reload(); }, fail);
+      return;
+    }
     if (!('absent' in e.target.dataset)) return;
     e.preventDefault(); e.stopImmediatePropagation();
     var a = e.target.dataset.absent.split('|'), r = e.target.querySelector('input[name=why]:checked');
