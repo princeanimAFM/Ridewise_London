@@ -11,7 +11,7 @@ window.CARE_CONFIG = {
   signIn: { whatsapp: false, email: true, google: true },
 
   // Public key for phone notifications after each service (the private half is a Supabase secret). Empty = off.
-  pushKey: '',
+  pushKey: 'BExspgto6Ya8ZUQ_k02ysOKXzZAgN14KViFblvrUPv-NOr6KmnCrQom-OQfb71vpy5DdJ9vmxC1RyX9i9Qzt5kw',
 
   church: 'The AFM Church',
   churchFull: 'Alleluia Faith Mission Global Assembly',
