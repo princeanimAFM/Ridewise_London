@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The AFM HUB: Running Costs</title>
+<style>
+  @page { size: A4; margin: 16mm 15mm 18mm; }
+  :root { --green: #2D6A3E; --gold: #C9A227; --ink: #1C2320; --muted: #5B6660; --line: #D9DED9; --soft: #F3F6F2; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Liberation Sans', Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.5; margin: 0; }
+  h1, h2, h3 { font-family: 'Liberation Serif', Georgia, serif; color: var(--green); line-height: 1.2; }
+  h1 { font-size: 26pt; margin: 0 0 4px; }
+  h2 { font-size: 16pt; margin: 22px 0 8px; padding-bottom: 4px; border-bottom: 2px solid var(--gold); }
+  h3 { font-size: 12.5pt; margin: 16px 0 4px; }
+  p { margin: 6px 0; }
+  ul { margin: 4px 0 8px; padding-left: 18px; }
+  li { margin: 2px 0; }
+  .cover { background: var(--green); color: #fff; padding: 22px 24px; border-radius: 10px; margin-bottom: 16px; }
+  .cover h1 { color: #fff; }
+  .cover .kicker { color: var(--gold); font-weight: 700; letter-spacing: 2px; font-size: 9pt; }
+  .cover p { color: #DCE8DC; margin: 4px 0 0; }
+  .big { display: flex; gap: 10px; margin: 12px 0; }
+  .big div { flex: 1; background: var(--soft); border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .big b { display: block; font-size: 18pt; color: var(--green); font-family: 'Liberation Serif', serif; }
+  .big span { color: var(--muted); font-size: 9pt; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 9.5pt; }
+  th { background: var(--green); color: #fff; text-align: left; padding: 6px 8px; font-weight: 700; }
+  td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:nth-child(even) td { background: #FAFBF9; }
+  .svc { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin: 10px 0; page-break-inside: avoid; }
+  .svc h3 { margin-top: 2px; }
+  .tag { display: inline-block; font-size: 8.5pt; font-weight: 700; padding: 1px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; font-family: 'Liberation Sans', sans-serif; }
+  .free { background: #E3F0E5; color: var(--green); }
+  .paid { background: #FBF1D6; color: #7A5E00; }
+  .off { background: #ECECEC; color: #555; }
+  .row { display: flex; gap: 14px; }
+  .row > div { flex: 1; }
+  .label { font-size: 8.5pt; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-top: 6px; }
+  .note { background: #FFF8E6; border-left: 4px solid var(--gold); padding: 8px 12px; border-radius: 4px; margin: 10px 0; page-break-inside: avoid; }
+  .warn { background: #FDECEA; border-left: 4px solid #B3261E; padding: 8px 12px; border-radius: 4px; margin: 10px 0; page-break-inside: avoid; }
+  .small { font-size: 8.5pt; color: var(--muted); }
+  .pb { page-break-before: always; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <div class="kicker">THE AFM HUB</div>
+  <h1>What the app costs to run</h1>
+  <p>A plain-English guide to every service behind the app: what it does, what's free, and when you'd start paying.</p>
+  <p class="small" style="color:#B9CDBB">Prepared September 2026. Prices change, so check each service's pricing page (listed at the end) before you pay for anything.</p>
+</div>
+
+<h2>The short version</h2>
+<div class="big">
+  <div><b>$25</b><span>one time: Google Play developer account</span></div>
+  <div><b>$0 / month</b><span>today: every service is on its free plan</span></div>
+  <div><b>$10–50 / month</b><span>typical once the app and newsletter grow</span></div>
+</div>
+<ul>
+  <li>Right now the app costs <b>nothing per month</b>. Every service it uses has a free plan big enough for launch.</li>
+  <li>Costs start only when (1) the <b>newsletter list gets big</b>, (2) <b>lots of people use the app</b>, or (3) you <b>switch on paid extras</b> such as text messages (SMS) or iPhone.</li>
+  <li><b>Sermons and live services cost you nothing extra.</b> Audio streams from Podbean and video from YouTube, so they don't use your paid services.</li>
+  <li><b>Giving and book sales are commission-free for the app.</b> People pay through PayPal, Cash App, MoMo, the bank or Amazon. Google and Apple take no cut. Those payment services charge their own usual fees on each transaction.</li>
+</ul>
+
+<div class="warn"><b>First limit you're likely to reach: the email daily limit.</b> Brevo's free plan sends <b>300 emails a day</b>, and that includes sign-up codes. Once more than about 250 people subscribe by email, a newsletter to everyone would stop partway. Before that happens, move Brevo to its Starter plan (about $9/month; see Brevo below). The Owner dashboard shows the subscriber count, so you can watch for it.</div>
+
+<h2>How each charge works</h2>
+
+<div class="svc">
+  <h3>Google Play Console <span class="tag paid">$25 once</span></h3>
+  <p><b>What it's for:</b> publishing the Android app on the Play Store.</p>
+  <p><b>How you pay:</b> a single $25 registration fee. There's no yearly fee. Google takes no commission because the app sells nothing through Google Play.</p>
+</div>
+
+<div class="svc">
+  <h3>Apple Developer Program <span class="tag off">Later: $99 / year</span></h3>
+  <p><b>What it's for:</b> publishing the iPhone app on the App Store. We agreed to wait on this.</p>
+  <p><b>How you pay:</b> $99 every year, as long as the app is on the App Store. If you stop paying, the app is removed from the store.</p>
+</div>
+
+<div class="svc">
+  <h3>Supabase: the backend <span class="tag free">Free now</span> <span class="tag paid">Pro $25 / month</span></h3>
+  <p><b>What it's for:</b> accounts and sign-in, newsletter subscribers, announcements and flyers, the content you edit in the dashboard (books, perfumes, quotes…), photos you upload, and the functions that send newsletters.</p>
+  <table>
+    <tr><th></th><th>Free plan</th><th>Pro plan ($25/month)</th></tr>
+    <tr><td>Monthly active users (people who sign in)</td><td>50,000</td><td>100,000, then about $0.003 each</td></tr>
+    <tr><td>Database (text data)</td><td>500 MB</td><td>8 GB, then about $0.125 per GB</td></tr>
+    <tr><td>File storage (flyers, covers, perfume photos)</td><td>1 GB</td><td>100 GB, then about $0.02 per GB</td></tr>
+    <tr><td>Bandwidth (photos and data sent to phones)</td><td>5 GB / month</td><td>250 GB, then about $0.09 per GB</td></tr>
+    <tr><td>Function calls (sending newsletters, AI drafts)</td><td>500,000 / month</td><td>2 million / month</td></tr>
+    <tr><td>Backups</td><td>None</td><td>Daily, kept 7 days</td></tr>
+    <tr><td>Pausing</td><td>Pauses after 7 days with no activity</td><td>Never pauses</td></tr>
+  </table>
+  <p><b>What these mean for The AFM HUB:</b></p>
+  <ul>
+    <li><b>Database:</b> text is tiny. 500 MB holds hundreds of thousands of subscribers and announcements, so you won't reach it for years.</li>
+    <li><b>Storage:</b> a phone photo is about 0.3–1 MB, so 1 GB holds roughly 1,000–3,000 flyers and product photos.</li>
+    <li><b>Bandwidth</b> is the one that grows with popularity. Every time a phone downloads a flyer or cover, it counts. The app keeps images it has already shown, so repeat views don't count again. <i>Example:</i> 2,000 people each seeing 2 new flyers a week at 0.5 MB each is about 8 GB a month. That's over the free 5 GB, and the point where Pro makes sense.</li>
+    <li><b>Pausing:</b> a free project pauses after 7 days with nobody using it. Once the app has daily users, it stays awake. If it does pause, press "Restore" in the Supabase dashboard.</li>
+  </ul>
+  <p><b>No surprise bills:</b> the Pro plan has a spend cap switched on by default. You pay $25, and at the plan limits usage is restricted instead of billed extra, unless you turn the cap off.</p>
+</div>
+
+<div class="svc">
+  <h3>Brevo: email <span class="tag free">Free now</span> <span class="tag paid">Starter from about $9 / month</span></h3>
+  <p><b>What it's for:</b> newsletters and announcements by email, plus account emails (sign-up codes and password resets).</p>
+  <table>
+    <tr><th>Plan</th><th>Emails</th><th>Price (approx.)</th></tr>
+    <tr><td>Free</td><td>300 per day (about 9,000 a month), with a small Brevo logo in emails</td><td>$0</td></tr>
+    <tr><td>Starter</td><td>5,000 per month, no daily limit</td><td>about $9 / month</td></tr>
+    <tr><td>Starter</td><td>20,000 per month</td><td>about $25–30 / month</td></tr>
+    <tr><td>Starter</td><td>100,000 per month</td><td>about $65–75 / month</td></tr>
+  </table>
+  <p><b>How to work out your plan:</b> email subscribers × newsletters per month.<br>
+  <i>Example:</i> 1,000 email subscribers × 4 newsletters a month = 4,000 emails, so the $9 plan is enough. 3,000 subscribers × 4 = 12,000 emails, so choose the 20,000 plan.</p>
+  <p><b>Tip:</b> for the most reliable delivery, send from an address on the ministry's own domain rather than a Gmail address (see "Domain" below).</p>
+</div>
+
+<div class="svc">
+  <h3>Text messages (SMS) through Twilio <span class="tag off">Not switched on</span> <span class="tag paid">Pay per text</span></h3>
+  <p><b>What it's for:</b> announcements by text, and signing in with a phone code. Both are built but switched off until you choose to pay for them.</p>
+  <p><b>How you pay:</b> you top up credit and each text uses some. A long message can count as 2 texts. Approximate prices per text:</p>
+  <table>
+    <tr><th>Sending to</th><th>Approx. price per text</th><th>Notes</th></tr>
+    <tr><td>Ghana</td><td>$0.20 – $0.35</td><td>International rates are high for Ghana</td></tr>
+    <tr><td>United Kingdom</td><td>$0.04 – $0.06</td><td></td></tr>
+    <tr><td>United States</td><td>about $0.01 + carrier fees</td><td>Needs a one-time business registration (about $20–50) and a number (about $1–2/month)</td></tr>
+  </table>
+  <p><i>Example:</i> 500 subscribers in Ghana × 4 announcements a month = 2,000 texts, which is about <b>$400–700 a month</b>.</p>
+  <div class="note"><b>Recommendation:</b> SMS is by far the most expensive part. <b>App push notifications are free and unlimited</b>, and email is cheap, so lean on those. If you want texts in Ghana, local bulk-SMS companies usually charge a small fraction of Twilio's price. The app can be switched to one with a small change; just ask.</div>
+</div>
+
+<div class="svc">
+  <h3>Expo (EAS): app builds and push notifications <span class="tag free">Free</span></h3>
+  <p><b>What it's for:</b> building the Android (and later iPhone) app files, and delivering push notifications.</p>
+  <p><b>How you pay:</b> the free plan includes about 30 builds a month (usually you need 1–3). Builds wait in a queue, which is why a build can take 10–30 minutes. <b>Push notifications are free and unlimited.</b> Paid plans (from about $19/month) only make builds faster. You don't need one.</p>
+</div>
+
+<div class="svc">
+  <h3>Anthropic (Claude AI) <span class="tag off">Optional</span> <span class="tag paid">Pay as you go</span></h3>
+  <p><b>What it's for:</b> the "Write it with AI" button in the Owner dashboard, and optionally the online AI assistant.</p>
+  <p><b>How you pay:</b> you buy prepaid credit (minimum about $5) and each use takes a little. One AI-written announcement costs a few US cents, so $5 lasts a long time. The AFM Assistant in the app currently answers from the app's own content for free. Switching on the fully online assistant would cost roughly a cent or a few cents per question, depending on the AI model chosen.</p>
+  <p><b>Hosting the online assistant:</b> Cloudflare Workers is free up to 100,000 requests a day.</p>
+</div>
+
+<div class="svc">
+  <h3>Domain name and ministry email <span class="tag off">Optional</span> <span class="tag paid">about $10–20 / year</span></h3>
+  <p><b>What it's for:</b> a web address like <i>theafmhub.org</i>. It gives you a home for the privacy policy, better newsletter delivery (for example news@theafmhub.org), and a more professional look.</p>
+  <p><b>How you pay:</b> yearly renewal. A mailbox on the domain (for example Google Workspace) is optional, at about $7 per person per month.</p>
+</div>
+
+<div class="svc">
+  <h3>Podbean, YouTube, PayPal, MoMo, Amazon <span class="tag free">Nothing new</span></h3>
+  <p>The app only links to or reads from these, so it adds no cost. Any Podbean plan the ministry already pays stays the same. PayPal, Cash App, MoMo and banks charge their normal fees on each gift. Amazon handles book payments and pays royalties as usual.</p>
+</div>
+
+<h2 class="pb">What you'd pay as the ministry grows</h2>
+<table>
+  <tr><th>Stage</th><th>Roughly</th><th>Monthly cost</th><th>What you'd be paying for</th></tr>
+  <tr><td><b>Launch (now)</b></td><td>Up to a few hundred users, under 250 email subscribers</td><td><b>$0</b></td><td>Everything on free plans (plus the one-time $25 Google fee)</td></tr>
+  <tr><td><b>Growing</b></td><td>1,000–3,000 users, 500–2,000 email subscribers, weekly newsletter</td><td><b>$10–50</b></td><td>Brevo Starter ($9–25), and Supabase Pro ($25) once photo bandwidth passes 5 GB</td></tr>
+  <tr><td><b>Established</b></td><td>10,000+ users, 5,000+ email subscribers</td><td><b>$50–100</b></td><td>Supabase Pro ($25 + small extras), Brevo ($25–75)</td></tr>
+  <tr><td><b>Any stage: extras</b></td><td></td><td>varies</td><td>SMS (per text), AI (cents per use), Apple ($99/year), domain ($10–20/year)</td></tr>
+</table>
+
+<h2>How to stay in control</h2>
+<ul>
+  <li><b>Check usage monthly.</b> Supabase: Project → <i>Usage</i>. Brevo: <i>Dashboard</i> shows emails sent and your plan limit.</li>
+  <li><b>Watch the newsletter results.</b> If the Owner dashboard shows emails as "failed", the most likely cause is Brevo's free daily limit. Upgrade Brevo, then send again.</li>
+  <li><b>Keep Supabase's spend cap on</b> (it's on by default on Pro), so the bill never goes above the plan price.</li>
+  <li><b>Set billing alerts or email notifications</b> on each service with a card attached.</li>
+  <li><b>Account ownership:</b> today everything is under princeanim88@gmail.com. When the ministry email is available, add it to each service as an owner or admin, and move billing to the ministry's card if that's the plan.</li>
+</ul>
+
+<h2>Pricing pages to check</h2>
+<table>
+  <tr><th>Service</th><th>Where to check prices</th></tr>
+  <tr><td>Supabase</td><td>supabase.com/pricing</td></tr>
+  <tr><td>Brevo</td><td>brevo.com/pricing</td></tr>
+  <tr><td>Twilio SMS</td><td>twilio.com/en-us/sms/pricing (choose the country)</td></tr>
+  <tr><td>Expo EAS</td><td>expo.dev/pricing</td></tr>
+  <tr><td>Anthropic</td><td>claude.com/pricing (API section)</td></tr>
+  <tr><td>Google Play / Apple</td><td>play.google.com/console · developer.apple.com/programs</td></tr>
+</table>
+<p class="small">All figures are approximate, in US dollars, and based on published prices known as of 2026. Card payments in other currencies may include bank conversion fees.</p>
+
+</body>
+</html>

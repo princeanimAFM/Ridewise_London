@@ -1,0 +1,1071 @@
+-- Church Care Tracker: database, access rules and public forms.
+-- Everything lives in its own schema, "care", so it can share a Supabase project (the AFM HUB one) without
+-- touching that app's tables. Safe to run again. After running, add "care" to the API's exposed schemas.
+--
+-- Who sees what (enforced here, not in the app):
+--   pastor   everything; sets up groups, leaders, the PA and the welcome team
+--   pa       only the areas the pastor ticks: visitors, groups, group prayer requests,
+--            prayer requests sent to the pastor
+--   welcome  adds visitors and sends welcome messages; no members or prayer requests
+--   leader   only the visitors, members and prayer requests of their own group
+--   visitors (no login) can only send the welcome form and prayer requests, never read anything
+-- People sign in with a code sent to WhatsApp or email; the team list says who may.
+
+create schema if not exists care;
+grant usage on schema care to anon, authenticated, service_role;
+
+-- ---------- tables ----------
+create table if not exists care.groups (
+  id          text primary key check (id ~ '^[a-z0-9-]{1,40}$'),
+  name        text not null check (char_length(btrim(name)) between 1 and 80),
+  tag         text not null default '' check (char_length(tag) <= 80),
+  leader_name text not null default '' check (char_length(leader_name) <= 80),
+  sort        int  not null default 0
+);
+
+create table if not exists care.staff (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null check (char_length(btrim(name)) between 1 and 80),
+  email      text unique check (email is null or (email = lower(email) and email like '%_@_%')),
+  phone      text unique check (phone is null or phone ~ '^[0-9]{10,15}$'),
+  role       text not null check (role in ('pastor', 'pa', 'welcome', 'leader')),
+  group_id   text references care.groups(id),
+  areas      text[] not null default '{}',
+  created_at timestamptz not null default now(),
+  check (email is not null or phone is not null),
+  check (role <> 'leader' or group_id is not null)
+);
+
+create table if not exists care.visitors (
+  id             uuid primary key default gen_random_uuid(),
+  name           text not null check (char_length(btrim(name)) between 1 and 80),
+  phone          text not null default '' check (char_length(phone) <= 20),
+  reason         text not null default '' check (char_length(reason) <= 60),
+  invited_by     text not null default '' check (char_length(invited_by) <= 80),
+  group_interest text references care.groups(id) on delete set null,
+  assigned_to    text references care.groups(id) on delete set null,
+  status         text not null default 'new' check (status in ('new', 'reached', 'joined')),
+  due            date,
+  reached_at     date,
+  seen_by_leader boolean not null default true,
+  consent_at     timestamptz,
+  source         text not null default 'team' check (source in ('form', 'team')),
+  welcomed_at    timestamptz,
+  welcomed_by    text not null default '',
+  created_at     timestamptz not null default now()
+);
+create index if not exists visitors_assigned on care.visitors (assigned_to);
+
+create table if not exists care.visitor_notes (
+  id         bigint generated always as identity primary key,
+  visitor_id uuid not null references care.visitors(id) on delete cascade,
+  author     text not null default '',
+  body       text not null check (char_length(btrim(body)) between 1 and 1000),
+  created_at timestamptz not null default now()
+);
+create index if not exists visitor_notes_visitor on care.visitor_notes (visitor_id);
+
+create table if not exists care.members (
+  id         uuid primary key default gen_random_uuid(),
+  name       text not null check (char_length(btrim(name)) between 1 and 80),
+  phone      text not null default '' check (char_length(phone) <= 20),
+  group_id   text not null references care.groups(id),
+  joined_at  date not null default current_date,
+  last_seen  date,
+  visitor_id uuid references care.visitors(id) on delete set null,
+  created_at timestamptz not null default now()
+);
+create index if not exists members_group on care.members (group_id);
+-- Set when a member joins the app through their group's invite link.
+alter table care.members add column if not exists login_phone   text;
+alter table care.members add column if not exists login_email   text;
+alter table care.members add column if not exists joined_app_at timestamptz;
+alter table care.members add column if not exists last_app_at   timestamptz;
+create unique index if not exists members_login_phone on care.members (group_id, login_phone) where login_phone is not null;
+create unique index if not exists members_login_email on care.members (group_id, login_email) where login_email is not null;
+
+-- Areas a PA can be given (kept as its own check so it can grow).
+alter table care.staff drop constraint if exists staff_areas_check;
+alter table care.staff drop constraint if exists staff_areas_allowed;
+alter table care.staff add constraint staff_areas_allowed check (areas <@ array['visitors', 'groups', 'prayer_groups', 'prayer_pastor', 'programs']);
+
+-- Special services and programs (conventions, Holy Ghost nights, thanksgiving…). Anyone may read them:
+-- they show on the welcome page and in the app. The pastor (or a PA with "programs") manages them.
+create table if not exists care.programs (
+  id         uuid primary key default gen_random_uuid(),
+  title      text not null check (char_length(btrim(title)) between 1 and 120),
+  starts_on  date not null,
+  ends_on    date not null,
+  time_text  text not null default '' check (char_length(time_text) <= 60),
+  place      text not null default '' check (char_length(place) <= 120),
+  details    text not null default '' check (char_length(details) <= 1000),
+  created_at timestamptz not null default now(),
+  check (ends_on >= starts_on and ends_on <= starts_on + 31)
+);
+
+-- One row per person per service attended. kind: sunday (Sunday service), friday (Friday Miracle Service),
+-- online (Sunday night online prayer), meeting (group meeting). by_self: the member marked it themselves.
+create table if not exists care.attendance (
+  member_id uuid not null references care.members(id) on delete cascade,
+  seen_on   date not null default current_date,
+  kind      text not null default 'sunday',
+  by_self   boolean not null default false,
+  marked_by text not null default ''
+);
+create index if not exists attendance_day on care.attendance (seen_on);
+-- kinds: sunday, tuesday (Time with the Rabbi), friday (Miracle Service), online (Sunday night), meeting (group), special (a program)
+alter table care.attendance add column if not exists program_id uuid references care.programs(id) on delete cascade;
+alter table care.attendance drop constraint if exists attendance_kind_check;
+alter table care.attendance drop constraint if exists attendance_kind_allowed;
+alter table care.attendance add constraint attendance_kind_allowed check (kind in ('sunday', 'tuesday', 'friday', 'online', 'meeting', 'special') and ((kind = 'special') = (program_id is not null)));
+-- Special programs are told apart by program, so the key is per program too.
+alter table care.attendance drop constraint if exists attendance_pkey;
+alter table care.attendance add column if not exists id bigint generated always as identity;
+do $$ begin
+  if not exists (select 1 from pg_constraint where conname = 'attendance_id_pkey') then
+    alter table care.attendance add constraint attendance_id_pkey primary key (id);
+  end if;
+end $$;
+drop index if exists care.attendance_one;
+create unique index attendance_one on care.attendance (member_id, seen_on, kind, coalesce(program_id, '00000000-0000-0000-0000-000000000000'::uuid));
+
+alter table care.staff add column if not exists joined_app_at timestamptz;
+alter table care.staff add column if not exists last_app_at   timestamptz;
+
+-- Invite links. 'leader': one person, one use, made by the pastor. 'member': the group's join link, shared freely.
+create table if not exists care.invites (
+  token      text primary key default replace(gen_random_uuid()::text, '-', ''),
+  kind       text not null check (kind in ('leader', 'member')),
+  group_id   text not null references care.groups(id) on delete cascade,
+  created_by text not null default '',
+  created_at timestamptz not null default now(),
+  used_at    timestamptz,
+  used_by    text,
+  revoked    boolean not null default false
+);
+
+-- to_pastor: the person asked for only the pastor (and a PA he allows) to read it.
+create table if not exists care.prayers (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null default '' check (char_length(name) <= 80),
+  phone       text not null default '' check (char_length(phone) <= 20),
+  body        text not null check (char_length(btrim(body)) between 1 and 1000),
+  status      text not null default 'open' check (status in ('open', 'prayed')),
+  to_pastor   boolean not null default false,
+  assigned_to text references care.groups(id) on delete set null,
+  visitor_id  uuid references care.visitors(id) on delete cascade,
+  source      text not null default 'team' check (source in ('form', 'team')),
+  created_at  timestamptz not null default now(),
+  check (not (to_pastor and assigned_to is not null))
+);
+create index if not exists prayers_assigned on care.prayers (assigned_to);
+alter table care.prayers add column if not exists member_id uuid references care.members(id) on delete set null;
+
+-- ---------- who is signed in ----------
+-- Phone numbers are kept as international digits (233241234567), as the sign-in system gives them.
+create or replace function care.intl_phone(p text) returns text language sql immutable as $$
+  select case
+    when d = '' then null
+    when d like '00%' then substr(d, 3)
+    when d like '0%' then '233' || substr(d, 2)
+    when length(d) <= 9 then '233' || d
+    else d end
+  from (select regexp_replace(coalesce(p, ''), '\D', '', 'g') as d) x
+$$;
+
+create or replace function care.me() returns care.staff language sql stable security definer set search_path = care, public as $$
+  select s.* from care.staff s
+  where (s.email is not null and s.email = lower(nullif(auth.jwt() ->> 'email', '')))
+     or (s.phone is not null and s.phone = care.intl_phone(nullif(auth.jwt() ->> 'phone', '')))
+  order by s.created_at limit 1
+$$;
+create or replace function care.my_id()    returns uuid language sql stable as $$ select (care.me()).id $$;
+create or replace function care.my_role()  returns text language sql stable as $$ select (care.me()).role $$;
+create or replace function care.my_name()  returns text language sql stable as $$ select (care.me()).name $$;
+create or replace function care.my_group() returns text language sql stable as $$ select case when (care.me()).role = 'leader' then (care.me()).group_id end $$;
+-- The pastor has every area; a PA has the ones the pastor ticked.
+create or replace function care.has_area(a text) returns boolean language sql stable as $$
+  select coalesce((care.me()).role = 'pastor' or ((care.me()).role = 'pa' and a = any((care.me()).areas)), false)
+$$;
+
+-- True only inside the public form functions below.
+create or replace function care.from_form() returns boolean language sql stable
+as $$ select coalesce(current_setting('care.form', true), '') = '1' $$;
+
+-- ---------- rules the app can't break ----------
+create or replace function care.staff_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  new.name := btrim(new.name);
+  new.email := nullif(lower(btrim(coalesce(new.email, ''))), '');
+  new.phone := care.intl_phone(new.phone);
+  if new.role <> 'leader' then new.group_id := null; end if;
+  if new.role <> 'pa' then new.areas := '{}'; end if;
+  if tg_op = 'UPDATE' then new.created_at := old.created_at; end if;
+  return new;
+end $$;
+drop trigger if exists staff_rules on care.staff;
+create trigger staff_rules before insert or update on care.staff for each row execute function care.staff_rules();
+
+-- Each group shows the name of its current leader (the most recently added one).
+create or replace function care.staff_leader_name() returns trigger language plpgsql security definer set search_path = care, public as $$
+declare g text;
+begin
+  foreach g in array array[case when tg_op <> 'INSERT' then old.group_id end, case when tg_op <> 'DELETE' then new.group_id end] loop
+    if g is not null then
+      update care.groups set leader_name = coalesce(
+        (select name from care.staff where role = 'leader' and group_id = g order by created_at desc limit 1), '')
+      where id = g;
+    end if;
+  end loop;
+  return null;
+end $$;
+drop trigger if exists staff_leader_name on care.staff;
+create trigger staff_leader_name after insert or update or delete on care.staff for each row execute function care.staff_leader_name();
+
+-- The team list always keeps at least one pastor.
+create or replace function care.keep_a_pastor() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if old.role = 'pastor' and (tg_op = 'DELETE' or new.role <> 'pastor')
+     and not exists (select 1 from care.staff where role = 'pastor' and id <> old.id) then
+    raise exception 'The team needs at least one pastor';
+  end if;
+  return coalesce(new, old);
+end $$;
+drop trigger if exists keep_a_pastor on care.staff;
+create trigger keep_a_pastor before update or delete on care.staff for each row execute function care.keep_a_pastor();
+
+create or replace function care.visitor_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+declare r text := care.my_role(); can_assign boolean := care.has_area('visitors');
+begin
+  if tg_op = 'INSERT' then
+    new.source := case when care.from_form() then 'form' else 'team' end;
+    new.created_at := now();
+    new.status := 'new';
+    new.reached_at := null;
+    new.welcomed_at := null; new.welcomed_by := '';
+    if new.source = 'form' or r = 'welcome' or (r = 'pa' and not can_assign) then
+      new.assigned_to := null;
+    elsif r = 'leader' then
+      new.assigned_to := care.my_group();
+    end if;
+    new.due := current_date + 2;
+    new.seen_by_leader := (new.assigned_to is null or r = 'leader');
+    new.name := btrim(new.name);
+    return new;
+  end if;
+  if new.assigned_to is distinct from old.assigned_to then
+    if not can_assign then raise exception 'Only the pastor can assign visitors to a group'; end if;
+    if new.assigned_to is not null and new.status = 'new' then
+      new.due := current_date + 2;   -- the leader has two days from assignment
+      new.seen_by_leader := false;   -- shows "New for you"
+    end if;
+  end if;
+  if not can_assign then new.due := old.due; end if;
+  if new.status <> 'new' and old.status = 'new' and new.reached_at is null then new.reached_at := current_date; end if;
+  if current_setting('care.welcoming', true) is distinct from '1' then
+    new.welcomed_at := old.welcomed_at; new.welcomed_by := old.welcomed_by;
+  end if;
+  if new.consent_at is distinct from old.consent_at or new.source is distinct from old.source or new.created_at is distinct from old.created_at then
+    raise exception 'Those details cannot be changed';
+  end if;
+  return new;
+end $$;
+drop trigger if exists visitor_rules on care.visitors;
+create trigger visitor_rules before insert or update on care.visitors for each row execute function care.visitor_rules();
+
+create or replace function care.note_author() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  new.author := coalesce(care.my_name(), '');
+  new.body := btrim(new.body);
+  new.created_at := now();
+  return new;
+end $$;
+drop trigger if exists note_author on care.visitor_notes;
+create trigger note_author before insert on care.visitor_notes for each row execute function care.note_author();
+
+create or replace function care.member_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  -- a leader's own edits stay in their group (not updates the database makes for them, such as "last seen" in another group)
+  if care.my_role() = 'leader' and pg_trigger_depth() = 1 then new.group_id := care.my_group(); end if;
+  new.name := btrim(new.name);
+  return new;
+end $$;
+drop trigger if exists member_rules on care.members;
+create trigger member_rules before insert or update on care.members for each row execute function care.member_rules();
+
+create or replace function care.prayer_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+declare r text := care.my_role();
+begin
+  if tg_op = 'INSERT' then
+    if care.from_form() then
+      new.source := 'form';
+    else
+      new.source := 'team';
+      new.visitor_id := null;
+      if current_setting('care.member', true) is distinct from '1' then new.member_id := null; end if;
+      if r = 'leader' and not new.to_pastor then new.assigned_to := care.my_group(); end if;
+      if r = 'welcome' then new.assigned_to := null; end if;
+    end if;
+    if new.to_pastor then new.assigned_to := null; end if;
+    new.status := 'open';
+    new.created_at := now();
+    return new;
+  end if;
+  if new.to_pastor is distinct from old.to_pastor then raise exception 'Who a prayer request is for cannot be changed'; end if;
+  if new.assigned_to is distinct from old.assigned_to then
+    if new.to_pastor then raise exception 'This prayer request is for the pastor only'; end if;
+    if not care.has_area('prayer_groups') and current_setting('care.follow', true) is distinct from '1' then raise exception 'Only the pastor can pass a prayer request to a group'; end if;
+  end if;
+  if new.body is distinct from old.body or new.source is distinct from old.source or new.created_at is distinct from old.created_at
+     or new.visitor_id is distinct from old.visitor_id or new.member_id is distinct from old.member_id then
+    raise exception 'A prayer request cannot be rewritten';
+  end if;
+  return new;
+end $$;
+drop trigger if exists prayer_rules on care.prayers;
+create trigger prayer_rules before insert or update on care.prayers for each row execute function care.prayer_rules();
+
+-- A visitor's prayer requests for "my leader" go to the same leader as the visitor.
+create or replace function care.visitor_prayers_follow() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if new.assigned_to is distinct from old.assigned_to then
+    perform set_config('care.follow', '1', true);
+    update care.prayers set assigned_to = new.assigned_to where visitor_id = new.id and not to_pastor;
+    perform set_config('care.follow', '', true);
+  end if;
+  return null;
+end $$;
+drop trigger if exists visitor_prayers_follow on care.visitors;
+create trigger visitor_prayers_follow after update of assigned_to on care.visitors for each row execute function care.visitor_prayers_follow();
+
+create or replace function care.attendance_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if current_setting('care.member', true) is distinct from '1' then
+    new.by_self := false;
+    new.marked_by := coalesce(care.my_name(), '');
+  end if;
+  if new.seen_on > current_date then raise exception 'You can''t mark a service that hasn''t happened yet'; end if;
+  if new.kind = 'special' and not exists (select 1 from care.programs where id = new.program_id and new.seen_on between starts_on and ends_on) then
+    raise exception 'That date is not part of the program';
+  end if;
+  return new;
+end $$;
+drop trigger if exists attendance_rules on care.attendance;
+create trigger attendance_rules before insert on care.attendance for each row execute function care.attendance_rules();
+
+-- Last seen = the latest attendance mark.
+create or replace function care.update_last_seen() returns trigger language plpgsql security definer set search_path = care, public as $$
+declare m uuid := coalesce(new.member_id, old.member_id);
+begin
+  update care.members set last_seen = (select max(seen_on) from care.attendance where member_id = m) where id = m;
+  return null;
+end $$;
+drop trigger if exists update_last_seen on care.attendance;
+create trigger update_last_seen after insert or delete on care.attendance for each row execute function care.update_last_seen();
+
+-- One person can be in more than one group (the choir and a fellowship, say): each group has its own entry for them.
+-- They are the same person when they share a sign-in, or the same phone number.
+create or replace function care.person_key(m care.members) returns text language sql immutable as $$
+  select coalesce(m.login_phone, m.login_email, care.intl_phone(m.phone), m.id::text)
+$$;
+create or replace function care.same_person(p_member uuid) returns setof uuid language sql stable security definer set search_path = care, public as $$
+  select o.id from care.members m join care.members o on o.id <> m.id and care.person_key(o) = care.person_key(m) where m.id = p_member
+$$;
+revoke all on function care.same_person(uuid) from public, anon, authenticated;
+
+-- Being at a church service counts in all their groups. Group meetings stay with their own group.
+create or replace function care.attendance_everywhere() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if pg_trigger_depth() > 1 then return null; end if;
+  if tg_op = 'INSERT' and new.kind <> 'meeting' then
+    insert into care.attendance (member_id, seen_on, kind, program_id, by_self, marked_by)
+    select s, new.seen_on, new.kind, new.program_id, new.by_self, new.marked_by from care.same_person(new.member_id) s
+    on conflict do nothing;
+  elsif tg_op = 'DELETE' and old.kind <> 'meeting' then
+    delete from care.attendance where member_id in (select care.same_person(old.member_id)) and seen_on = old.seen_on
+      and kind = old.kind and program_id is not distinct from old.program_id and by_self = old.by_self;
+  end if;
+  return null;
+end $$;
+drop trigger if exists attendance_everywhere on care.attendance;
+create trigger attendance_everywhere after insert or delete on care.attendance for each row execute function care.attendance_everywhere();
+-- Fill in marks made before this rule existed (safe to run again).
+do $$ begin
+  perform set_config('care.member', '1', true);
+  insert into care.attendance (member_id, seen_on, kind, program_id, by_self, marked_by)
+  select s, a.seen_on, a.kind, a.program_id, a.by_self, a.marked_by from care.attendance a cross join lateral care.same_person(a.member_id) s
+  where a.kind <> 'meeting' on conflict do nothing;
+  perform set_config('care.member', '', true);
+end $$;
+
+-- ---------- access rules ----------
+alter table care.groups        enable row level security;
+alter table care.staff         enable row level security;
+alter table care.visitors      enable row level security;
+alter table care.visitor_notes enable row level security;
+alter table care.members       enable row level security;
+alter table care.attendance    enable row level security;
+alter table care.prayers       enable row level security;
+alter table care.invites       enable row level security;
+alter table care.programs      enable row level security;   -- no policies: only the functions below use it
+
+-- Nobody without a login reads or writes tables directly; the public forms use the functions below.
+revoke all on care.invites from anon, authenticated;
+revoke all on care.groups, care.staff, care.visitors, care.visitor_notes, care.members, care.attendance, care.prayers from anon;
+grant select on care.groups to anon;
+revoke all on care.programs from anon;
+grant select on care.programs to anon;
+drop policy if exists programs_read on care.programs;
+create policy programs_read on care.programs for select to anon, authenticated using (true);
+drop policy if exists programs_write on care.programs;
+create policy programs_write on care.programs for all to authenticated using (care.has_area('programs')) with check (care.has_area('programs'));
+
+drop policy if exists groups_read on care.groups;
+create policy groups_read on care.groups for select to anon, authenticated using (true);
+drop policy if exists groups_write on care.groups;
+create policy groups_write on care.groups for all to authenticated using (care.my_role() = 'pastor') with check (care.my_role() = 'pastor');
+
+drop policy if exists staff_read on care.staff;
+create policy staff_read on care.staff for select to authenticated using (care.my_role() = 'pastor' or id = care.my_id());
+drop policy if exists staff_write on care.staff;
+create policy staff_write on care.staff for all to authenticated using (care.my_role() = 'pastor') with check (care.my_role() = 'pastor');
+
+drop policy if exists visitors_read on care.visitors;
+create policy visitors_read on care.visitors for select to authenticated
+  using (care.has_area('visitors') or care.my_role() = 'welcome' or (care.my_role() = 'leader' and assigned_to = care.my_group()));
+drop policy if exists visitors_add on care.visitors;
+create policy visitors_add on care.visitors for insert to authenticated
+  with check (care.has_area('visitors') or care.my_role() in ('welcome', 'leader'));
+drop policy if exists visitors_edit on care.visitors;
+create policy visitors_edit on care.visitors for update to authenticated
+  using (care.has_area('visitors') or (care.my_role() = 'leader' and assigned_to = care.my_group()))
+  with check (care.has_area('visitors') or (care.my_role() = 'leader' and assigned_to = care.my_group()));
+drop policy if exists visitors_remove on care.visitors;
+create policy visitors_remove on care.visitors for delete to authenticated using (care.my_role() = 'pastor');
+
+drop policy if exists notes_read on care.visitor_notes;
+create policy notes_read on care.visitor_notes for select to authenticated
+  using (exists (select 1 from care.visitors v where v.id = visitor_id));
+drop policy if exists notes_add on care.visitor_notes;
+create policy notes_add on care.visitor_notes for insert to authenticated
+  with check (care.my_role() is not null and exists (select 1 from care.visitors v where v.id = visitor_id));
+drop policy if exists notes_remove on care.visitor_notes;
+create policy notes_remove on care.visitor_notes for delete to authenticated using (care.my_role() = 'pastor');
+
+drop policy if exists members_all on care.members;
+create policy members_all on care.members for all to authenticated
+  using (care.has_area('groups') or (care.my_role() = 'leader' and group_id = care.my_group()))
+  with check (care.has_area('groups') or (care.my_role() = 'leader' and group_id = care.my_group()));
+
+drop policy if exists attendance_all on care.attendance;
+create policy attendance_all on care.attendance for all to authenticated
+  using (exists (select 1 from care.members m where m.id = member_id))
+  with check (exists (select 1 from care.members m where m.id = member_id));
+
+create or replace function care.can_see_prayer(to_pastor boolean, assigned_to text) returns boolean language sql stable as $$
+  select case when to_pastor then care.has_area('prayer_pastor')
+              else care.has_area('prayer_groups') or (care.my_role() = 'leader' and assigned_to = care.my_group()) end
+$$;
+drop policy if exists prayers_read on care.prayers;
+create policy prayers_read on care.prayers for select to authenticated using (care.can_see_prayer(to_pastor, assigned_to));
+drop policy if exists prayers_add on care.prayers;
+create policy prayers_add on care.prayers for insert to authenticated with check (care.my_role() is not null);
+drop policy if exists prayers_edit on care.prayers;
+create policy prayers_edit on care.prayers for update to authenticated
+  using (care.can_see_prayer(to_pastor, assigned_to)) with check (care.can_see_prayer(to_pastor, assigned_to));
+drop policy if exists prayers_remove on care.prayers;
+create policy prayers_remove on care.prayers for delete to authenticated using (care.my_role() = 'pastor');
+
+-- ---------- public forms (QR code page) ----------
+-- A small brake on floods of fake submissions: at most 60 forms in any 10 minutes, church-wide.
+create or replace function care.form_brake() returns void language plpgsql security definer set search_path = care, public as $$
+begin
+  if (select count(*) from care.visitors where source = 'form' and created_at > now() - interval '10 minutes')
+   + (select count(*) from care.prayers  where source = 'form' and created_at > now() - interval '10 minutes') >= 60 then
+    raise exception 'Too many forms right now. Please try again in a few minutes.';
+  end if;
+end $$;
+
+drop function if exists care.submit_welcome(text, text, text, text, text, text, boolean);
+drop function if exists care.submit_prayer(text, text, text, boolean);
+
+-- p_prayer_to: 'pastor' (pastor only) or 'leader' (the group leader they are given, and the pastor)
+create or replace function care.submit_welcome(
+  p_name text, p_phone text, p_reason text, p_invited_by text, p_group text, p_prayer text, p_prayer_to text, p_consent boolean
+) returns void language plpgsql security definer set search_path = care, public as $$
+declare vid uuid;
+begin
+  if not coalesce(p_consent, false) then raise exception 'Please tick the consent box'; end if;
+  if char_length(btrim(coalesce(p_name, ''))) not between 1 and 80 then raise exception 'Please enter your name'; end if;
+  if char_length(regexp_replace(coalesce(p_phone, ''), '\D', '', 'g')) not between 9 and 15 then raise exception 'Please enter a WhatsApp number'; end if;
+  perform care.form_brake();
+  perform set_config('care.form', '1', true);
+  insert into care.visitors (name, phone, reason, invited_by, group_interest, consent_at)
+  values (btrim(p_name), left(btrim(p_phone), 20), left(btrim(coalesce(p_reason, '')), 60), left(btrim(coalesce(p_invited_by, '')), 80),
+          (select id from care.groups where id = p_group), now())
+  returning id into vid;
+  if char_length(btrim(coalesce(p_prayer, ''))) > 0 then
+    insert into care.prayers (name, phone, body, visitor_id, to_pastor)
+    values (btrim(p_name), left(btrim(p_phone), 20), left(btrim(p_prayer), 1000), vid, coalesce(p_prayer_to, 'pastor') = 'pastor');
+  end if;
+end $$;
+
+-- p_to: 'pastor', or a group id to send it to that group's leader
+create or replace function care.submit_prayer(p_name text, p_phone text, p_body text, p_to text, p_consent boolean)
+returns void language plpgsql security definer set search_path = care, public as $$
+declare g text := (select id from care.groups where id = p_to);
+begin
+  if not coalesce(p_consent, false) then raise exception 'Please tick the consent box'; end if;
+  if char_length(btrim(coalesce(p_body, ''))) not between 1 and 1000 then raise exception 'Please write your prayer request'; end if;
+  perform care.form_brake();
+  perform set_config('care.form', '1', true);
+  insert into care.prayers (name, phone, body, to_pastor, assigned_to)
+  values (left(btrim(coalesce(p_name, '')), 80), left(btrim(coalesce(p_phone, '')), 20), btrim(p_body), g is null, g);
+end $$;
+
+revoke all on function care.submit_welcome(text, text, text, text, text, text, text, boolean) from public;
+revoke all on function care.submit_prayer(text, text, text, text, boolean) from public;
+grant execute on function care.submit_welcome(text, text, text, text, text, text, text, boolean) to anon, authenticated;
+grant execute on function care.submit_prayer(text, text, text, text, boolean) to anon, authenticated;
+revoke all on function care.form_brake() from public, anon, authenticated;
+
+-- Records that the welcome message was sent.
+create or replace function care.mark_welcomed(p_id uuid) returns void language plpgsql security definer set search_path = care, public as $$
+declare r text := care.my_role();
+begin
+  if r is null then raise exception 'You don''t have access to do that'; end if;
+  perform set_config('care.welcoming', '1', true);
+  update care.visitors set welcomed_at = coalesce(welcomed_at, now()),
+         welcomed_by = case when welcomed_at is null then coalesce(care.my_name(), '') else welcomed_by end
+   where id = p_id and (care.has_area('visitors') or r = 'welcome' or (r = 'leader' and assigned_to = care.my_group()));
+  if not found then raise exception 'You don''t have access to do that'; end if;
+  perform set_config('care.welcoming', '', true);
+end $$;
+revoke all on function care.mark_welcomed(uuid) from public, anon;
+grant execute on function care.mark_welcomed(uuid) to authenticated;
+
+-- ---------- the app for everyone: who am I, invite links, members ----------
+create or replace function care.my_login_phone() returns text language sql stable as $$ select care.intl_phone(nullif(auth.jwt() ->> 'phone', '')) $$;
+create or replace function care.my_login_email() returns text language sql stable as $$ select lower(nullif(auth.jwt() ->> 'email', '')) $$;
+
+-- Group memberships of the signed-in person (a person can be in more than one group).
+create or replace function care.my_member_groups() returns setof text language sql stable security definer set search_path = care, public as $$
+  select group_id from care.members
+  where (login_phone is not null and login_phone = care.my_login_phone()) or (login_email is not null and login_email = care.my_login_email())
+$$;
+
+-- Called when the app opens: says who you are and records that you use the app.
+create or replace function care.whoami() returns jsonb language plpgsql security definer set search_path = care, public as $$
+declare st care.staff := care.me(); ph text := care.my_login_phone(); em text := care.my_login_email(); gs jsonb;
+begin
+  if ph is null and em is null then return null; end if;
+  if st.id is not null then
+    update care.staff set joined_app_at = coalesce(joined_app_at, now()), last_app_at = now() where id = st.id;
+    return jsonb_build_object('kind', 'staff', 'id', st.id, 'name', st.name, 'role', st.role, 'group_id', st.group_id, 'areas', to_jsonb(st.areas), 'email', st.email, 'phone', st.phone);
+  end if;
+  update care.members set last_app_at = now()
+   where (login_phone is not null and login_phone = ph) or (login_email is not null and login_email = em);
+  select jsonb_agg(jsonb_build_object('member_id', m.id, 'group_id', m.group_id) order by m.joined_app_at), min(m.name)
+    into gs from care.members m
+   where (m.login_phone is not null and m.login_phone = ph) or (m.login_email is not null and m.login_email = em);
+  if gs is null then return null; end if;
+  return jsonb_build_object('kind', 'member', 'role', 'member', 'name',
+    (select name from care.members where (login_phone = ph or login_email = em) order by joined_app_at limit 1), 'groups', gs);
+end $$;
+
+-- Make (or fetch) an invite link token.
+create or replace function care.create_invite(p_group text, p_kind text) returns text language plpgsql security definer set search_path = care, public as $$
+declare r text := care.my_role(); t text;
+begin
+  if not exists (select 1 from care.groups where id = p_group) then raise exception 'That group does not exist'; end if;
+  if p_kind = 'leader' then
+    if r is distinct from 'pastor' then raise exception 'Only the pastor can invite a group leader'; end if;
+    update care.invites set revoked = true where group_id = p_group and kind = 'leader' and used_at is null and not revoked;
+    insert into care.invites (kind, group_id, created_by) values ('leader', p_group, coalesce(care.my_name(), '')) returning token into t;
+    return t;
+  elsif p_kind = 'member' then
+    if not coalesce(care.has_area('groups') or (r = 'leader' and care.my_group() = p_group), false) then raise exception 'You can only invite people to your own group'; end if;
+    select token into t from care.invites where group_id = p_group and kind = 'member' and not revoked order by created_at desc limit 1;
+    if t is null then insert into care.invites (kind, group_id, created_by) values ('member', p_group, coalesce(care.my_name(), '')) returning token into t; end if;
+    return t;
+  end if;
+  raise exception 'Unknown invite type';
+end $$;
+
+-- A new join link for the group (the old one stops working).
+create or replace function care.reset_member_invite(p_group text) returns text language plpgsql security definer set search_path = care, public as $$
+begin
+  if not coalesce(care.has_area('groups') or (care.my_role() = 'leader' and care.my_group() = p_group), false) then raise exception 'You can only change your own group''s link'; end if;
+  update care.invites set revoked = true where group_id = p_group and kind = 'member';
+  return care.create_invite(p_group, 'member');
+end $$;
+
+-- What an invite link is for, shown before signing in. Says nothing private.
+create or replace function care.invite_info(p_token text) returns jsonb language sql stable security definer set search_path = care, public as $$
+  select jsonb_build_object('kind', i.kind, 'group', g.name, 'tag', g.tag, 'leader', g.leader_name,
+    'valid', not i.revoked and (i.kind = 'member' or i.used_at is null))
+  from care.invites i join care.groups g on g.id = i.group_id where i.token = p_token
+$$;
+
+-- Accept an invite after signing in with a WhatsApp or email code.
+create or replace function care.accept_invite(p_token text, p_name text) returns jsonb language plpgsql security definer set search_path = care, public as $$
+declare i care.invites; ph text := care.my_login_phone(); em text := care.my_login_email(); st care.staff := care.me(); n text := btrim(coalesce(p_name, '')); mid uuid;
+begin
+  if ph is null and em is null then raise exception 'Please sign in first'; end if;
+  select * into i from care.invites where token = p_token for update;
+  if i.token is null or i.revoked then raise exception 'This invite link is no longer valid. Ask for a new one.'; end if;
+  if i.kind = 'leader' then
+    if i.used_at is not null then raise exception 'This invite link has already been used. Ask the pastor for a new one.'; end if;
+    if st.id is not null and st.role in ('pastor', 'pa') then raise exception 'You are already on the team as %', st.role; end if;
+    if st.id is not null then
+      update care.staff set role = 'leader', group_id = i.group_id, name = coalesce(nullif(n, ''), name) where id = st.id;
+    else
+      if char_length(n) not between 1 and 80 then raise exception 'Please enter your name'; end if;
+      insert into care.staff (name, phone, email, role, group_id, joined_app_at) values (n, ph, em, 'leader', i.group_id, now());
+    end if;
+    update care.invites set used_at = now(), used_by = coalesce(ph, em) where token = i.token;
+    return jsonb_build_object('kind', 'leader', 'group_id', i.group_id);
+  end if;
+  -- member: link to an existing entry the leader made with the same number, or add them
+  select id into mid from care.members where group_id = i.group_id
+    and ((login_phone is not null and login_phone = ph) or (login_email is not null and login_email = em));
+  if mid is null and ph is not null then
+    select id into mid from care.members where group_id = i.group_id and login_phone is null and login_email is null
+      and care.intl_phone(phone) = ph order by created_at limit 1;
+  end if;
+  if mid is not null then
+    update care.members set login_phone = coalesce(login_phone, ph), login_email = coalesce(login_email, em), joined_app_at = coalesce(joined_app_at, now()) where id = mid;
+  else
+    if char_length(n) not between 1 and 80 then raise exception 'Please enter your name'; end if;
+    insert into care.members (name, phone, group_id, login_phone, login_email, joined_app_at)
+    values (n, coalesce(case when ph is not null then '+' || ph end, ''), i.group_id, ph, em, now()) returning id into mid;
+  end if;
+  return jsonb_build_object('kind', 'member', 'group_id', i.group_id);
+end $$;
+
+-- A member's view of their group: names only (no phone numbers), plus their leader's WhatsApp.
+create or replace function care.my_group_view(p_group text) returns jsonb language plpgsql stable security definer set search_path = care, public as $$
+begin
+  if not coalesce(p_group in (select care.my_member_groups()) or care.my_group() = p_group or care.has_area('groups'), false) then
+    raise exception 'You can only see your own group';
+  end if;
+  return jsonb_build_object(
+    'group', (select to_jsonb(g) from care.groups g where g.id = p_group),
+    'leader_phone', (select phone from care.staff where role = 'leader' and group_id = p_group order by created_at desc limit 1),
+    'people', coalesce((select jsonb_agg(jsonb_build_object('name', m.name, 'on_app', m.joined_app_at is not null) order by m.name)
+                        from care.members m where m.group_id = p_group), '[]'::jsonb));
+end $$;
+
+-- Members send prayer requests to their leader or the pastor, and see their own.
+create or replace function care.member_prayer(p_body text, p_to text, p_group text) returns void language plpgsql security definer set search_path = care, public as $$
+declare m care.members;
+begin
+  select * into m from care.members where group_id = p_group and id in (
+    select id from care.members where (login_phone is not null and login_phone = care.my_login_phone()) or (login_email is not null and login_email = care.my_login_email()));
+  if m.id is null then raise exception 'You can only send prayer requests from your own group'; end if;
+  if char_length(btrim(coalesce(p_body, ''))) not between 1 and 1000 then raise exception 'Please write your prayer request'; end if;
+  perform set_config('care.member', '1', true);
+  insert into care.prayers (name, phone, body, to_pastor, assigned_to, member_id)
+  values (m.name, m.phone, btrim(p_body), p_to = 'pastor', case when p_to = 'pastor' then null else p_group end, m.id);
+  perform set_config('care.member', '', true);
+end $$;
+
+create or replace function care.my_prayers() returns jsonb language sql stable security definer set search_path = care, public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('body', p.body, 'status', p.status, 'to_pastor', p.to_pastor, 'created_at', p.created_at) order by p.created_at desc), '[]'::jsonb)
+  from care.prayers p join care.members m on m.id = p.member_id
+  where (m.login_phone is not null and m.login_phone = care.my_login_phone()) or (m.login_email is not null and m.login_email = care.my_login_email())
+$$;
+
+-- Members say they were at a service (today or the two days before). Sunday and online services are on Sundays,
+-- the Miracle Service on Fridays; group meetings any day.
+drop function if exists care.member_checkin(text, text, date, boolean);
+create or replace function care.member_checkin(p_group text, p_kind text, p_day date, p_here boolean, p_program uuid default null) returns void language plpgsql security definer set search_path = care, public as $$
+declare mid uuid;
+begin
+  select id into mid from care.members where group_id = p_group and id in (
+    select id from care.members where (login_phone is not null and login_phone = care.my_login_phone()) or (login_email is not null and login_email = care.my_login_email()));
+  if mid is null then raise exception 'You can only mark attendance in your own group'; end if;
+  if p_day is null or p_day > current_date or p_day < current_date - 6 then raise exception 'You can mark attendance for the last week only'; end if;
+  if p_kind in ('sunday', 'online') and extract(dow from p_day) <> 0 then raise exception 'That service is on Sundays'; end if;
+  if p_kind = 'friday' and extract(dow from p_day) <> 5 then raise exception 'The Miracle Service is on Fridays'; end if;
+  if p_kind = 'tuesday' and extract(dow from p_day) <> 2 then raise exception 'Time with the Rabbi is on Tuesdays'; end if;
+  if p_kind <> 'special' then p_program := null; end if;
+  if p_here then
+    perform set_config('care.member', '1', true);
+    insert into care.attendance (member_id, seen_on, kind, program_id, by_self, marked_by)
+    values (mid, p_day, p_kind, p_program, true, (select name from care.members where id = mid)) on conflict do nothing;
+    perform set_config('care.member', '', true);
+  else
+    delete from care.attendance where member_id = mid and seen_on = p_day and kind = p_kind
+      and program_id is not distinct from p_program and by_self;
+  end if;
+end $$;
+
+create or replace function care.my_attendance(p_group text) returns jsonb language sql stable security definer set search_path = care, public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('seen_on', a.seen_on, 'kind', a.kind, 'program_id', a.program_id, 'by_self', a.by_self) order by a.seen_on desc), '[]'::jsonb)
+  from care.attendance a join care.members m on m.id = a.member_id
+  where m.group_id = p_group and a.seen_on > current_date - 120
+    and ((m.login_phone is not null and m.login_phone = care.my_login_phone()) or (m.login_email is not null and m.login_email = care.my_login_email()))
+$$;
+
+-- Church growth figures. Pastor and PA: the whole church. Leader: their own group. Numbers only: no names,
+-- phone numbers, notes or prayer words, so a PA sees growth even without the private areas.
+create or replace function care.growth_data() returns jsonb language plpgsql stable security definer set search_path = care, public as $$
+declare r text := care.my_role(); g text := care.my_group(); since date := (date_trunc('month', current_date) - interval '12 months')::date;
+begin
+  if r is null or r not in ('pastor', 'pa', 'leader') then raise exception 'You don''t have access to the growth figures'; end if;
+  return jsonb_build_object(
+    'scope', case when g is null then 'church' else 'group' end, 'group', g, 'today', current_date,
+    'members', coalesce((select jsonb_agg(jsonb_build_array(m.group_id, m.joined_at, m.joined_app_at is not null, m.last_seen, left(md5(care.person_key(m)), 12)))
+                         from care.members m where g is null or m.group_id = g), '[]'::jsonb),
+    'visitors', coalesce((select jsonb_agg(jsonb_build_array(v.assigned_to, v.created_at::date, v.status, v.due, v.reached_at))
+                          from care.visitors v where g is null or v.assigned_to = g), '[]'::jsonb),
+    'attendance', coalesce((select jsonb_agg(jsonb_build_array(x.group_id, x.seen_on, x.kind, x.n)) from (
+                              select m.group_id, a.seen_on, a.kind, count(*) as n from care.attendance a join care.members m on m.id = a.member_id
+                              where a.seen_on >= since and a.kind in ('sunday', 'tuesday', 'friday', 'online') and (g is null or m.group_id = g)
+                              group by 1, 2, 3) x), '[]'::jsonb),
+    -- the same, counting each person once however many groups they are in
+    'people_attendance', coalesce((select jsonb_agg(jsonb_build_array(x.seen_on, x.kind, x.n)) from (
+                              select a.seen_on, a.kind, count(distinct care.person_key(m)) as n from care.attendance a join care.members m on m.id = a.member_id
+                              where a.seen_on >= since and a.kind in ('sunday', 'tuesday', 'friday', 'online') and (g is null or m.group_id = g)
+                              group by 1, 2) x), '[]'::jsonb),
+    'prayers', coalesce((select jsonb_agg(jsonb_build_array(p.assigned_to, p.to_pastor, p.created_at::date, p.status))
+                         from care.prayers p where p.created_at >= since and (g is null or (p.assigned_to = g and not p.to_pastor))), '[]'::jsonb));
+end $$;
+revoke all on function care.growth_data() from public, anon;
+grant execute on function care.growth_data() to authenticated;
+
+do $$ begin
+  revoke all on function care.member_checkin(text, text, date, boolean, uuid), care.my_attendance(text) from public, anon;
+  grant execute on function care.member_checkin(text, text, date, boolean, uuid), care.my_attendance(text) to authenticated;
+  revoke all on function care.whoami(), care.create_invite(text, text), care.reset_member_invite(text), care.accept_invite(text, text),
+    care.my_group_view(text), care.member_prayer(text, text, text), care.my_prayers(), care.my_member_groups() from public, anon;
+  grant execute on function care.whoami(), care.create_invite(text, text), care.reset_member_invite(text), care.accept_invite(text, text),
+    care.my_group_view(text), care.member_prayer(text, text, text), care.my_prayers() to authenticated;
+  revoke all on function care.invite_info(text) from public;
+  grant execute on function care.invite_info(text) to anon, authenticated;
+end $$;
+
+-- ---------- phone notifications after each service ----------
+-- A phone that said yes to notifications. Only the functions below touch this table.
+create table if not exists care.push_subs (
+  endpoint   text primary key check (char_length(endpoint) between 10 and 1000),
+  staff_id   uuid references care.staff(id) on delete cascade,
+  p256dh     text not null check (char_length(p256dh) <= 200),
+  auth       text not null check (char_length(auth) <= 100),
+  created_at timestamptz not null default now()
+);
+-- a member's phone: the WhatsApp number (international digits) or email they sign in with
+alter table care.push_subs alter column staff_id drop not null;
+alter table care.push_subs add column if not exists member_login text;
+alter table care.push_subs drop constraint if exists push_subs_who;
+alter table care.push_subs add constraint push_subs_who check ((staff_id is null) <> (member_login is null));
+alter table care.push_subs enable row level security;
+revoke all on care.push_subs from anon, authenticated;
+
+create or replace function care.save_push(p_endpoint text, p_p256dh text, p_auth text) returns void language plpgsql security definer set search_path = care, public as $$
+declare st uuid; ml text;
+begin
+  if care.my_role() in ('pastor', 'pa', 'leader') then st := care.my_id();
+  elsif exists (select care.my_member_groups()) then ml := coalesce(care.my_login_phone(), care.my_login_email());
+  else raise exception 'Please join your group first'; end if;
+  if p_endpoint !~ '^https://' then raise exception 'That notification address doesn''t look right'; end if;
+  insert into care.push_subs (endpoint, staff_id, member_login, p256dh, auth) values (p_endpoint, st, ml, p_p256dh, p_auth)
+  on conflict (endpoint) do update set staff_id = excluded.staff_id, member_login = excluded.member_login, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now();
+end $$;
+create or replace function care.drop_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
+  delete from care.push_subs where endpoint = p_endpoint
+    and (staff_id = care.my_id() or member_login in (care.my_login_phone(), care.my_login_email()))
+$$;
+-- Used by the sender when a phone has switched notifications off.
+create or replace function care.forget_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
+  delete from care.push_subs where endpoint = p_endpoint
+$$;
+
+-- "a, b and 3 more"
+create or replace function care.name_list(names text[], n int default 3) returns text language sql immutable as $$
+  select case when coalesce(array_length(names, 1), 0) = 0 then ''
+    when array_length(names, 1) <= n then array_to_string(names, ', ')
+    else array_to_string(names[1:n], ', ') || ' and ' || (array_length(names, 1) - n) || ' more' end
+$$;
+
+-- One message per phone after a service: the church picture for the pastor and PA, the group's for a leader.
+-- p_kind: sunday, tuesday, friday, online, special (every program on today), or test.
+create or replace function care.service_push(p_kind text, p_day date default current_date)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare pr record; s record; lbl text; msg text; pres int; total int; missed text[]; unmarked text[]; noleader text[]; offapp int; newv int; todo int;
+begin
+  for pr in
+    select null::uuid as id, p_kind as kind,
+           case p_kind when 'sunday' then 'Sunday service' when 'tuesday' then 'Time with the Rabbi' when 'friday' then 'Friday Miracle Service'
+                       when 'online' then 'Online prayer' else 'Church Care' end as label
+    where p_kind in ('sunday', 'tuesday', 'friday', 'online', 'test')
+    union all
+    select p.id, 'special', p.title from care.programs p where p_kind = 'special' and p_day between p.starts_on and p.ends_on
+  loop
+    -- the online prayer only gets a message when someone was marked present
+    if pr.kind = 'online' and not exists (select 1 from care.attendance a where a.seen_on = p_day and a.kind = 'online') then continue; end if;
+    for s in select st.*, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id loop
+      if pr.kind = 'test' then
+        msg := 'Notifications are working. You''ll get a short update after each service.';
+      elsif s.role in ('pastor', 'pa') then
+        select count(distinct care.person_key(m)) into pres from care.attendance a join care.members m on m.id = a.member_id
+          where a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id;
+        select array_agg(g.name order by g.sort) into unmarked from care.groups g
+          where exists (select 1 from care.members m where m.group_id = g.id)
+            and not exists (select 1 from care.attendance a join care.members m on m.id = a.member_id
+                            where m.group_id = g.id and a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id);
+        select array_agg(g.name order by g.sort) into noleader from care.groups g
+          where not exists (select 1 from care.staff x where x.role = 'leader' and x.group_id = g.id and x.joined_app_at is not null);
+        select count(*) into offapp from care.members m where m.joined_app_at is null;
+        select count(*) into newv from care.visitors v where v.created_at::date = p_day;
+        msg := pres || case when pres = 1 then ' person' else ' people' end || ' marked present.'
+          || case when unmarked is not null then ' No one marked yet: ' || care.name_list(unmarked) || '.' else '' end
+          || case when newv > 0 then ' ' || newv || ' new visitor' || case when newv = 1 then '' else 's' end || '.' else '' end
+          || case when noleader is not null then ' Still to sign up: the leader of ' || care.name_list(noleader) || '.' else '' end
+          || case when offapp > 0 then ' ' || offapp || ' member' || case when offapp = 1 then '' else 's' end || ' not on the app yet.' else '' end;
+      elsif s.role = 'leader' then
+        select count(*) filter (where a.member_id is not null), count(*),
+               array_agg(m.name order by m.name) filter (where a.member_id is null)
+          into pres, total, missed
+          from care.members m left join care.attendance a on a.member_id = m.id and a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id
+          where m.group_id = s.group_id and (m.joined_at <= p_day or a.member_id is not null);
+        select count(*) into todo from care.visitors v where v.assigned_to = s.group_id and v.status = 'new';
+        msg := pres || ' of ' || total || ' from ' || coalesce((select name from care.groups where id = s.group_id), 'your group') || ' marked present.'
+          || case when missed is not null then ' Not marked: ' || care.name_list(missed) || '.' else '' end
+          || case when todo > 0 then ' ' || todo || ' visitor' || case when todo = 1 then '' else 's' end || ' to contact.' else '' end;
+      else
+        continue;
+      end if;
+      endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+      title := case when pr.kind = 'test' then 'Church Care' else pr.label || ', ' || to_char(p_day, 'FMDay FMDD Mon') end;
+      body := msg;
+      url := 'team.html' || case when pr.kind = 'test' then '' else '#after=' || pr.kind || '|' || p_day || coalesce('|' || pr.id, '') end;
+      return next;
+    end loop;
+  end loop;
+end $$;
+
+revoke all on function care.save_push(text, text, text), care.drop_push(text) from public, anon;
+grant execute on function care.save_push(text, text, text), care.drop_push(text) to authenticated;
+revoke all on function care.forget_push(text), care.service_push(text, date) from public, anon, authenticated;
+grant execute on function care.forget_push(text), care.service_push(text, date) to service_role;
+
+-- ---------- "we missed you": members say why, or that they were there ----------
+-- One row per group entry (so each of their leaders sees it), per service.
+create table if not exists care.absences (
+  id         bigint generated always as identity primary key,
+  member_id  uuid not null references care.members(id) on delete cascade,
+  seen_on    date not null,
+  kind       text not null check (kind in ('sunday', 'tuesday', 'friday', 'online', 'special')),
+  program_id uuid references care.programs(id) on delete cascade,
+  reason     text not null check (reason in ('sick', 'travelling', 'work', 'family', 'transport', 'other')),
+  note       text not null default '' check (char_length(note) <= 300),
+  created_at timestamptz not null default now(),
+  check ((kind = 'special') = (program_id is not null))
+);
+create unique index if not exists absences_one on care.absences (member_id, seen_on, kind, coalesce(program_id, '00000000-0000-0000-0000-000000000000'::uuid));
+alter table care.absences enable row level security;
+revoke all on care.absences from anon;
+drop policy if exists absences_read on care.absences;
+-- whoever can see the member (their leader, the pastor, a PA with Groups) can read why they missed
+create policy absences_read on care.absences for select to authenticated using (exists (select 1 from care.members m where m.id = member_id));
+
+-- Marked present after all: the reason no longer applies.
+create or replace function care.absence_cleared() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  delete from care.absences where member_id = new.member_id and seen_on = new.seen_on and kind = new.kind and program_id is not distinct from new.program_id;
+  return null;
+end $$;
+drop trigger if exists absence_cleared on care.attendance;
+create trigger absence_cleared after insert on care.attendance for each row execute function care.absence_cleared();
+
+-- The services a member is asked about: Sunday service, Time with the Rabbi, the Friday Miracle Service and special programs, in the last week,
+-- that they weren't marked present at and haven't given a reason for.
+create or replace function care.missed_for(p_login text, p_from date, p_to date)
+returns table (kind text, seen_on date, program_id uuid, label text) language sql stable security definer set search_path = care, public as $$
+  with mine as (select * from care.members m where m.login_phone = p_login or m.login_email = p_login),
+  svc as (
+    select case extract(dow from d) when 0 then 'sunday' when 2 then 'tuesday' else 'friday' end as kind, d::date as seen_on, null::uuid as program_id,
+           case extract(dow from d) when 0 then 'Sunday service' when 2 then 'Time with the Rabbi' else 'Friday Miracle Service' end as label
+      from generate_series(p_from, p_to, interval '1 day') d
+      where (extract(dow from d) = 0 and (d::date < current_date or now()::time > '14:00')) or (extract(dow from d) in (2, 5) and d::date < current_date)
+    union all
+    select 'special', d::date, p.id, p.title from care.programs p cross join generate_series(greatest(p.starts_on, p_from), least(p.ends_on, p_to), interval '1 day') d
+      where d::date < current_date or now()::time > '22:00')
+  select s.kind, s.seen_on, s.program_id, s.label from svc s
+  where exists (select 1 from mine m where m.joined_at <= s.seen_on)
+    and not exists (select 1 from care.attendance a join mine m on m.id = a.member_id where a.seen_on = s.seen_on and a.kind = s.kind and a.program_id is not distinct from s.program_id)
+    and not exists (select 1 from care.absences x join mine m on m.id = x.member_id where x.seen_on = s.seen_on and x.kind = s.kind and x.program_id is not distinct from s.program_id)
+  order by s.seen_on desc
+$$;
+revoke all on function care.missed_for(text, date, date) from public, anon, authenticated;
+
+create or replace function care.my_missed() returns jsonb language sql stable security definer set search_path = care, public as $$
+  select coalesce(jsonb_agg(jsonb_build_object('kind', x.kind, 'seen_on', x.seen_on, 'program_id', x.program_id, 'label', x.label)), '[]'::jsonb)
+  from care.missed_for(coalesce(care.my_login_phone(), care.my_login_email()), current_date - 6, current_date) x
+$$;
+
+create or replace function care.member_absence(p_kind text, p_day date, p_program uuid, p_reason text, p_note text) returns void language plpgsql security definer set search_path = care, public as $$
+declare lg text := coalesce(care.my_login_phone(), care.my_login_email()); n int;
+begin
+  if lg is null or not exists (select care.my_member_groups()) then raise exception 'Please join your group first'; end if;
+  if p_day is null or p_day > current_date or p_day < current_date - 6 then raise exception 'You can only answer for the last week'; end if;
+  if p_kind <> 'special' then p_program := null; end if;
+  insert into care.absences (member_id, seen_on, kind, program_id, reason, note)
+  select m.id, p_day, p_kind, p_program, p_reason, left(btrim(coalesce(p_note, '')), 300) from care.members m
+   where (m.login_phone = lg or m.login_email = lg)
+     and not exists (select 1 from care.attendance a where a.member_id = m.id and a.seen_on = p_day and a.kind = p_kind and a.program_id is not distinct from p_program)
+  on conflict (member_id, seen_on, kind, coalesce(program_id, '00000000-0000-0000-0000-000000000000'::uuid)) do update set reason = excluded.reason, note = excluded.note, created_at = now();
+  get diagnostics n = row_count;
+  if n = 0 then raise exception 'You''re already marked present for that service'; end if;
+end $$;
+
+create or replace function care.reason_text(r text) returns text language sql immutable as $$
+  select case r when 'sick' then 'sick' when 'travelling' then 'travelling' when 'work' then 'work' when 'family' then 'family matter'
+    when 'transport' then 'transport' else 'other' end
+$$;
+
+-- Next morning: a gentle note to members who weren't marked present (one per person, however many groups).
+create or replace function care.missed_push(p_day date default current_date - 1)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare s record; x record;
+begin
+  for s in select ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2, ps.member_login as lg from care.push_subs ps where ps.member_login is not null loop
+    for x in select * from care.missed_for(s.lg, p_day, p_day) loop
+      endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+      title := 'We missed you at ' || case when x.kind = 'sunday' then 'church' else x.label end || ' 💛';
+      body := x.label || ', ' || to_char(x.seen_on, 'FMDay FMDD Mon') || '. If you were there, tap to let your leader know. If you couldn''t come, you can tell them why.';
+      url := 'team.html#missed=' || x.kind || '|' || x.seen_on || coalesce('|' || x.program_id, '');
+      return next;
+    end loop;
+  end loop;
+end $$;
+
+-- Evening after: each leader hears who told them why they missed, and who said they came.
+create or replace function care.reasons_push(p_day date default current_date - 1)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare s record; pr record; why text[]; came text[];
+begin
+  for pr in select case extract(dow from p_day) when 0 then 'sunday' when 2 then 'tuesday' else 'friday' end as kind, null::uuid as id,
+                   case extract(dow from p_day) when 0 then 'Sunday service' when 2 then 'Time with the Rabbi' else 'Friday Miracle Service' end as label
+            where extract(dow from p_day) in (0, 2, 5)
+            union all select 'special', p.id, p.title from care.programs p where p_day between p.starts_on and p.ends_on loop
+    for s in select st.group_id, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id where st.role = 'leader' loop
+      select array_agg(m.name || ' (' || care.reason_text(x.reason) || ')' order by m.name) into why from care.absences x join care.members m on m.id = x.member_id
+        where m.group_id = s.group_id and x.seen_on = p_day and x.kind = pr.kind and x.program_id is not distinct from pr.id;
+      select array_agg(m.name order by m.name) into came from care.attendance a join care.members m on m.id = a.member_id
+        where m.group_id = s.group_id and a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id and a.by_self;
+      if why is null and came is null then continue; end if;
+      endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+      title := pr.label || ', ' || to_char(p_day, 'FMDay FMDD Mon') || ': members replied';
+      body := case when why is not null then 'Couldn''t come: ' || care.name_list(why) || '.' else '' end
+           || case when why is not null and came is not null then ' ' else '' end
+           || case when came is not null then 'Said they came: ' || care.name_list(came) || '. Please check and mark them present if they were there.' else '' end;
+      url := 'team.html#after=' || pr.kind || '|' || p_day || coalesce('|' || pr.id, '');
+      return next;
+    end loop;
+  end loop;
+end $$;
+
+revoke all on function care.my_missed(), care.member_absence(text, date, uuid, text, text) from public, anon;
+grant execute on function care.my_missed(), care.member_absence(text, date, uuid, text, text) to authenticated;
+revoke all on function care.missed_push(date), care.reasons_push(date) from public, anon, authenticated;
+grant execute on function care.missed_push(date), care.reasons_push(date) to service_role;
+
+-- ---------- monthly group reports ----------
+-- Each leader sends the pastor a report for their group each month: the app's figures plus their own words.
+create table if not exists care.reports (
+  id         uuid primary key default gen_random_uuid(),
+  group_id   text not null references care.groups(id) on delete cascade,
+  month      date not null check (extract(day from month) = 1),
+  figures    jsonb not null default '{}'::jsonb check (pg_column_size(figures) < 20000),
+  highlights text not null default '' check (char_length(highlights) <= 1500),
+  needs      text not null default '' check (char_length(needs) <= 1500),
+  prayer     text not null default '' check (char_length(prayer) <= 1500),
+  sent_by    text not null default '',
+  sent_at    timestamptz not null default now(),
+  unique (group_id, month)
+);
+alter table care.reports enable row level security;
+revoke all on care.reports from anon;
+drop policy if exists reports_read on care.reports;
+create policy reports_read on care.reports for select to authenticated
+  using (care.has_area('groups') or (care.my_role() = 'leader' and group_id = care.my_group()));
+drop policy if exists reports_add on care.reports;
+create policy reports_add on care.reports for insert to authenticated with check (care.my_role() = 'leader' and group_id = care.my_group());
+drop policy if exists reports_edit on care.reports;
+create policy reports_edit on care.reports for update to authenticated
+  using (care.my_role() = 'leader' and group_id = care.my_group()) with check (care.my_role() = 'leader' and group_id = care.my_group());
+create or replace function care.report_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
+begin
+  if new.month > date_trunc('month', current_date)::date then raise exception 'That month hasn''t started yet'; end if;
+  new.sent_by := coalesce(care.my_name(), ''); new.sent_at := now();
+  return new;
+end $$;
+drop trigger if exists report_rules on care.reports;
+create trigger report_rules before insert or update on care.reports for each row execute function care.report_rules();
+
+-- 'due' (the 1st): leaders whose group hasn't sent last month's report.  'check' (the 8th): the pastor and PA hear who has.
+create or replace function care.report_push(p_what text)
+returns table (endpoint text, p256dh text, auth text, title text, body text, url text)
+language plpgsql stable security definer set search_path = care, public as $$
+declare mo date := (date_trunc('month', current_date) - interval '1 month')::date; s record; sent int; total int; missing text[];
+begin
+  for s in select st.role, st.group_id, ps.endpoint as ep, ps.p256dh as k1, ps.auth as k2 from care.push_subs ps join care.staff st on st.id = ps.staff_id loop
+    if p_what = 'due' and s.role = 'leader' then
+      if exists (select 1 from care.reports r where r.group_id = s.group_id and r.month = mo) then continue; end if;
+      title := 'Your ' || to_char(mo, 'FMMonth') || ' report';
+      body := 'Time to send the pastor ' || coalesce((select name from care.groups where id = s.group_id), 'your group') || '''s report for ' || to_char(mo, 'FMMonth') || '. The figures are ready; just add a few words.';
+      url := 'team.html#report=' || to_char(mo, 'YYYY-MM');
+    elsif p_what = 'check' and s.role in ('pastor', 'pa') then
+      select count(*) filter (where r.id is not null), count(*), array_agg(g.name order by g.sort) filter (where r.id is null)
+        into sent, total, missing
+        from care.groups g left join care.reports r on r.group_id = g.id and r.month = mo;
+      title := to_char(mo, 'FMMonth') || ' group reports';
+      body := sent || ' of ' || total || ' groups have sent their report.' || case when missing is not null then ' Still to come: ' || care.name_list(missing) || '.' else ' All in. 🙌' end;
+      url := 'team.html#reports';
+    else
+      continue;
+    end if;
+    endpoint := s.ep; p256dh := s.k1; auth := s.k2;
+    return next;
+  end loop;
+end $$;
+revoke all on function care.report_push(text) from public, anon, authenticated;
+grant execute on function care.report_push(text) to service_role;
+
+-- ---------- live updates ----------
+do $$
+declare t text;
+begin
+  foreach t in array array['visitors', 'visitor_notes', 'members', 'prayers', 'staff', 'groups', 'attendance', 'programs', 'absences', 'reports'] loop
+    if not exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'care' and tablename = t) then
+      execute format('alter publication supabase_realtime add table care.%I', t);
+    end if;
+  end loop;
+end $$;
+
+-- ---------- groups (the pastor can rename them and add more in the app) ----------
+insert into care.groups (id, name, tag, leader_name, sort) values
+  ('g1',   'Bishop David Oyedepo',                '',                    'Prophet Richmond Taku', 1),
+  ('g2',   'Archbishop Nicholas Duncan-Williams', '',                    'Elijah Antwi',          2),
+  ('g3',   'Prophet Miracle Damoah Godfred',      '',                    'Prophet Elijah',        3),
+  ('g4',   'Dr. Mike Murdock',                    '',                    'Mr. Owusu Erga',        4),
+  ('wog',  'Women of Glory',                      'Women''s Fellowship', 'Madam Millicent',       5),
+  ('sg',   'Stoic Gentleman',                     'Men''s Fellowship',   'Mr. Owusu Geoffery',    6),
+  ('prov', 'The Providence',                      'Church Choir',        'Caljay Music',          7),
+  ('dia',  'The AFM Diaspora',                    '',                    'David Annor',           8)
+on conflict (id) do nothing;
+
+-- ---------- table rights (row-level security above decides which rows) ----------
+grant select, insert, update, delete on all tables in schema care to authenticated, service_role;
+grant usage, select on all sequences in schema care to authenticated, service_role;
+revoke all on care.invites from authenticated;
+grant all on care.invites to service_role;
+grant select on care.groups, care.programs to anon;
+revoke all on care.push_subs from anon, authenticated;
+grant all on care.push_subs to service_role;
