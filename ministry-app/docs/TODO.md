@@ -2,10 +2,12 @@
 
 Ideas agreed with the owner, to build later. Nothing here is started or published until the owner says so.
 
-## Version 9 (Play Store), reminder set for 18 November 2026
-- Update to the newest Expo SDK and React Native (clears Play's edge-to-edge warning).
-- Test APK for the owner to try, then the Play Store bundle.
-- Remove the unused microphone permission (RECORD_AUDIO, added by expo-audio by default; the app only plays audio) so Play doesn't ask about it.
+## Version 9 (Play Store), started 18 November 2026
+- Done: Expo SDK 58 / React Native 0.88 (clears Play's edge-to-edge warning); app version 9.0.0 (new runtime, so
+  over-the-air updates for version 8 phones stay separate until they update).
+- Done: microphone permission removed (RECORD_AUDIO blocked; expo-audio recording off). Camera stays removed.
+- Test APK (preview build) for the owner to try, then the Play Store bundle (production build) and submit.
+- After release: update the Play listing's Data safety only if anything changed (nothing new collected).
 - Google Play app quality requirements (memory use and code optimisation), deadline February 2027: check the version 9 build against them (R8 shrinking is already on since version 8).
 
 ## Apple App Store (with version 9, November)
