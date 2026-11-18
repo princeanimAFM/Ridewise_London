@@ -2,7 +2,7 @@
   "expo": {
     "name": "The AFM HUB",
     "slug": "afm-hub",
-    "version": "1.0.0",
+    "version": "9.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -24,12 +24,14 @@
       "package": "com.afm.hub",
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.FOREGROUND_SERVICE",
         "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
       ],
-      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.afm.hub"
+      "playStoreUrl": "https://play.google.com/store/apps/details?id=com.afm.hub",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png",
@@ -49,7 +51,9 @@
       [
         "expo-audio",
         {
-          "enableBackgroundPlayback": true
+          "enableBackgroundPlayback": true,
+          "recordAudioAndroid": false,
+          "microphonePermission": false
         }
       ],
       [

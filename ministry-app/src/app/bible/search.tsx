@@ -76,7 +76,7 @@ export default function BibleSearch() {
               <Text style={{ color: t.textMuted, marginBottom: space.sm }}>
                 {result.hits.length ? `${result.more ? 'First ' : ''}${result.hits.length} verse${result.hits.length === 1 ? '' : 's'} in the ${TRANSLATIONS[prefs.translation].short}` : `No verses found for “${query}”.`}
               </Text>
-            ) : null
+            ) : undefined
           }
           renderItem={({ item }) => (
             <Pressable

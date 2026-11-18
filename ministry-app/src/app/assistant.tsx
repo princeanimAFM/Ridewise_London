@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type ScrollViewInstance } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { ministry } from '@/content/ministry';
@@ -23,7 +23,7 @@ export default function Assistant() {
   const [bubbles, setBubbles] = useState<Bubble[]>([welcome]);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const nextId = useRef(1);
 
   useEffect(() => {

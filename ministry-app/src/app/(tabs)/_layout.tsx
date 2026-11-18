@@ -11,7 +11,7 @@ import { backendReady } from '@/lib/supabase';
 import { welcomeDone } from '@/lib/welcome';
 
 const tab = (icon: IconName) => ({ color, size }: { color: ColorValue; size: number }) => (
-  <Ionicons name={icon} color={color} size={size} />
+  <Ionicons name={icon} color={color as string} size={size} />
 );
 
 export default function TabsLayout() {

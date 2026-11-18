@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from 'react-native';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { handbook } from '@/content/handbook';
@@ -31,7 +31,7 @@ function Expandable({ title, children, defaultOpen = false }: { title: string; c
 
 export default function Handbook() {
   const t = useTheme();
-  const scroll = useRef<ScrollView>(null);
+  const scroll = useRef<ScrollViewInstance>(null);
   const offsets = useRef<Partial<Record<SectionKey, number>>>({});
   const jump = (k: SectionKey) => scroll.current?.scrollTo({ y: Math.max(0, (offsets.current[k] ?? 0) - space.sm), animated: true });
   const mark = (k: SectionKey) => (e: { nativeEvent: { layout: { y: number } } }) => {
