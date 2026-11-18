@@ -208,6 +208,8 @@ export const sections: Section[] = [
       { key: 'collectionName', label: 'Name on the bottles', placeholder: 'Rabbi Azanduna' },
       { key: 'orderPhones', label: 'Order phone numbers', placeholder: '0592 717 859, 0555 181 555', hint: 'Not shown in the app (orders go through the shop website). Kept for reference.' },
       { key: 'shopUrl', label: 'Online shop link (optional)', kind: 'url', placeholder: 'https://…' },
+      { key: 'latestAndroid', label: 'Newest version on the Play Store', group: 'App updates', placeholder: '9.0.0', hint: 'Set this only after Google approves the update. Phones with an older version see an "Update now" pop-up. Leave empty for no pop-up.' },
+      { key: 'updateMessage', label: 'Message in the update pop-up (optional)', kind: 'multiline', placeholder: 'Update now from the Play Store to get the latest improvements and fixes.' },
     ],
   },
 ];

@@ -6,6 +6,7 @@ import { AuthProvider } from '@/lib/auth';
 import { maybeAskForReview } from '@/lib/review';
 import { refreshNotifications, supported as notificationsSupported } from '@/lib/notifications';
 import { syncContent } from '@/lib/contentSync';
+import { UpdatePrompt } from '@/components/UpdatePrompt';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
 import { useEffect } from 'react';
@@ -34,6 +35,7 @@ export default function RootLayout() {
     <AuthProvider>
     <PlayerProvider>
       <StatusBar style="light" />
+      <UpdatePrompt />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: t.primary },

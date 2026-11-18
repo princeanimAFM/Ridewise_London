@@ -119,6 +119,8 @@ export const ministry = {
   privacyPolicyUrl: 'https://theafmchurch.org/privacy.html',
   // Fill in once the app is live on Google Play: shows "Get it on Google Play" on the website.
   playStoreUrl: 'https://play.google.com/store/apps/details?id=com.afm.hub',
+  /** Newest version in the stores (set in the Owner dashboard once approved). Older phones get an "update" pop-up. */
+  appUpdate: { android: '', message: '' },
 
   about: {
     headline: 'About the Ministry',

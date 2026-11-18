@@ -30,6 +30,8 @@ export type Details = {
   brandStory: string;
   collectionName: string;
   orderPhones: string;
+  latestAndroid?: string;
+  updateMessage?: string;
 };
 export type BookRow = { id: string; title: string; subtitle?: string; description?: string; cover?: string; amazonUrl: string; price?: string };
 export type PerfumeRow = { id: string; name: string; image?: string; tagline?: string; description?: string; notes?: string; size?: string; price?: string; buyUrl?: string; video?: string };
@@ -83,6 +85,8 @@ export function builtinValue(key: ContentKey): unknown {
         brandStory: m.fragrances.brandStory,
         collectionName: m.fragrances.collectionName,
         orderPhones: m.fragrances.orderPhones,
+        latestAndroid: m.appUpdate.android,
+        updateMessage: m.appUpdate.message,
       } satisfies Details;
     case 'books':
       return m.books.map((b): BookRow => ({ id: b.id, title: b.title, subtitle: b.subtitle ?? '', description: b.description, cover: imageRef(b.cover), amazonUrl: b.amazonUrl, price: b.price ?? '' }));
@@ -144,6 +148,7 @@ function build(o: Overrides): Content {
       address: str(d.address),
       serviceTimes: services ? services.map((s) => ({ day: s.day, detail: s.detail ?? '' })) : m.about.serviceTimes,
     },
+    appUpdate: { android: str(d.latestAndroid).replace(/^v/i, ''), message: str(d.updateMessage) },
     live: { youtubeHandle: str(d.youtubeHandle).replace(/^@/, '') || m.live.youtubeHandle, channelId: str(d.channelId) },
     giving: {
       intro: str(d.givingIntro) || m.giving.intro,
