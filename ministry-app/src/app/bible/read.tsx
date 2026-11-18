@@ -15,6 +15,7 @@ import {
   useBiblePrefs,
   useMarks,
   verseKey,
+  wordsOf,
   type HighlightColour,
 } from '@/lib/bible';
 import { shareText } from '@/lib/links';
@@ -47,6 +48,8 @@ export default function Reader() {
   const [copied, setCopied] = useState(false);
   // The note being written: on verse `verse`, covering up to `to` when several verses are selected.
   const [note, setNote] = useState<{ verse: number; to?: number; text: string } | null>(null);
+  // The words of the selected verses, to look one up in the concordance.
+  const [words, setWords] = useState<string[] | null>(null);
   const insets = useSafeAreaInsets();
   const scroll = useRef<ScrollViewInstance>(null);
   const positions = useRef<Record<number, number>>({});
@@ -234,6 +237,15 @@ export default function Reader() {
               { label: 'Note', icon: 'create-outline', onPress: noteFromSelection },
               { label: 'Copy', icon: 'copy-outline', onPress: copy },
               { label: 'Share', icon: 'share-social-outline', onPress: () => shareText(`${selectionText}\n\nShared from ${ministry.name}`) },
+              { label: 'Words', icon: 'library-outline', onPress: () => {
+                const seen = new Set<string>();
+                setWords([...selected].sort((a, b) => a - b).flatMap((v) => wordsOf(verses[v - 1] ?? '')).filter((w) => {
+                  const k = w.toLowerCase();
+                  if (w.length < 2 || seen.has(k)) return false;
+                  seen.add(k);
+                  return true;
+                }));
+              } },
             ].map((a) => (
               <Pressable key={a.label} onPress={a.onPress} accessibilityRole="button" style={({ pressed }) => [styles.action, { borderColor: t.border }, pressed && { opacity: 0.7 }]}>
                 <Ionicons name={a.icon as 'copy-outline'} size={22} color={t.accent} />
@@ -263,6 +275,24 @@ export default function Reader() {
           <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copied</Text>
         </View>
       )}
+
+      <Modal visible={!!words} transparent animationType="fade" onRequestClose={() => setWords(null)}>
+        <View style={styles.backdrop}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => setWords(null)} accessibilityLabel="Close" />
+          <View style={[styles.sheet, { backgroundColor: t.surface, paddingBottom: space.md + insets.bottom }]}>
+            <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Concordance: tap a word</Text>
+            <Text style={{ color: t.textMuted, marginTop: -space.sm }}>See every verse it appears in, and how many times.</Text>
+            <ScrollView style={{ maxHeight: 320 }} contentContainerStyle={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
+              {(words ?? []).map((w) => (
+                <Pressable key={w} onPress={() => { setWords(null); setSelected([]); router.push({ pathname: '/bible/concordance', params: { word: w } }); }}
+                  style={({ pressed }) => [{ borderWidth: 1, borderColor: t.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: t.background }, pressed && { opacity: 0.7 }]}>
+                  <Text style={{ color: t.text, fontWeight: '600' }}>{w}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       <Modal visible={!!note} transparent animationType="fade" onRequestClose={() => setNote(null)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.backdrop}>

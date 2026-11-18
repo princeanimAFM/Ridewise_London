@@ -73,9 +73,19 @@ export default function BibleSearch() {
           contentContainerStyle={{ padding: space.md, paddingTop: 0 }}
           ListHeaderComponent={
             query ? (
+              <View>
+              {words.length === 1 && (
+                <Pressable onPress={() => router.push({ pathname: '/bible/concordance', params: { word: words[0] } })}
+                  style={({ pressed }) => [styles.hit, { backgroundColor: t.surface, borderColor: t.accent, flexDirection: 'row', alignItems: 'center', gap: space.sm }, pressed && { opacity: 0.8 }]}>
+                  <Ionicons name="library-outline" size={20} color={t.accent} />
+                  <Text style={{ color: t.text, flex: 1 }}>See every “{words[0]}” in the <Text style={{ fontWeight: '700' }}>concordance</Text>: how many times and in which books</Text>
+                  <Ionicons name="chevron-forward" size={18} color={t.textMuted} />
+                </Pressable>
+              )}
               <Text style={{ color: t.textMuted, marginBottom: space.sm }}>
                 {result.hits.length ? `${result.more ? 'First ' : ''}${result.hits.length} verse${result.hits.length === 1 ? '' : 's'} in the ${TRANSLATIONS[prefs.translation].short}` : `No verses found for “${query}”.`}
               </Text>
+              </View>
             ) : undefined
           }
           renderItem={({ item }) => (

@@ -315,6 +315,77 @@ export function searchBible(data: BibleData, query: string, limit = 300): { hits
   return { hits, more: false };
 }
 
+// ---------- Concordance ----------
+
+/** Letters in every version in the app: English, French, Twi (ɛ ɔ), Ewe (ƒ ʋ ɖ ŋ ɣ), Hausa (ɓ ɗ ƙ), with accents. */
+const WORD = /[A-Za-z\u00C0-\u024F\u0250-\u02AF\u1E00-\u1EFF\u0300-\u036F]+/g;
+/** The words of a verse, as written (apostrophes split words: "LORD's" gives "LORD"). */
+export const wordsOf = (text: string) => text.match(WORD) ?? [];
+/** Matching ignores capitals and accents, and ɛ/ɔ match e/o, so a word can be typed on any keyboard. */
+const fold = (w: string) => (w.normalize ? w.normalize('NFD') : w).replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/ɛ/g, 'e').replace(/ɔ/g, 'o');
+
+/** Every word in a version → the verses it is in (one entry per time it appears). Built once per version. */
+const indexes = new WeakMap<BibleData, { idx: Map<string, number[]>; shown: Map<string, string> }>();
+function indexOf(data: BibleData) {
+  const have = indexes.get(data);
+  if (have) return have;
+  const idx = new Map<string, number[]>(), shown = new Map<string, string>();
+  for (let b = 0; b < data.books.length; b++) {
+    const chapters = data.books[b].chapters;
+    for (let c = 0; c < chapters.length; c++) {
+      for (let v = 0; v < chapters[c].length; v++) {
+        const at = b * 1_000_000 + (c + 1) * 1000 + (v + 1);
+        for (const w of wordsOf(chapters[c][v])) {
+          const k = fold(w);
+          const list = idx.get(k);
+          if (list) list.push(at);
+          else { idx.set(k, [at]); shown.set(k, w.toLowerCase()); }
+        }
+      }
+    }
+  }
+  const built = { idx, shown };
+  indexes.set(data, built);
+  return built;
+}
+
+export type ConcordanceHit = Hit & { times: number };
+export type Concordance = {
+  word: string;
+  /** Times the word appears, and the number of verses. */
+  occurrences: number;
+  hits: ConcordanceHit[];
+  /** Times per book (index = book number). */
+  byBook: number[];
+  /** The word forms found (with "starts with"), most frequent first. */
+  forms: { word: string; count: number }[];
+};
+
+/** A concordance of one word: the exact word, or every word starting with it. */
+export function concordance(data: BibleData, word: string, startsWith = false): Concordance {
+  const w = fold(wordsOf(word)[0] ?? '');
+  const empty: Concordance = { word: word.trim().toLowerCase(), occurrences: 0, hits: [], byBook: data.books.map(() => 0), forms: [] };
+  if (!w) return empty;
+  const { idx, shown } = indexOf(data);
+  const keys = startsWith ? [...idx.keys()].filter((k) => k.startsWith(w)) : idx.has(w) ? [w] : [];
+  const times = new Map<number, number>();
+  const forms: { word: string; count: number }[] = [];
+  for (const k of keys) {
+    const list = idx.get(k)!;
+    forms.push({ word: shown.get(k) ?? k, count: list.length });
+    for (const at of list) times.set(at, (times.get(at) ?? 0) + 1);
+  }
+  const ats = [...times.keys()].sort((a, b) => a - b);
+  const byBook = data.books.map(() => 0);
+  const hits = ats.map((at): ConcordanceHit => {
+    const book = Math.floor(at / 1_000_000), chapter = Math.floor((at % 1_000_000) / 1000), verse = at % 1000;
+    byBook[book] += times.get(at)!;
+    return { book, chapter, verse, text: data.books[book].chapters[chapter - 1][verse - 1], times: times.get(at)! };
+  });
+  forms.sort((a, b) => b.count - a.count || a.word.localeCompare(b.word));
+  return { word: shown.get(w) ?? w, occurrences: [...times.values()].reduce((a, b) => a + b, 0), hits, byBook, forms };
+}
+
 // ---------- Verse of the day ----------
 
 /** The same verse all day, changing at midnight (phone time). */
