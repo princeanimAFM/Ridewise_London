@@ -34,6 +34,22 @@ const intents: Intent[] = [
     }),
   },
   {
+    words: ['concordance', 'hebrew', 'greek', 'strongs', 'strong', 'original', 'lexicon', 'meaning', 'meanings', 'definition', 'study', 'occurrences', 'appears'],
+    phrases: ['word study', 'original language', 'what does the word', 'how many times', 'where else'],
+    reply: () => ({
+      text: `You can study any word in the Bible. While reading a chapter, tap the study button at the top (next to the version), then tap any word: a pop-up shows how many times it appears, in which books, and the verses, without leaving the chapter. With the King James Version it also shows the Hebrew or Greek word behind it, how to say it and what it means; tap it to see every place that original word is used. Tap Full screen, or Bible tab → Concordance, for the full concordance. You can also select a verse and tap Words.`,
+      actions: [go('Open the Bible', '/bible'), go('Concordance', '/bible/concordance')],
+    }),
+  },
+  {
+    words: ['bible', 'bibles', 'verse', 'verses', 'scripture', 'scriptures', 'kjv', 'version', 'versions', 'translation', 'twi', 'ewe', 'hausa', 'chapter', 'highlight', 'bookmark'],
+    phrases: ['verse of the day', 'read the bible'],
+    reply: () => ({
+      text: `Open the Bible tab to read 17 versions, including the King James Version, Akuapem and Asante Twi, Ewe, Hausa and French. Download a version once to read it offline. Search a word or type a reference like John 3:16, and tap verses to highlight, bookmark, add a note, copy or share them. For word study, tap the study button at the top of a chapter and then any word.`,
+      actions: [go('Open the Bible', '/bible'), go('Concordance', '/bible/concordance')],
+    }),
+  },
+  {
     words: ['sermon', 'sermons', 'message', 'messages', 'podcast', 'listen', 'audio', 'preaching', 'teaching', 'episode'],
     reply: () => ({
       text: `Open the Sermons tab to search and play The AFM Podcast (500+ audio messages) right inside the app. You can also watch on YouTube or listen on Spotify and Apple Podcasts.`,
@@ -289,4 +305,5 @@ export const suggestedQuestions = [
   'How do I buy his books?',
   'What are the AFM slogans?',
   'How can I send a prayer request?',
+  'How do I see the Hebrew or Greek of a word?',
 ];
