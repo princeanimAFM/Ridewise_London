@@ -4,6 +4,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { bookName, concordance, reference, TRANSLATIONS, useBible, useBiblePrefs, wordsOf, type Concordance } from '@/lib/bible';
 import { Button } from '@/components/ui';
+import { originalsOf, useStrongs } from '@/lib/strongs';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 type Part = 'all' | 'ot' | 'nt' | number;
@@ -22,6 +23,8 @@ export default function BibleConcordance() {
   const [form, setForm] = useState<string | null>(null);
   const prefs = useBiblePrefs();
   const { data, error, loading, retry } = useBible(prefs.translation);
+  // The Hebrew and Greek words behind an English KJV word (grace → cháris, chên).
+  const strongs = useStrongs(prefs.translation === 'kjv' && !!word);
   const [found, setFound] = useState<{ key: string; result: Concordance } | null>(null);
   const key = data && word.trim() ? `${prefs.translation}|${word.trim()}|${startsWith}` : null;
 
@@ -91,6 +94,24 @@ export default function BibleConcordance() {
                 {chip('All forms', !form, () => setForm(null))}
                 {result.forms.map((f) => chip(`${f.word} ${f.count}`, form === f.word, () => setForm(form === f.word ? null : f.word), f.word))}
               </ScrollView>
+            </>
+          )}
+          {strongs.data && !startsWith && originalsOf(strongs.data, result.word).length > 0 && (
+            <>
+              <Text style={[styles.label, { color: t.textMuted }]}>THE HEBREW AND GREEK BEHIND IT</Text>
+              <View style={styles.bookGrid}>
+                {originalsOf(strongs.data, result.word).slice(0, 8).map((o) => {
+                  const e = strongs.data!.dict[o.id];
+                  return (
+                    <Pressable key={o.id} onPress={() => router.push({ pathname: '/bible/strongs', params: { id: o.id } })}
+                      style={[styles.book, { borderColor: t.accent, backgroundColor: t.surface, maxWidth: '100%' }]}>
+                      <Text style={{ color: t.text, fontSize: 14 }}>{e?.[0]} <Text style={{ fontStyle: 'italic' }}>{e?.[1]}</Text></Text>
+                      <Text style={{ color: t.textMuted, fontSize: 12 }}>{o.id}</Text>
+                      <Text style={{ color: t.accent, fontWeight: '800', fontSize: 13 }}>{o.count}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
             </>
           )}
           <Text style={[styles.label, { color: t.textMuted }]}>WHERE IT APPEARS</Text>
