@@ -19,6 +19,7 @@ import {
   type HighlightColour,
 } from '@/lib/bible';
 import { strongsId, useStrongs, verseWords } from '@/lib/strongs';
+import { WORD_SPLIT, WordStudy, type StudyWord } from '@/components/WordStudy';
 import { shareText } from '@/lib/links';
 import { useContent } from '@/lib/liveContent';
 import { Button } from '@/components/ui';
@@ -30,6 +31,8 @@ const isDarkColour = (hex: string) => {
 };
 
 /** One chapter. Tap verses to highlight, bookmark, add a note, copy or share them. */
+let studyStays = false;
+
 export default function Reader() {
   const t = useTheme();
   const ministry = useContent();
@@ -51,6 +54,12 @@ export default function Reader() {
   const [note, setNote] = useState<{ verse: number; to?: number; text: string } | null>(null);
   // The words of the selected verses, to look one up in the concordance.
   const [words, setWords] = useState<{ list: string[]; verses: number[] } | null>(null);
+  // Word study: tap any word in the chapter to see the concordance in a pop-up, without leaving the chapter.
+  // Stays on from chapter to chapter until Done (each chapter opens a new reader screen).
+  const [studyMode, setStudyModeState] = useState(studyStays);
+  const setStudyMode = (on: boolean | ((was: boolean) => boolean)) =>
+    setStudyModeState((was) => (studyStays = typeof on === 'function' ? on(was) : on));
+  const [study, setStudy] = useState<StudyWord | null>(null);
   const strongs = useStrongs(!!words);
   const insets = useSafeAreaInsets();
   const scroll = useRef<ScrollViewInstance>(null);
@@ -121,6 +130,14 @@ export default function Reader() {
             <View style={styles.headerButtons}>
               <Pressable
                 hitSlop={8}
+                onPress={() => { setStudyMode((s) => !s); setSelected([]); }}
+                style={[styles.headerChip, studyMode && { backgroundColor: '#FFFFFF' }]}
+                accessibilityLabel={studyMode ? 'Stop word study' : 'Word study: tap a word to see the concordance'}
+              >
+                <Ionicons name={studyMode ? 'library' : 'library-outline'} size={16} color={studyMode ? t.primary : '#FFFFFF'} />
+              </Pressable>
+              <Pressable
+                hitSlop={8}
                 onPress={() => router.push('/bible/versions')}
                 style={styles.headerChip}
                 accessibilityLabel="Change Bible version"
@@ -144,6 +161,16 @@ export default function Reader() {
           <Text style={{ color: t.text, width: 28, textAlign: 'center' }}>{prefs.size}</Text>
           <Pressable onPress={() => setBiblePrefs({ size: Math.min(30, prefs.size + 2) })} style={[styles.sizeBtn, { borderColor: t.border }]}>
             <Text style={{ color: t.text, fontSize: 18, fontWeight: '700' }}>A+</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {studyMode && (
+        <View style={[styles.sizeBar, { backgroundColor: t.surface, borderColor: t.border }]}>
+          <Ionicons name="library" size={18} color={t.accent} />
+          <Text style={{ color: t.text, flex: 1 }}>Word study: <Text style={{ fontWeight: '700' }}>tap any word</Text> to see where else it appears{prefs.translation === 'kjv' ? ' and its Hebrew or Greek' : ''}.</Text>
+          <Pressable onPress={() => setStudyMode(false)} hitSlop={8}>
+            <Text style={{ color: t.accent, fontWeight: '700' }}>Done</Text>
           </Pressable>
         </View>
       )}
@@ -172,7 +199,7 @@ export default function Reader() {
             const isSelected = selected.includes(v);
             const bg = mark?.colour ? HIGHLIGHTS[mark.colour][dark ? 'dark' : 'light'] : v === target ? t.surfaceAlt : 'transparent';
             return (
-              <Pressable key={v} onPress={() => toggle(v)} onLayout={(e) => onVerseLayout(v, e.nativeEvent.layout.y)}>
+              <Pressable key={v} onPress={studyMode ? undefined : () => toggle(v)} onLayout={(e) => onVerseLayout(v, e.nativeEvent.layout.y)}>
                 <Text
                   style={[
                     styles.verse,
@@ -181,7 +208,16 @@ export default function Reader() {
                   ]}
                 >
                   <Text style={[styles.num, { color: t.accent, fontSize: Math.round(prefs.size * 0.65) }]}>{v} </Text>
-                  {text}
+                  {studyMode
+                    ? text.split(WORD_SPLIT).map((part, i) =>
+                        i % 2 ? (
+                          <Text key={i} suppressHighlighting onPress={() => setStudy({ word: part, book, chapter, verse: v })}
+                            style={study && study.verse === v && study.word === part ? { color: t.accent, fontWeight: '700' } : { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: t.border }}>
+                            {part}
+                          </Text>
+                        ) : part,
+                      )
+                    : text}
                   {mark?.bookmark ? <Text style={{ color: t.accent }}>  ★</Text> : null}
                 </Text>
                 {!!mark?.note && (
@@ -277,6 +313,18 @@ export default function Reader() {
           <Text style={{ color: '#FFFFFF', fontWeight: '600' }}>Copied</Text>
         </View>
       )}
+
+      <WordStudy
+        study={study}
+        onClose={() => setStudy(null)}
+        onGoTo={(b, c, v) => {
+          setStudy(null);
+          if (b === book && c === chapter) {
+            const y = positions.current[v];
+            if (y != null) scroll.current?.scrollTo({ y: Math.max(y - 80, 0), animated: true });
+          } else router.replace({ pathname: '/bible/read', params: { book: b, chapter: c, verse: v } });
+        }}
+      />
 
       <Modal visible={!!words} transparent animationType="fade" onRequestClose={() => setWords(null)}>
         <View style={styles.backdrop}>
