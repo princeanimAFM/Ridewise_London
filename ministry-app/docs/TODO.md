@@ -3,7 +3,7 @@
 Ideas agreed with the owner, to build later. Nothing here is started or published until the owner says so.
 
 ## Version 9 (Play Store), started 18 November 2026
-- Done: Expo SDK 58 / React Native 0.88 (clears Play's edge-to-edge warning); app version 9.0.0 (new runtime, so
+- Done: Expo SDK 58 / React Native 0.88 (the app now displays edge-to-edge on Android 15; Play still shows a "recommended" note about deprecated edge-to-edge APIs inside React Native 0.88, expo-image-picker's crop screen and Google libraries, which clears when those are updated); app version 9.0.0 (new runtime, so
   over-the-air updates for version 8 phones stay separate until they update).
 - Done: microphone permission removed (RECORD_AUDIO blocked; expo-audio recording off). Camera stays removed.
 - Test APK (preview build) for the owner to try, then the Play Store bundle (production build) and submit.
