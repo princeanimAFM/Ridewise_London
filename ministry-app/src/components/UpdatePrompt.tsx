@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Linking, Modal, Platform, StyleSheet, Text, View } from 'react-native';
 import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useContent } from '@/lib/liveContent';
 import { Button } from './ui';
@@ -27,7 +28,8 @@ export function UpdatePrompt() {
   const ministry = useContent();
   const [later, setLater] = useState(false);
   const latest = Platform.OS === 'android' ? ministry.appUpdate.android : '';
-  const installed = Constants.nativeAppVersion ?? '';
+  // The installed version: the app's runtime version is its version number (runtimeVersion policy "appVersion").
+  const installed = Updates.runtimeVersion ?? Constants.expoConfig?.version ?? '';
   if (later || !latest || !installed || !isNewer(latest, installed)) return null;
 
   const update = () => {
