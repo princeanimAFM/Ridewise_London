@@ -7,6 +7,14 @@ Ideas agreed with the owner, to build later. Nothing here is started or publishe
   over-the-air updates for version 8 phones stay separate until they update).
 - Done: microphone permission removed (RECORD_AUDIO blocked; expo-audio recording off). Camera stays removed.
 - Test APK (preview build) for the owner to try, then the Play Store bundle (production build) and submit.
+- Study Bible (built 19 November, waiting for "publish"; goes out as an over-the-air update to 9.0.0 phones):
+  cross-references, book introductions, Bible studies by the owner and admins, Bible dictionary (Easton's),
+  commentary (Matthew Henry Concise), Bible maps. To publish:
+  1. Upload the data files to the afm-church repo: bible/crossrefs.json, bible/dictionary.json,
+     bible/commentary.json, bible/places.json and bible/map/ (index.html, basemap.json, leaflet.js, leaflet.css).
+     Rebuild them with scripts/build-crossrefs.py, build-dictionary.py, build-commentary.py and build-maps.py.
+  2. Apply supabase/migrations/0009_bible_studies.sql.
+  3. Over-the-air update (production and preview, runtime 9.0.0) and redeploy the web app.
 - After release: update the Play listing's Data safety only if anything changed (nothing new collected).
 - Google Play app quality requirements (memory use and code optimisation), deadline February 2027: check the version 9 build against them (R8 shrinking is already on since version 8).
 

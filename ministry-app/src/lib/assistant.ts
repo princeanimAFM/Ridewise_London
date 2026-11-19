@@ -34,6 +34,22 @@ const intents: Intent[] = [
     }),
   },
   {
+    words: ['map', 'maps', 'place', 'places', 'journey', 'journeys', 'exodus', 'missionary'],
+    phrases: ['bible map', 'bible maps', "paul's journey", 'pauls journey'],
+    reply: () => ({
+      text: `Open Bible tab → Bible maps to find any place in the Bible and every verse that names it, and to follow Abraham's journey, the Exodus, Paul's three missionary journeys and his journey to Rome. While reading, tap "Map" at the top of a chapter to see the places it names.`,
+      actions: [go('Bible maps', '/bible/map')],
+    }),
+  },
+  {
+    words: ['commentary', 'commentaries', 'henry', 'dictionary', 'cross', 'references', 'background', 'introduction', 'studies'],
+    phrases: ['study bible', 'bible study', 'bible studies', 'cross reference', 'cross-references', 'who wrote the book of', 'bible dictionary'],
+    reply: () => ({
+      text: `The Bible has study helps. At the top of each chapter: About the book (author, date, background, themes and outline), the Commentary on the chapter, and a Map. Select a verse and tap Study for cross-references, the commentary on that verse, its places, Bible studies and the Hebrew & Greek. The Bible tab also has the Bible dictionary (about 4,000 entries) and Bible studies from the ministry.`,
+      actions: [go('Open the Bible', '/bible'), go('Bible studies', '/bible/studies'), go('Bible dictionary', '/bible/dictionary')],
+    }),
+  },
+  {
     words: ['concordance', 'hebrew', 'greek', 'strongs', 'strong', 'original', 'lexicon', 'meaning', 'meanings', 'definition', 'study', 'occurrences', 'appears'],
     phrases: ['word study', 'original language', 'what does the word', 'how many times', 'where else'],
     reply: () => ({
