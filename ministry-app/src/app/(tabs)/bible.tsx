@@ -82,6 +82,15 @@ export default function BibleHome() {
         )}
       </View>
 
+      <Card onPress={() => router.push('/bible/studies')} style={styles.continue}>
+        <Ionicons name="document-text-outline" size={22} color={t.accent} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Bible studies</Text>
+          <Text style={{ color: t.textMuted, fontSize: 13 }}>Studies from the ministry on passages of the Bible</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
+      </Card>
+
       <Card onPress={() => router.push('/bible/concordance')} style={styles.continue}>
         <Ionicons name="library-outline" size={22} color={t.accent} />
         <View style={{ flex: 1 }}>

@@ -6,9 +6,10 @@ import { reference, useBible, useBiblePrefs, wordsOf } from '@/lib/bible';
 import { CROSSREFS_CREDIT, refsFor, useCrossrefs, type CrossRef } from '@/lib/crossrefs';
 import { strongsId, useStrongs, verseWords } from '@/lib/strongs';
 import { Button } from './ui';
+import { covers, useStudies } from '@/lib/studies';
 import { fonts, radius, space, useTheme } from '@/theme';
 
-export type StudyTab = 'refs' | 'original' | 'words';
+export type StudyTab = 'refs' | 'studies' | 'original' | 'words';
 
 /**
  * Study tools for the selected verses, in a sheet over the chapter: cross-references, the Hebrew and Greek
@@ -31,6 +32,8 @@ export function VerseStudy({ book, chapter, verses, onClose, onGoTo }: {
   const bible = useBible(prefs.translation);
   const crossrefs = useCrossrefs(open && tab === 'refs');
   const strongs = useStrongs(open && tab === 'original');
+  const studies = useStudies({ book, chapter });
+  const theseStudies = studies.items.filter((s) => covers(s, verses ?? []));
 
   const text = (b: number, c: number, v: number) => bible.data?.books[b]?.chapters[c - 1]?.[v - 1] ?? '';
   const refText = (r: CrossRef) => {
@@ -60,7 +63,7 @@ export function VerseStudy({ book, chapter, verses, onClose, onGoTo }: {
       <Text style={{ color: t.textMuted, flex: 1 }}>Getting the {what} (once; then it works offline)…</Text>
     </View>
   );
-  const tabs: [StudyTab, string][] = [['refs', 'Cross-references'], ['original', 'Hebrew & Greek'], ['words', 'Concordance']];
+  const tabs: [StudyTab, string][] = [['refs', 'Cross-references'], ...(theseStudies.length ? [['studies', `Studies (${theseStudies.length})`] as [StudyTab, string]] : []), ['original', 'Hebrew & Greek'], ['words', 'Concordance']];
 
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
@@ -101,6 +104,15 @@ export function VerseStudy({ book, chapter, verses, onClose, onGoTo }: {
                 <Button label="Try again" icon="refresh" variant="outline" onPress={crossrefs.retry} style={{ alignSelf: 'flex-start' }} />
               ) : loading('cross-references, about 1 MB')
             )}
+
+            {tab === 'studies' && theseStudies.map((s) => (
+              <Pressable key={s.id} onPress={() => go(() => router.push({ pathname: '/bible/study', params: { id: s.id } }))}
+                style={({ pressed }) => [styles.card, { borderColor: t.accent, backgroundColor: t.background }, pressed && { opacity: 0.8 }]}>
+                <Text style={{ color: t.text, fontFamily: fonts.serif, fontSize: 17, fontWeight: '700' }}>{s.title}</Text>
+                {!!s.author && <Text style={{ color: t.textMuted, fontSize: 13 }}>{s.author}</Text>}
+                <Text style={{ color: t.text, marginTop: 4, lineHeight: 21 }} numberOfLines={3}>{s.body}</Text>
+              </Pressable>
+            ))}
 
             {tab === 'original' && (
               strongs.data ? (

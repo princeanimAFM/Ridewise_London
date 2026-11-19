@@ -19,6 +19,7 @@ import {
   type HighlightColour,
 } from '@/lib/bible';
 import { VerseStudy } from '@/components/VerseStudy';
+import { passageLabel, useStudies } from '@/lib/studies';
 import { WORD_SPLIT, WordStudy, type StudyWord } from '@/components/WordStudy';
 import { shareText } from '@/lib/links';
 import { useContent } from '@/lib/liveContent';
@@ -55,6 +56,8 @@ export default function Reader() {
   // The words of the selected verses, to look one up in the concordance.
   // The study panel (cross-references, Hebrew & Greek, concordance) for the selected verses.
   const [studyVerses, setStudyVerses] = useState<number[] | null>(null);
+  // Studies from the ministry on this chapter.
+  const studies = useStudies({ book, chapter });
   // Word study: tap any word in the chapter to see the concordance in a pop-up, without leaving the chapter.
   // Stays on from chapter to chapter until Done (each chapter opens a new reader screen).
   const [studyMode, setStudyModeState] = useState(studyStays);
@@ -182,6 +185,18 @@ export default function Reader() {
             <Ionicons name="information-circle-outline" size={16} color={t.accent} />
             <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>About {bookName(book)}: author, background, outline</Text>
           </Pressable>
+          {studies.items.length > 0 && (
+            <View style={[styles.noteChip, { backgroundColor: t.surfaceAlt, borderColor: t.accent, flexDirection: 'column', alignItems: 'stretch', marginBottom: space.md, gap: 6 }]}>
+              <Text style={{ color: t.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 }}>{studies.items.length === 1 ? 'A STUDY' : `${studies.items.length} STUDIES`} ON THIS CHAPTER</Text>
+              {studies.items.map((s) => (
+                <Pressable key={s.id} onPress={() => router.push({ pathname: '/bible/study', params: { id: s.id } })} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                  <Ionicons name="document-text-outline" size={16} color={t.accent} />
+                  <Text style={{ color: t.text, flex: 1, fontWeight: '600' }} numberOfLines={1}>{s.title}</Text>
+                  <Text style={{ color: t.accent, fontSize: 13 }}>{s.verse_from ? passageLabel(s).replace(/^.* (\d)/, '$1') : ''}</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
           {loading && (
             <View style={{ alignItems: 'center', marginTop: space.xl }}>
               <ActivityIndicator color={t.accent} />

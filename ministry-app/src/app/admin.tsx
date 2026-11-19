@@ -189,6 +189,7 @@ export default function Admin() {
       </View>
 
       <Button label="Edit app content" icon="create-outline" onPress={() => router.push('/manage')} style={{ marginTop: space.md }} />
+      <Button label="Bible studies" icon="book-outline" variant="outline" onPress={() => router.push('/manage-studies')} style={{ marginTop: space.sm }} />
       <Body muted style={{ marginTop: space.xs }}>Books, perfumes, quotes, giving details, links, service times and the theme.</Body>
       <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.sm }}>
         <Button label="Subscribers" icon="people-circle-outline" variant="outline" onPress={() => router.push('/subscribers')} style={{ flex: 1 }} />
