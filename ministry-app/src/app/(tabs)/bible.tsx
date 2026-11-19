@@ -91,6 +91,15 @@ export default function BibleHome() {
         <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
       </Card>
 
+      <Card onPress={() => router.push('/bible/dictionary')} style={styles.continue}>
+        <Ionicons name="reader-outline" size={22} color={t.accent} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Bible dictionary</Text>
+          <Text style={{ color: t.textMuted, fontSize: 13 }}>About 4,000 people, places, words and customs</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
+      </Card>
+
       <Card onPress={() => router.push('/bible/concordance')} style={styles.continue}>
         <Ionicons name="library-outline" size={22} color={t.accent} />
         <View style={{ flex: 1 }}>

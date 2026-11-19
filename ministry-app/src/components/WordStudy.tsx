@@ -5,6 +5,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { bookName, concordance, reference, TRANSLATIONS, useBible, useBiblePrefs, type Concordance } from '@/lib/bible';
 import { entry, strongsId, useStrongs, verseWords } from '@/lib/strongs';
+import { lookup, plain, useDictionary } from '@/lib/dictionary';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 /** Splits a verse into words (odd parts) and the spaces and punctuation between them (even parts). */
@@ -25,6 +26,8 @@ export function WordStudy({ study, onClose, onGoTo }: { study: StudyWord | null;
   const prefs = useBiblePrefs();
   const { data } = useBible(prefs.translation);
   const strongs = useStrongs(!!study);
+  const dict = useDictionary(!!study);
+  const meaning = study && dict.data ? lookup(dict.data, study.word)[0] : undefined;
   const [found, setFound] = useState<{ key: string; result: Concordance } | null>(null);
   const [part, setPart] = useState<Part>('all');
   const key = study && data ? `${prefs.translation}|${study.word}` : null;
@@ -54,6 +57,7 @@ export function WordStudy({ study, onClose, onGoTo }: { study: StudyWord | null;
   const books = result ? result.byBook.map((n, b) => ({ b, n })).filter((x) => x.n > 0).sort((a, b) => b.n - a.n) : [];
 
   const full = () => { const w = study!.word; onClose(); router.push({ pathname: '/bible/concordance', params: { word: w } }); };
+  const openEntry = (term: string) => { onClose(); router.push({ pathname: '/bible/dictionary', params: { term } }); };
   const openStrongs = (id: string) => { onClose(); router.push({ pathname: '/bible/strongs', params: { id } }); };
 
   const marked = (text: string) =>
@@ -93,6 +97,13 @@ export function WordStudy({ study, onClose, onGoTo }: { study: StudyWord | null;
             contentContainerStyle={{ paddingHorizontal: space.md, paddingBottom: space.lg }}
             ListHeaderComponent={
               <View>
+                {meaning && (
+                  <Pressable onPress={() => openEntry(meaning.term)} style={({ pressed }) => [styles.orig, { borderColor: t.border, backgroundColor: t.background }, pressed && { opacity: 0.8 }]}>
+                    <Text style={{ color: t.accent, fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>BIBLE DICTIONARY · {meaning.term.toUpperCase()}</Text>
+                    <Text style={{ color: t.text, lineHeight: 21, marginTop: 2 }} numberOfLines={3}>{plain(meaning.body)}</Text>
+                    <Text style={{ color: t.accent, fontWeight: '700', marginTop: 4 }}>Read the entry ›</Text>
+                  </Pressable>
+                )}
                 {original ? (
                   <Pressable onPress={() => openStrongs(original.id)} style={({ pressed }) => [styles.orig, { borderColor: t.accent, backgroundColor: t.background }, pressed && { opacity: 0.8 }]}>
                     <Text style={{ color: t.accent, fontSize: 11, fontWeight: '800', letterSpacing: 1 }}>{original.language.toUpperCase()} IN THIS VERSE · {original.id}</Text>
