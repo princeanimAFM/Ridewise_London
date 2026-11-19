@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { byLetter, DICTIONARY_CREDIT, lookup, paragraphs, plain, searchDictionary, useDictionary, type DictEntry } from '@/lib/dictionary';
+import { RichText } from '@/components/RichText';
+import { byLetter, DICTIONARY_CREDIT, lookup, plain, searchDictionary, useDictionary, type DictEntry } from '@/lib/dictionary';
 import { Button } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
@@ -90,9 +91,6 @@ function Entry({ term }: { term: string }) {
   const t = useTheme();
   const { data, status } = useData();
   const found = data ? lookup(data, term) : [];
-  const read = (book: number, chapter: number, verse: number) =>
-    router.push({ pathname: '/bible/read', params: { book, chapter, verse: verse || '' } });
-  const see = (other: string) => router.push({ pathname: '/bible/dictionary', params: { term: other } });
   const share = (e: DictEntry) => Share.share({ message: `${e.term}\n\n${plain(e.body)}\n\n${DICTIONARY_CREDIT}\nThe AFM HUB` });
 
   return (
@@ -106,17 +104,7 @@ function Entry({ term }: { term: string }) {
               <View key={n} style={{ marginBottom: space.lg }}>
                 <Text style={[styles.kicker, { color: t.accent }]}>BIBLE DICTIONARY{found.length > 1 ? ` · ${n + 1} OF ${found.length}` : ''}</Text>
                 <Text style={[styles.title, { color: t.text }]}>{e.term}</Text>
-                {paragraphs(e.body).map((pieces, i) => (
-                  <Text key={i} style={[styles.body, { color: t.text }]}>
-                    {pieces.map((p, j) =>
-                      p.kind === 'text' ? p.text : (
-                        <Text key={j} onPress={() => (p.kind === 'ref' ? read(p.book, p.chapter, p.verse) : see(p.term))}
-                          style={{ color: t.accent, fontWeight: p.kind === 'ref' ? '600' : '700' }}>
-                          {p.kind === 'entry' ? p.text.charAt(0) + p.text.slice(1).toLowerCase() : p.text}
-                        </Text>
-                      ))}
-                  </Text>
-                ))}
+                <RichText body={e.body} style={[styles.body, { color: t.text }]} />
                 <Button label="Share" icon="share-outline" variant="outline" onPress={() => share(e)} style={{ alignSelf: 'flex-start', marginTop: space.sm }} />
               </View>
             ))}

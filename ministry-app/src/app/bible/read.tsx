@@ -185,6 +185,10 @@ export default function Reader() {
             <Ionicons name="information-circle-outline" size={16} color={t.accent} />
             <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>About {bookName(book)}: author, background, outline</Text>
           </Pressable>
+          <Pressable onPress={() => router.push({ pathname: '/bible/commentary', params: { book, chapter } })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -space.sm, marginBottom: space.md }}>
+            <Ionicons name="chatbox-ellipses-outline" size={16} color={t.accent} />
+            <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>Commentary on this chapter</Text>
+          </Pressable>
           {studies.items.length > 0 && (
             <View style={[styles.noteChip, { backgroundColor: t.surfaceAlt, borderColor: t.accent, flexDirection: 'column', alignItems: 'stretch', marginBottom: space.md, gap: 6 }]}>
               <Text style={{ color: t.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 }}>{studies.items.length === 1 ? 'A STUDY' : `${studies.items.length} STUDIES`} ON THIS CHAPTER</Text>
