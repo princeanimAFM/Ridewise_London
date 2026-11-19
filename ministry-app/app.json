@@ -80,7 +80,8 @@
           }
         }
       ],
-      "expo-asset"
+      "expo-asset",
+      "./plugins/withOptionalPortrait"
     ],
     "description": "The official app of Prophet Micah Felix Azanduna (D.D) and the AFM Family Network.",
     "extra": {
