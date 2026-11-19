@@ -91,6 +91,15 @@ export default function BibleHome() {
         <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
       </Card>
 
+      <Card onPress={() => router.push('/bible/map')} style={styles.continue}>
+        <Ionicons name="map-outline" size={22} color={t.accent} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Bible maps</Text>
+          <Text style={{ color: t.textMuted, fontSize: 13 }}>Places of the Bible, Abraham, the Exodus and Paul’s journeys</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
+      </Card>
+
       <Card onPress={() => router.push('/bible/dictionary')} style={styles.continue}>
         <Ionicons name="reader-outline" size={22} color={t.accent} />
         <View style={{ flex: 1 }}>

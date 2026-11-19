@@ -20,6 +20,7 @@ import {
 } from '@/lib/bible';
 import { VerseStudy } from '@/components/VerseStudy';
 import { passageLabel, useStudies } from '@/lib/studies';
+import { placesIn, usePlaces } from '@/lib/maps';
 import { WORD_SPLIT, WordStudy, type StudyWord } from '@/components/WordStudy';
 import { shareText } from '@/lib/links';
 import { useContent } from '@/lib/liveContent';
@@ -58,6 +59,9 @@ export default function Reader() {
   const [studyVerses, setStudyVerses] = useState<number[] | null>(null);
   // Studies from the ministry on this chapter.
   const studies = useStudies({ book, chapter });
+  // Places named in this chapter, for the map link.
+  const maps = usePlaces();
+  const placeCount = maps.data ? placesIn(maps.data, book, chapter).length : 0;
   // Word study: tap any word in the chapter to see the concordance in a pop-up, without leaving the chapter.
   // Stays on from chapter to chapter until Done (each chapter opens a new reader screen).
   const [studyMode, setStudyModeState] = useState(studyStays);
@@ -181,14 +185,19 @@ export default function Reader() {
       <ScrollView ref={scroll} contentContainerStyle={styles.page}>
         <View style={styles.maxWidth}>
           <Text style={[styles.heading, { color: t.text, marginBottom: space.xs }]}>{reference(book, chapter)}</Text>
-          <Pressable onPress={() => router.push({ pathname: '/bible/intro', params: { book } })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: space.md }}>
-            <Ionicons name="information-circle-outline" size={16} color={t.accent} />
-            <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>About {bookName(book)}: author, background, outline</Text>
-          </Pressable>
-          <Pressable onPress={() => router.push({ pathname: '/bible/commentary', params: { book, chapter } })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -space.sm, marginBottom: space.md }}>
-            <Ionicons name="chatbox-ellipses-outline" size={16} color={t.accent} />
-            <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>Commentary on this chapter</Text>
-          </Pressable>
+          {/* Study helps for this chapter. */}
+          <View style={styles.helps}>
+            {([
+              ['information-circle-outline', `About ${bookName(book)}`, () => router.push({ pathname: '/bible/intro', params: { book } })],
+              ['chatbox-ellipses-outline', 'Commentary', () => router.push({ pathname: '/bible/commentary', params: { book, chapter } })],
+              ...(placeCount ? [['map-outline', `Map · ${placeCount} ${placeCount === 1 ? 'place' : 'places'}`, () => router.push({ pathname: '/bible/map', params: { book, chapter } })]] : []),
+            ] as [keyof typeof Ionicons.glyphMap, string, () => void][]).map(([icon, label, onPress]) => (
+              <Pressable key={label} onPress={onPress} hitSlop={4} style={({ pressed }) => [styles.help, { borderColor: t.border, backgroundColor: t.surface }, pressed && { opacity: 0.7 }]}>
+                <Ionicons name={icon} size={15} color={t.accent} />
+                <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>{label}</Text>
+              </Pressable>
+            ))}
+          </View>
           {studies.items.length > 0 && (
             <View style={[styles.noteChip, { backgroundColor: t.surfaceAlt, borderColor: t.accent, flexDirection: 'column', alignItems: 'stretch', marginBottom: space.md, gap: 6 }]}>
               <Text style={{ color: t.textMuted, fontSize: 12, fontWeight: '800', letterSpacing: 1 }}>{studies.items.length === 1 ? 'A STUDY' : `${studies.items.length} STUDIES`} ON THIS CHAPTER</Text>
@@ -384,6 +393,8 @@ export default function Reader() {
 }
 
 const styles = StyleSheet.create({
+  helps: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: space.md },
+  help: { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: StyleSheet.hairlineWidth, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
   headerButtons: { flexDirection: 'row', alignItems: 'center', gap: space.md, marginRight: space.sm },
   headerChip: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.6)', borderRadius: 12, paddingHorizontal: 8, paddingVertical: 2 },
   headerChipText: { color: '#FFFFFF', fontWeight: '700', fontSize: 13 },

@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Bible maps · The AFM HUB</title>
+<link rel="stylesheet" href="leaflet.css">
+<style>
+  :root { --sea: #c9dde6; --land: #f1ead9; --edge: #b9ab8a; --lake: #a9c9d8; --river: #6f9fbb; --ink: #2b2a26; --pin: #1f5e3b; --gold: #b8892b; --halo: rgba(255,255,255,.85); }
+  html.dark { --sea: #1b2a33; --land: #2c2a24; --edge: #4c4636; --lake: #24404f; --river: #3f6f8a; --ink: #f1ece0; --pin: #7cc39a; --gold: #e0b45a; --halo: rgba(0,0,0,.7); }
+  html, body, #map { height: 100%; margin: 0; background: var(--sea); }
+  body { font: 13px/1.3 -apple-system, system-ui, "Segoe UI", Roboto, sans-serif; color: var(--ink); }
+  .leaflet-container { background: var(--sea); font: inherit; }
+  .leaflet-tooltip.lbl { background: none; border: 0; box-shadow: none; padding: 0 0 0 2px; color: var(--ink); font-weight: 700;
+    text-shadow: 0 0 3px var(--halo), 0 0 3px var(--halo), 0 0 3px var(--halo); }
+  .leaflet-tooltip.lbl::before { display: none; }
+  .leaflet-tooltip.lbl.on { color: var(--gold); font-size: 15px; }
+  .leaflet-tooltip.lbl.dim { font-weight: 600; opacity: .85; }
+  .leaflet-tooltip.lbl.hid { visibility: hidden; }
+  .num { background: var(--pin); color: #fff; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 11px; border: 2px solid #fff; box-sizing: border-box; }
+  .leaflet-control-attribution { font-size: 10px; background: var(--halo) !important; color: var(--ink); }
+  .leaflet-control-attribution a { color: inherit; }
+  .legend { background: var(--halo); padding: 4px 8px; border-radius: 8px; font-size: 11px; line-height: 1.6; }
+  .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 4px; vertical-align: -1px; }
+  #msg { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 24px; z-index: 999; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="msg">Loading the map…</div>
+<script src="leaflet.js"></script>
+<script>
+/*
+ * Bible maps for The AFM HUB. The view is set by the address after #:
+ *   #chapter=42.3      places named in John 3 (book 0 = Genesis)
+ *   #place=123         one place
+ *   #journey=paul2     a journey, stop by stop
+ *   (nothing)          every place
+ * Add &dark=1 for dark mode, &sel=123 to highlight a place. Tapping a place sends {"place": id} to the app.
+ * Places: OpenBible.info (CC BY 4.0). Coastlines, lakes and rivers: Natural Earth (public domain).
+ */
+const send = (msg) => {
+  const s = JSON.stringify(msg);
+  if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(s);
+  else if (window.parent !== window) window.parent.postMessage(s, '*');
+};
+const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+const map = L.map('map', { zoomControl: false, attributionControl: true, minZoom: 3, maxZoom: 13, zoomSnap: 0.25, worldCopyJump: false, preferCanvas: true })
+  .setView([31.5, 35.2], 7);
+L.control.zoom({ position: 'topright' }).addTo(map);
+map.createPane('base').style.zIndex = 250;  // coastlines under the places
+map.setMaxBounds([[2, -14], [52, 66]]);  // the drawn area
+map.attributionControl.setPrefix('').addAttribution('Places: <a href="https://www.openbible.info/geo/">OpenBible.info</a> (CC BY) · Natural Earth · Leaflet');
+const legend = L.control({ position: 'bottomleft' });
+legend.onAdd = () => {
+  const d = L.DomUtil.create('div', 'legend');
+  d.innerHTML = `<div><i style="background:${css('--pin')}"></i>Known site</div><div><i style="background:${css('--gold')}"></i>Likely site</div><div><i style="border:1.5px dashed ${css('--ink')}"></i>Uncertain</div>`;
+  return d;
+};
+
+let data, layer = L.layerGroup().addTo(map), base, markers = {};
+
+function drawBase() {
+  if (base) base.remove();
+  const canvas = L.canvas({ padding: 0.5, pane: 'base' });
+  const poly = (rings, style) => L.polygon(rings.map((ring) => ring.map(([x, y]) => [y, x])), { ...style, renderer: canvas, interactive: false });
+  base = L.layerGroup([
+    ...data.base.land.map((p) => poly(p, { color: css('--edge'), weight: 0.8, fillColor: css('--land'), fillOpacity: 1 })),
+    ...data.base.lakes.map((p) => poly(p, { color: css('--river'), weight: 0.6, fillColor: css('--lake'), fillOpacity: 1 })),
+    ...data.base.rivers.map((l) => L.polyline(l.map(([x, y]) => [y, x]), { color: css('--river'), weight: 1.2, renderer: canvas, interactive: false })),
+  ]).addTo(map);
+}
+
+function dot(i, opts = {}) {
+  const [name, lat, lon, kind, sure] = data.places.places[i];
+  const color = sure === 2 ? css('--pin') : sure === 1 ? css('--gold') : css('--ink');
+  const m = opts.number
+    ? L.marker([lat, lon], { icon: L.divIcon({ className: '', html: `<div class="num">${opts.number}</div>`, iconSize: [20, 20], iconAnchor: [10, 10] }) })
+    : L.circleMarker([lat, lon], {
+      radius: opts.small ? 4 : 6, weight: sure === 0 ? 1.5 : 2, color: sure === 0 ? color : '#fff', dashArray: sure === 0 ? '3 2' : null,
+      fillColor: color, fillOpacity: sure === 0 ? 0.15 : 1,
+    });
+  m.bindTooltip(opts.label || name, { permanent: !!opts.permanent, direction: 'right', offset: opts.number ? [10, 0] : [6, 0], className: 'lbl' + (opts.small ? ' dim' : '') });
+  m.on('click', () => { select(i); send({ place: i }); });
+  markers[i] = m;
+  return m.addTo(layer);
+}
+
+let selected = null;
+function select(i) {
+  if (selected != null && markers[selected]) {
+    const el = markers[selected].getTooltip().getElement(); if (el) el.classList.remove('on', 'hid');
+    if (!markers[selected].options.keepLabel) markers[selected].closeTooltip();
+  }
+  selected = i;
+  const m = markers[i];
+  if (!m) return;
+  m.openTooltip(); const el = m.getTooltip().getElement(); if (el) el.classList.add('on');
+  if (m.bringToFront) m.bringToFront();
+  declutter();
+}
+
+// Hide labels that would overlap one already shown (the selected place, then in order, wins).
+function declutter() {
+  const shown = [];
+  const els = Object.keys(markers).map(Number).sort((a, b) => (b === selected) - (a === selected))
+    .map((i) => markers[i].getTooltip() && markers[i].isTooltipOpen() && markers[i].getTooltip().getElement()).filter((el, k, all) => el && all.indexOf(el) === k);
+  els.forEach((el) => el.classList.remove('hid'));
+  els.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (shown.some((o) => r.left < o.right && r.right > o.left && r.top < o.bottom && r.bottom > o.top)) el.classList.add('hid');
+    else shown.push(r);
+  });
+}
+map.on('zoomend moveend', () => setTimeout(declutter, 0));
+
+// Places at the same spot (e.g. Luz and Bethel) share one marker: "Luz / Bethel".
+function merged(ids) {
+  const at = new Map();
+  ids.forEach((i) => {
+    const [name, lat, lon] = data.places.places[i];
+    const k = `${lat},${lon}`;
+    if (!at.has(k)) at.set(k, { id: i, names: [] });
+    const g = at.get(k);
+    if (!g.names.includes(name)) g.names.push(name);
+  });
+  return [...at.values()];
+}
+
+function fit(points, maxZoom) {
+  if (!points.length) return;
+  if (points.length === 1) return map.setView(points[0], maxZoom || 9);
+  map.fitBounds(L.latLngBounds(points), { paddingTopLeft: [24, 24], paddingBottomRight: [80, 60], maxZoom: maxZoom || 10 });  // room for labels and the key
+}
+
+function show() {
+  const q = new URLSearchParams(location.hash.slice(1));
+  const dark = q.get('dark') === '1';
+  if (dark !== document.documentElement.classList.contains('dark')) {
+    document.documentElement.classList.toggle('dark', dark);
+    drawBase();
+  }
+  layer.clearLayers(); markers = {}; selected = null; legend.remove();
+  const P = data.places;
+  const at = (i) => [P.places[i][1], P.places[i][2]];
+  if (q.has('chapter')) {
+    const [b, c] = q.get('chapter').split('.').map(Number);
+    const ids = [...new Set((P.books[b] && P.books[b][c - 1] || []).map(([p]) => p))];
+    const groups = merged(ids);
+    groups.forEach((g) => {
+      const m = dot(g.id, { permanent: true, label: g.names.join(' / ') }); m.options.keepLabel = true;
+      // Tapping any of the names at this spot selects the first; the app lists them all.
+      ids.forEach((i) => { if (!markers[i]) markers[i] = m; });
+    });
+    fit(ids.map(at), 9);
+    legend.addTo(map);
+  } else if (q.has('journey')) {
+    const j = P.journeys.find((x) => x.id === q.get('journey'));
+    if (j) {
+      const pts = j.stops.map(([i]) => at(i));
+      L.polyline(pts, { color: css('--gold'), weight: 3, dashArray: '8 6' }).addTo(layer);
+      const done = new Map();
+      j.stops.forEach(([i, label], n) => {
+        if (done.has(i)) { const m = done.get(i); m.setTooltipContent(`${m.getTooltip().getContent()}, ${n + 1}`); return; }
+        const m = dot(i, { permanent: true, number: n + 1, label: label || P.places[i][0] });
+        m.options.keepLabel = true; done.set(i, m);
+      });
+      fit(pts);
+    }
+  } else if (q.has('place')) {
+    const i = Number(q.get('place'));
+    // Nearby places for context, then the place itself.
+    const [, lat, lon] = P.places[i];
+    P.places.forEach((p, k) => { if (k !== i && Math.abs(p[1] - lat) < 0.6 && Math.abs(p[2] - lon) < 0.6 && p[4] > 0) dot(k, { small: true }); });
+    const m = dot(i, { permanent: true }); m.options.keepLabel = true;
+    map.setView([lat, lon], 10);
+    legend.addTo(map);
+  } else {
+    P.places.forEach((p, k) => dot(k, { small: true }));
+    map.setView([31.8, 35.3], 7);
+    legend.addTo(map);
+  }
+  if (q.has('sel')) select(Number(q.get('sel')));
+  document.getElementById('msg').style.display = 'none';
+  setTimeout(declutter, 50);
+}
+
+Promise.all([fetch('../places.json').then((r) => r.json()), fetch('basemap.json').then((r) => r.json())])
+  .then(([places, basemap]) => {
+    data = { places, base: basemap };
+    document.documentElement.classList.toggle('dark', new URLSearchParams(location.hash.slice(1)).get('dark') === '1');
+    drawBase();
+    show();
+    send({ ready: true });
+  })
+  .catch(() => { document.getElementById('msg').textContent = 'Could not load the map. Check your internet connection.'; send({ error: true }); });
+window.addEventListener('hashchange', () => data && show());
+// The app highlights a place without moving away from the current view: selectPlace(id) (phone) or a {select: id} message (web).
+window.selectPlace = (i) => {
+  if (!data || !markers[i]) return;
+  select(i);
+  const ll = markers[i].getLatLng();
+  if (!map.getBounds().pad(-0.1).contains(ll)) map.panTo(ll);
+};
+window.addEventListener('message', (e) => {
+  try { const m = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; if (m && m.select != null) window.selectPlace(m.select); } catch (err) {}
+});
+</script>
+</body>
+</html>

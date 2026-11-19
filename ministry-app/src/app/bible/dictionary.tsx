@@ -3,6 +3,7 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, Share, StyleSheet, 
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { RichText } from '@/components/RichText';
+import { placesNamed, usePlaces } from '@/lib/maps';
 import { byLetter, DICTIONARY_CREDIT, lookup, plain, searchDictionary, useDictionary, type DictEntry } from '@/lib/dictionary';
 import { Button } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
@@ -91,6 +92,8 @@ function Entry({ term }: { term: string }) {
   const t = useTheme();
   const { data, status } = useData();
   const found = data ? lookup(data, term) : [];
+  const maps = usePlaces();
+  const onMap = maps.data && found[0] ? placesNamed(maps.data, found[0].term)[0] : undefined;
   const share = (e: DictEntry) => Share.share({ message: `${e.term}\n\n${plain(e.body)}\n\n${DICTIONARY_CREDIT}\nThe AFM HUB` });
 
   return (
@@ -104,6 +107,10 @@ function Entry({ term }: { term: string }) {
               <View key={n} style={{ marginBottom: space.lg }}>
                 <Text style={[styles.kicker, { color: t.accent }]}>BIBLE DICTIONARY{found.length > 1 ? ` · ${n + 1} OF ${found.length}` : ''}</Text>
                 <Text style={[styles.title, { color: t.text }]}>{e.term}</Text>
+                {n === 0 && onMap && (
+                  <Button label="Show on the map" icon="map-outline" variant="outline" onPress={() => router.push({ pathname: '/bible/map', params: { place: onMap.id } })}
+                    style={{ alignSelf: 'flex-start', marginBottom: space.md }} />
+                )}
                 <RichText body={e.body} style={[styles.body, { color: t.text }]} />
                 <Button label="Share" icon="share-outline" variant="outline" onPress={() => share(e)} style={{ alignSelf: 'flex-start', marginTop: space.sm }} />
               </View>

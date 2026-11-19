@@ -9,9 +9,10 @@ import { Button } from './ui';
 import { covers, useStudies } from '@/lib/studies';
 import { COMMENTARY_CREDIT, sectionLabel, sectionsFor, useCommentary } from '@/lib/commentary';
 import { RichText } from './RichText';
+import { placesIn, SURE, usePlaces } from '@/lib/maps';
 import { fonts, radius, space, useTheme } from '@/theme';
 
-export type StudyTab = 'refs' | 'commentary' | 'studies' | 'original' | 'words';
+export type StudyTab = 'refs' | 'commentary' | 'places' | 'studies' | 'original' | 'words';
 
 /**
  * Study tools for the selected verses, in a sheet over the chapter: cross-references, the Hebrew and Greek
@@ -35,6 +36,8 @@ export function VerseStudy({ book, chapter, verses, onClose, onGoTo }: {
   const crossrefs = useCrossrefs(open && tab === 'refs');
   const strongs = useStrongs(open && tab === 'original');
   const commentary = useCommentary(open && tab === 'commentary');
+  const maps = usePlaces(open);
+  const places = maps.data && verses ? placesIn(maps.data, book, chapter, verses) : [];
   const studies = useStudies({ book, chapter });
   const theseStudies = studies.items.filter((s) => covers(s, verses ?? []));
 
@@ -66,7 +69,7 @@ export function VerseStudy({ book, chapter, verses, onClose, onGoTo }: {
       <Text style={{ color: t.textMuted, flex: 1 }}>Getting the {what} (once; then it works offline)…</Text>
     </View>
   );
-  const tabs: [StudyTab, string][] = [['refs', 'Cross-references'], ['commentary', 'Commentary'], ...(theseStudies.length ? [['studies', `Studies (${theseStudies.length})`] as [StudyTab, string]] : []), ['original', 'Hebrew & Greek'], ['words', 'Concordance']];
+  const tabs: [StudyTab, string][] = [['refs', 'Cross-references'], ['commentary', 'Commentary'], ...(places.length ? [['places', `Places (${places.length})`] as [StudyTab, string]] : []), ...(theseStudies.length ? [['studies', `Studies (${theseStudies.length})`] as [StudyTab, string]] : []), ['original', 'Hebrew & Greek'], ['words', 'Concordance']];
 
   return (
     <Modal visible={open} transparent animationType="slide" onRequestClose={onClose}>
@@ -124,6 +127,21 @@ export function VerseStudy({ book, chapter, verses, onClose, onGoTo }: {
               ) : commentary.error ? (
                 <Button label="Try again" icon="refresh" variant="outline" onPress={commentary.retry} style={{ alignSelf: 'flex-start' }} />
               ) : loading('commentary, about 1.4 MB')
+            )}
+
+            {tab === 'places' && (
+              <>
+                {places.map(({ place: p, verses: vs }) => (
+                  <Pressable key={p.id} onPress={() => go(() => router.push({ pathname: '/bible/map', params: { book, chapter, sel: p.id } }))}
+                    style={({ pressed }) => [styles.card, styles.row, { borderColor: t.border, backgroundColor: t.background }, pressed && { opacity: 0.8 }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>{p.name}</Text>
+                      <Text style={{ color: t.textMuted, fontSize: 12 }}>{SURE[p.sure]} · {p.kind}{verses && verses.length > 1 ? ` · verse ${vs.join(', ')}` : ''}</Text>
+                    </View>
+                    <Text style={{ color: t.accent, fontWeight: '700' }}>Map ›</Text>
+                  </Pressable>
+                ))}
+              </>
             )}
 
             {tab === 'studies' && theseStudies.map((s) => (
