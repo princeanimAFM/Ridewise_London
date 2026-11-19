@@ -61,6 +61,7 @@ export default function RootLayout() {
         <Stack.Screen name="bible/search" options={{ title: 'Search the Bible' }} />
         <Stack.Screen name="bible/concordance" options={{ title: 'Concordance' }} />
         <Stack.Screen name="bible/strongs" options={{ title: 'Hebrew & Greek' }} />
+        <Stack.Screen name="bible/intro" options={{ title: 'Introduction' }} />
         <Stack.Screen name="bible/saved" options={{ title: 'Highlights & Notes' }} />
         <Stack.Screen name="bible/versions" options={{ title: 'Bible Versions' }} />
         <Stack.Screen name="account/index" options={{ title: 'My Account' }} />

@@ -15,6 +15,7 @@ import {
   useBiblePrefs,
   useMarks,
   verseKey,
+  bookName,
   type HighlightColour,
 } from '@/lib/bible';
 import { VerseStudy } from '@/components/VerseStudy';
@@ -176,7 +177,11 @@ export default function Reader() {
 
       <ScrollView ref={scroll} contentContainerStyle={styles.page}>
         <View style={styles.maxWidth}>
-          <Text style={[styles.heading, { color: t.text }]}>{reference(book, chapter)}</Text>
+          <Text style={[styles.heading, { color: t.text, marginBottom: space.xs }]}>{reference(book, chapter)}</Text>
+          <Pressable onPress={() => router.push({ pathname: '/bible/intro', params: { book } })} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: space.md }}>
+            <Ionicons name="information-circle-outline" size={16} color={t.accent} />
+            <Text style={{ color: t.accent, fontWeight: '600', fontSize: 13 }}>About {bookName(book)}: author, background, outline</Text>
+          </Pressable>
           {loading && (
             <View style={{ alignItems: 'center', marginTop: space.xl }}>
               <ActivityIndicator color={t.accent} />
