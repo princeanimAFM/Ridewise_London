@@ -15,10 +15,9 @@ import {
   useBiblePrefs,
   useMarks,
   verseKey,
-  wordsOf,
   type HighlightColour,
 } from '@/lib/bible';
-import { strongsId, useStrongs, verseWords } from '@/lib/strongs';
+import { VerseStudy } from '@/components/VerseStudy';
 import { WORD_SPLIT, WordStudy, type StudyWord } from '@/components/WordStudy';
 import { shareText } from '@/lib/links';
 import { useContent } from '@/lib/liveContent';
@@ -53,14 +52,14 @@ export default function Reader() {
   // The note being written: on verse `verse`, covering up to `to` when several verses are selected.
   const [note, setNote] = useState<{ verse: number; to?: number; text: string } | null>(null);
   // The words of the selected verses, to look one up in the concordance.
-  const [words, setWords] = useState<{ list: string[]; verses: number[] } | null>(null);
+  // The study panel (cross-references, Hebrew & Greek, concordance) for the selected verses.
+  const [studyVerses, setStudyVerses] = useState<number[] | null>(null);
   // Word study: tap any word in the chapter to see the concordance in a pop-up, without leaving the chapter.
   // Stays on from chapter to chapter until Done (each chapter opens a new reader screen).
   const [studyMode, setStudyModeState] = useState(studyStays);
   const setStudyMode = (on: boolean | ((was: boolean) => boolean)) =>
     setStudyModeState((was) => (studyStays = typeof on === 'function' ? on(was) : on));
   const [study, setStudy] = useState<StudyWord | null>(null);
-  const strongs = useStrongs(!!words);
   const insets = useSafeAreaInsets();
   const scroll = useRef<ScrollViewInstance>(null);
   const positions = useRef<Record<number, number>>({});
@@ -275,15 +274,7 @@ export default function Reader() {
               { label: 'Note', icon: 'create-outline', onPress: noteFromSelection },
               { label: 'Copy', icon: 'copy-outline', onPress: copy },
               { label: 'Share', icon: 'share-social-outline', onPress: () => shareText(`${selectionText}\n\nShared from ${ministry.name}`) },
-              { label: 'Words', icon: 'library-outline', onPress: () => {
-                const seen = new Set<string>(), sorted = [...selected].sort((a, b) => a - b);
-                setWords({ verses: sorted, list: sorted.flatMap((v) => wordsOf(verses[v - 1] ?? '')).filter((w) => {
-                  const k = w.toLowerCase();
-                  if (w.length < 2 || seen.has(k)) return false;
-                  seen.add(k);
-                  return true;
-                }) });
-              } },
+              { label: 'Study', icon: 'library-outline', onPress: () => setStudyVerses([...selected].sort((a, b) => a - b)) },
             ].map((a) => (
               <Pressable key={a.label} onPress={a.onPress} accessibilityRole="button" style={({ pressed }) => [styles.action, { borderColor: t.border }, pressed && { opacity: 0.7 }]}>
                 <Ionicons name={a.icon as 'copy-outline'} size={22} color={t.accent} />
@@ -326,48 +317,17 @@ export default function Reader() {
         }}
       />
 
-      <Modal visible={!!words} transparent animationType="fade" onRequestClose={() => setWords(null)}>
-        <View style={styles.backdrop}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={() => setWords(null)} accessibilityLabel="Close" />
-          <View style={[styles.sheet, { backgroundColor: t.surface, paddingBottom: space.md + insets.bottom }]}>
-            <ScrollView style={{ maxHeight: 460 }} contentContainerStyle={{ gap: space.sm }}>
-            <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Hebrew & Greek: tap a word</Text>
-            <Text style={{ color: t.textMuted, marginTop: -space.xs }}>The original word, its meaning, and everywhere it is used{prefs.translation === 'kjv' ? '' : ' (from the King James Version)'}.</Text>
-            {strongs.data ? (
-              <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-                {(words?.verses ?? []).flatMap((v) => verseWords(strongs.data!, book, chapter, v).map(([w, n], i) => ({ w, n, key: `${v}.${i}` }))).map(({ w, n, key }) => {
-                  const id = strongsId(n), e = strongs.data!.dict[id];
-                  return (
-                    <Pressable key={key} onPress={() => { setWords(null); setSelected([]); router.push({ pathname: '/bible/strongs', params: { id } }); }}
-                      style={({ pressed }) => [{ borderWidth: 1, borderColor: t.accent, borderRadius: radius.md, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: t.background }, pressed && { opacity: 0.7 }]}>
-                      <Text style={{ color: t.text, fontWeight: '700' }}>{w}</Text>
-                      <Text style={{ color: t.textMuted, fontSize: 12 }}>{e ? `${e[1]} · ${id}` : id}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            ) : strongs.error ? (
-              <Button label="Try again" icon="refresh" variant="outline" onPress={strongs.retry} style={{ alignSelf: 'flex-start' }} />
-            ) : (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: space.sm }}>
-                <ActivityIndicator color={t.accent} />
-                <Text style={{ color: t.textMuted }}>Getting the Hebrew and Greek words (2 MB, once)…</Text>
-              </View>
-            )}
-            <Text style={{ color: t.text, fontWeight: '700', fontSize: 16, marginTop: space.sm }}>Concordance: tap a word</Text>
-            <Text style={{ color: t.textMuted, marginTop: -space.xs }}>See every verse it appears in, and how many times.</Text>
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space.sm }}>
-              {(words?.list ?? []).map((w) => (
-                <Pressable key={w} onPress={() => { setWords(null); setSelected([]); router.push({ pathname: '/bible/concordance', params: { word: w } }); }}
-                  style={({ pressed }) => [{ borderWidth: 1, borderColor: t.border, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: t.background }, pressed && { opacity: 0.7 }]}>
-                  <Text style={{ color: t.text, fontWeight: '600' }}>{w}</Text>
-                </Pressable>
-              ))}
-            </View>
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
+      <VerseStudy
+        book={book}
+        chapter={chapter}
+        verses={studyVerses}
+        onClose={() => setStudyVerses(null)}
+        onGoTo={(b, c, v) => {
+          setStudyVerses(null);
+          setSelected([]);
+          router.push({ pathname: '/bible/read', params: { book: b, chapter: c, verse: v } });
+        }}
+      />
 
       <Modal visible={!!note} transparent animationType="fade" onRequestClose={() => setNote(null)}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.backdrop}>

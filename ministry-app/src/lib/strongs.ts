@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { loader, studyFile } from './studyData';
 
 /**
  * Hebrew and Greek (Strong's numbers). Every word of the King James Version that carries a number, and
@@ -10,7 +9,6 @@ import { Platform } from 'react-native';
  * dictionaries via Open Scriptures (CC BY-SA), from James Strong's 1890 dictionaries.
  */
 
-const SOURCE = 'https://theafmchurch.org/bible';
 export const STRONGS_SIZE = '2 MB download, once';
 export const STRONGS_CREDIT =
   "Strong's numbers from the King James Version (eBible.org, public domain). Hebrew and Greek dictionaries by James Strong (1890), via Open Scriptures, licensed CC BY-SA.";
@@ -120,66 +118,13 @@ export function originalsOf(data: StrongsData, word: string): { id: string; coun
 
 // ---------- Download once, keep on the phone ----------
 
-let loaded: StrongsData | undefined;
-let pending: Promise<StrongsData> | undefined;
-
-async function offlineFile(name: string) {
-  if (Platform.OS === 'web') return null;
-  try {
-    const { Directory, File, Paths } = await import('expo-file-system');
-    const dir = new Directory(Paths.document, 'bible');
-    if (!dir.exists) dir.create({ intermediates: true });
-    return new File(dir, name);
-  } catch {
-    return null;
-  }
-}
-
-async function fetchJson<T>(name: string): Promise<T> {
-  const file = await offlineFile(name);
-  if (file?.exists) {
-    try {
-      return JSON.parse(await file.text()) as T;
-    } catch {
-      file.delete();
-    }
-  }
-  const res = await fetch(`${SOURCE}/${name}`).catch(() => fetch(`${SOURCE}/${name}`));
-  if (!res.ok) throw new Error(`Download failed (${res.status})`);
-  const text = await res.text();
-  const data = JSON.parse(text) as T;
-  try {
-    file?.write(text);
-  } catch {}
-  return data;
-}
-
-export function loadStrongs(): Promise<StrongsData> {
-  if (loaded) return Promise.resolve(loaded);
-  pending ??= Promise.all([fetchJson<{ books: Tags }>('kjv-strongs.json'), fetchJson<Dict>('strongs.json')])
-    .then(([t, dict]) => {
-      if (t.books?.length !== 66) throw new Error('The download was incomplete.');
-      return (loaded = { tags: t.books, dict });
-    })
-    .finally(() => (pending = undefined));
-  return pending;
-}
-
+const strongsData = loader(() =>
+  Promise.all([studyFile<{ books: Tags }>('kjv-strongs.json'), studyFile<Dict>('strongs.json')]).then(([t, dict]) => {
+    if (t.books?.length !== 66) throw new Error('The download was incomplete.');
+    return { tags: t.books, dict };
+  }),
+);
+export const loadStrongs = strongsData.get;
 /** The Hebrew and Greek data; downloads it the first time (when `enabled`). */
-export function useStrongs(enabled = true) {
-  const [data, setData] = useState<StrongsData | undefined>(loaded);
-  const [error, setError] = useState('');
-  const [attempt, setAttempt] = useState(0);
-  useEffect(() => {
-    if (!enabled) return;
-    let live = true;
-    loadStrongs()
-      .then((d) => live && setData(d))
-      .catch(() => live && setError('Could not download the Hebrew and Greek words. Check your internet connection and try again.'));
-    return () => {
-      live = false;
-    };
-  }, [enabled, attempt]);
-  const retry = useCallback(() => { setError(''); setAttempt((a) => a + 1); }, []);
-  return { data, error, loading: enabled && !data && !error, retry };
-}
+export const useStrongs = (enabled = true) =>
+  strongsData.use(enabled, 'Could not download the Hebrew and Greek words. Check your internet connection and try again.');
