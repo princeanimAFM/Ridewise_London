@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BOOKS, NEW_TESTAMENT_START } from '@/content/bible';
 import { bookName, parseReference, reference, TRANSLATIONS, useBible, useBiblePrefs, useDownloads, useMarks, verseOfTheDay } from '@/lib/bible';
 import { applyPrefs, getPrefs, permissionStatus, supported } from '@/lib/notifications';
-import { Card, Screen, SectionHeader } from '@/components/ui';
+import { Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
-/** Bible home: translation, search, continue reading, verse of the day and the 66 books. */
+/** Bible home: continue reading first, then search, the study tools as tiles, verse of the day and the 66 books. */
 export default function BibleHome() {
   const t = useTheme();
   const prefs = useBiblePrefs();
@@ -16,6 +16,8 @@ export default function BibleHome() {
   useBible(prefs.translation); // loads the version so book names show in its language
   useDownloads();
   const [query, setQuery] = useState('');
+  const [testament, setTestament] = useState<'old' | 'new' | null>(null);
+  const shown = testament ?? (prefs.last && prefs.last.book >= NEW_TESTAMENT_START ? 'new' : 'old');
   // Offer the daily verse notification on phones where it is not on yet.
   const [verseReminder, setVerseReminder] = useState<'hidden' | 'offer' | 'on'>('hidden');
   useEffect(() => {
@@ -51,18 +53,49 @@ export default function BibleHome() {
     </View>
   );
 
+  // Where "Continue reading" goes: the last chapter read, or the start of the Bible.
+  const last = prefs.last;
+  const here = last ?? { book: 0, chapter: 1 };
+  const chapters = BOOKS[here.book]?.[2] ?? 1;
+  const progress = Math.min(1, here.chapter / chapters);
+  const openHere = () => router.push({ pathname: '/bible/read', params: { book: here.book, chapter: here.chapter } });
+
+  const tools: { icon: keyof typeof Ionicons.glyphMap; label: string; badge?: string; count?: number; to: Href }[] = [
+    { icon: 'school', label: 'Studies', to: '/bible/studies' },
+    { icon: 'map', label: 'Maps', to: '/bible/map' },
+    { icon: 'reader', label: 'Dictionary', to: '/bible/dictionary' },
+    { icon: 'library', label: 'Concordance', to: '/bible/concordance' },
+    { icon: 'bookmarks', label: 'My notes', count: saved, to: '/bible/saved' },
+    { icon: 'language', label: 'Version', badge: TRANSLATIONS[prefs.translation].short, to: '/bible/versions' },
+  ];
+
   return (
     <Screen>
-      <Card onPress={() => router.push('/bible/versions')} style={styles.continue}>
-        <View style={[styles.badge, { backgroundColor: t.primary }]}>
-          <Text style={{ color: '#FFFFFF', fontWeight: '800', fontSize: 11 }} numberOfLines={1}>{TRANSLATIONS[prefs.translation].short}</Text>
+      <Pressable
+        onPress={openHere}
+        accessibilityRole="button"
+        accessibilityLabel={`${last ? 'Continue reading' : 'Start reading'} ${reference(here.book, here.chapter)}`}
+        style={({ pressed }) => [styles.hero, { backgroundColor: t.primary }, pressed && { opacity: 0.92 }]}
+      >
+        <View style={styles.heroRow}>
+          <View style={styles.heroIcon}>
+            <Ionicons name="book" size={26} color={t.gold} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.kicker, { color: t.gold }]}>{last ? 'CONTINUE READING' : 'START READING'}</Text>
+            <Text style={styles.heroRef} numberOfLines={1}>{reference(here.book, here.chapter)}</Text>
+          </View>
+          <View style={[styles.heroGo, { backgroundColor: t.gold }]}>
+            <Ionicons name="arrow-forward" size={22} color={t.primary} />
+          </View>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }} numberOfLines={1}>{TRANSLATIONS[prefs.translation].name}</Text>
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>Change version · download for offline</Text>
+        <View style={styles.track}>
+          <View style={[styles.fill, { width: `${Math.max(4, progress * 100)}%`, backgroundColor: t.gold }]} />
         </View>
-        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-      </Card>
+        <Text style={[styles.heroSub, { color: t.onPrimaryMuted }]}>
+          Chapter {here.chapter} of {chapters} · {TRANSLATIONS[prefs.translation].short}
+        </Text>
+      </Pressable>
 
       <View style={[styles.search, { backgroundColor: t.surface, borderColor: t.border }]}>
         <Ionicons name="search" size={18} color={t.textMuted} />
@@ -82,60 +115,39 @@ export default function BibleHome() {
         )}
       </View>
 
-      <Card onPress={() => router.push('/bible/studies')} style={styles.continue}>
-        <Ionicons name="document-text-outline" size={22} color={t.accent} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Bible studies</Text>
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>Studies from the ministry on passages of the Bible</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-      </Card>
-
-      <Card onPress={() => router.push('/bible/map')} style={styles.continue}>
-        <Ionicons name="map-outline" size={22} color={t.accent} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Bible maps</Text>
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>Places of the Bible, Abraham, the Exodus and Paul’s journeys</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-      </Card>
-
-      <Card onPress={() => router.push('/bible/dictionary')} style={styles.continue}>
-        <Ionicons name="reader-outline" size={22} color={t.accent} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Bible dictionary</Text>
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>About 4,000 people, places, words and customs</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-      </Card>
-
-      <Card onPress={() => router.push('/bible/concordance')} style={styles.continue}>
-        <Ionicons name="library-outline" size={22} color={t.accent} />
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>Concordance</Text>
-          <Text style={{ color: t.textMuted, fontSize: 13 }}>Every place a word appears, and how many times</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-      </Card>
-
-      {prefs.last && (
-        <Card onPress={() => router.push({ pathname: '/bible/read', params: { book: prefs.last!.book, chapter: prefs.last!.chapter } })} style={styles.continue}>
-          <Ionicons name="bookmark-outline" size={22} color={t.accent} />
-          <View style={{ flex: 1 }}>
-            <Text style={{ color: t.textMuted, fontSize: 13 }}>Continue reading</Text>
-            <Text style={{ color: t.text, fontWeight: '700', fontSize: 16 }}>{reference(prefs.last.book, prefs.last.chapter)}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-        </Card>
-      )}
+      <View style={styles.tools}>
+        {tools.map((x) => (
+          <Pressable
+            key={x.label}
+            onPress={() => router.push(x.to)}
+            accessibilityRole="button"
+            accessibilityLabel={x.badge ? `${x.label}: ${x.badge}` : x.label}
+            style={({ pressed }) => [styles.tool, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.75 }]}
+          >
+            <View style={[styles.toolIcon, { backgroundColor: t.surfaceAlt }]}>
+              {x.badge ? (
+                <Text style={{ color: t.primary, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>{x.badge}</Text>
+              ) : (
+                <Ionicons name={x.icon} size={24} color={t.accent} />
+              )}
+              {!!x.count && (
+                <View style={[styles.count, { backgroundColor: t.primary }]}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '800' }}>{x.count > 99 ? '99+' : x.count}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={{ color: t.text, fontWeight: '600', fontSize: 13 }} numberOfLines={1}>{x.label}</Text>
+          </Pressable>
+        ))}
+      </View>
 
       <Pressable
         onPress={() => router.push({ pathname: '/bible/read', params: { book: votd.book, chapter: votd.chapter, verse: votd.verse } })}
-        style={({ pressed }) => [styles.votd, { backgroundColor: t.primary }, pressed && { opacity: 0.9 }]}
+        style={({ pressed }) => [styles.votd, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.9 }]}
       >
-        <Text style={[styles.kicker, { color: t.gold }]}>VERSE OF THE DAY</Text>
-        <Text style={styles.votdText}>“{votd.text}”</Text>
-        <Text style={[styles.votdRef, { color: t.onPrimaryMuted }]}>{votd.ref} · KJV</Text>
+        <Text style={[styles.kicker, { color: t.accent }]}>VERSE OF THE DAY</Text>
+        <Text style={[styles.votdText, { color: t.text }]}>“{votd.text}”</Text>
+        <Text style={[styles.votdRef, { color: t.textMuted }]}>{votd.ref} · KJV</Text>
       </Pressable>
       {verseReminder !== 'hidden' && (
         <Pressable onPress={remindMe} disabled={verseReminder === 'on'} style={styles.remind} hitSlop={6}>
@@ -146,33 +158,47 @@ export default function BibleHome() {
         </Pressable>
       )}
 
-      {saved > 0 && (
-        <Card onPress={() => router.push('/bible/saved')} style={styles.continue}>
-          <Ionicons name="color-wand-outline" size={22} color={t.accent} />
-          <Text style={{ color: t.text, fontWeight: '700', fontSize: 16, flex: 1 }}>My highlights, bookmarks & notes</Text>
-          <Text style={{ color: t.textMuted }}>{saved}</Text>
-          <Ionicons name="chevron-forward" size={20} color={t.textMuted} />
-        </Card>
-      )}
-
-      <SectionHeader title="Old Testament" />
-      {bookGrid(0, NEW_TESTAMENT_START)}
-      <SectionHeader title="New Testament" />
-      {bookGrid(NEW_TESTAMENT_START, BOOKS.length)}
+      <SectionHeader title="Books of the Bible" />
+      <View style={[styles.segment, { backgroundColor: t.surfaceAlt }]}>
+        {(['old', 'new'] as const).map((k) => (
+          <Pressable
+            key={k}
+            onPress={() => setTestament(k)}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: shown === k }}
+            style={[styles.segmentButton, shown === k && { backgroundColor: t.primary }]}
+          >
+            <Text style={{ color: shown === k ? '#FFFFFF' : t.text, fontWeight: '700' }}>{k === 'old' ? 'Old Testament' : 'New Testament'}</Text>
+          </Pressable>
+        ))}
+      </View>
+      {shown === 'old' ? bookGrid(0, NEW_TESTAMENT_START) : bookGrid(NEW_TESTAMENT_START, BOOKS.length)}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  badge: { minWidth: 48, height: 34, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 6 },
+  hero: { borderRadius: radius.lg, padding: space.md, marginBottom: space.md },
+  heroRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
+  heroIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)' },
+  heroRef: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 24, fontWeight: '700', marginTop: 2 },
+  heroGo: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  track: { height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.18)', marginTop: space.md, overflow: 'hidden' },
+  fill: { height: 6, borderRadius: 3 },
+  heroSub: { marginTop: 6, fontSize: 13, fontWeight: '600' },
   search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, marginBottom: space.md },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 12 },
-  continue: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, marginBottom: space.md },
-  votd: { borderRadius: radius.md, padding: space.md, marginBottom: space.md },
+  tools: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.sm, marginBottom: space.md },
+  tool: { width: '31.5%', alignItems: 'center', gap: 6, paddingVertical: space.md, paddingHorizontal: 4, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
+  toolIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  count: { position: 'absolute', top: -4, right: -8, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
+  votd: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: space.md, marginBottom: space.md },
   kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
-  votdText: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 18, lineHeight: 27, marginTop: space.sm },
+  votdText: { fontFamily: fonts.serif, fontSize: 18, lineHeight: 27, marginTop: space.sm },
   votdRef: { marginTop: space.sm, fontWeight: '600' },
   remind: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -space.sm, marginBottom: space.md, paddingHorizontal: 4 },
+  segment: { flexDirection: 'row', borderRadius: radius.md, padding: 4, marginBottom: space.md },
+  segmentButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm },
   books: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
   book: { width: '48.5%', paddingVertical: 12, paddingHorizontal: space.md, borderRadius: radius.sm, borderWidth: StyleSheet.hairlineWidth },
 });
