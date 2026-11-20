@@ -1,14 +1,13 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { router, type Href } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { BOOKS, NEW_TESTAMENT_START } from '@/content/bible';
-import { bookName, parseReference, reference, TRANSLATIONS, useBible, useBiblePrefs, useDownloads, useMarks, verseOfTheDay } from '@/lib/bible';
-import { applyPrefs, getPrefs, permissionStatus, supported } from '@/lib/notifications';
+import { bookName, parseReference, reference, TRANSLATIONS, useBible, useBiblePrefs, useDownloads, useMarks } from '@/lib/bible';
 import { Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
-/** Bible home: continue reading first, then search, the study tools as tiles, the 66 books and the verse of the day. */
+/** Bible home: continue reading first, then search, the study tools as tiles and the 66 books (the Verse of the Day is on Home). */
 export default function BibleHome() {
   const t = useTheme();
   const prefs = useBiblePrefs();
@@ -18,17 +17,6 @@ export default function BibleHome() {
   const [query, setQuery] = useState('');
   const [testament, setTestament] = useState<'old' | 'new' | null>(null);
   const shown = testament ?? (prefs.last && prefs.last.book >= NEW_TESTAMENT_START ? 'new' : 'old');
-  // Offer the daily verse notification on phones where it is not on yet.
-  const [verseReminder, setVerseReminder] = useState<'hidden' | 'offer' | 'on'>('hidden');
-  useEffect(() => {
-    if (!supported) return;
-    Promise.all([getPrefs(), permissionStatus()]).then(([p, status]) => setVerseReminder(p.dailyVerse && status === 'granted' ? 'hidden' : 'offer'));
-  }, []);
-  const remindMe = async () => {
-    const { granted } = await applyPrefs({ ...(await getPrefs()), prompted: true, dailyVerse: true });
-    setVerseReminder(granted ? 'on' : 'offer');
-  };
-  const votd = verseOfTheDay();
   const saved = Object.keys(marks).length;
 
   const go = () => {
@@ -156,23 +144,6 @@ export default function BibleHome() {
         ))}
       </View>
       {shown === 'old' ? bookGrid(0, NEW_TESTAMENT_START) : bookGrid(NEW_TESTAMENT_START, BOOKS.length)}
-
-      <Pressable
-        onPress={() => router.push({ pathname: '/bible/read', params: { book: votd.book, chapter: votd.chapter, verse: votd.verse } })}
-        style={({ pressed }) => [styles.votd, { marginTop: space.lg }, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.9 }]}
-      >
-        <Text style={[styles.kicker, { color: t.accent }]}>VERSE OF THE DAY</Text>
-        <Text style={[styles.votdText, { color: t.text }]}>“{votd.text}”</Text>
-        <Text style={[styles.votdRef, { color: t.textMuted }]}>{votd.ref} · KJV</Text>
-      </Pressable>
-      {verseReminder !== 'hidden' && (
-        <Pressable onPress={remindMe} disabled={verseReminder === 'on'} style={styles.remind} hitSlop={6}>
-          <Ionicons name={verseReminder === 'on' ? 'checkmark-circle' : 'notifications-outline'} size={18} color={t.accent} />
-          <Text style={{ color: t.accent, fontWeight: '700' }}>
-            {verseReminder === 'on' ? 'Done: you will get the Verse of the Day every morning' : 'Send me the Verse of the Day every morning'}
-          </Text>
-        </Pressable>
-      )}
     </Screen>
   );
 }
@@ -192,11 +163,7 @@ const styles = StyleSheet.create({
   tool: { width: '31.5%', alignItems: 'center', gap: 6, paddingVertical: space.md, paddingHorizontal: 4, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
   toolIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   count: { position: 'absolute', top: -4, right: -8, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
-  votd: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: space.md, marginBottom: space.md },
   kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
-  votdText: { fontFamily: fonts.serif, fontSize: 18, lineHeight: 27, marginTop: space.sm },
-  votdRef: { marginTop: space.sm, fontWeight: '600' },
-  remind: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: -space.sm, marginBottom: space.md, paddingHorizontal: 4 },
   segment: { flexDirection: 'row', borderRadius: radius.md, padding: 4, marginBottom: space.md },
   segmentButton: { flex: 1, alignItems: 'center', paddingVertical: 10, borderRadius: radius.sm },
   books: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm },
