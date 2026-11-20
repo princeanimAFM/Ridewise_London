@@ -2,6 +2,16 @@
 
 Ideas agreed with the owner, to build later. Nothing here is started or published until the owner says so.
 
+## Security follow-ups (from the 19 November 2026 review)
+- Church Care to its own address care.theafmchurch.org (separate GitHub Pages repo `afm-care`, DNS CNAME at the domain provider, add the address to the Supabase auth redirect list, then put `church-care/scripts/redirect.html` at theafmchurch.org/welcome/index.html and team.html; leaders sign in again and turn notifications on again; delete the old push subscriptions a week later).
+- HUB code to a private repository `afm-hub` (clean copy without history); then delete or empty the old public repo.
+- Give the pastor his own Church Care sign-in (his own email) and take the shared church mailbox off the guide card; prayer requests to the pastor's WhatsApp instead of the church mailbox.
+- Turn on Expo "enhanced push security": create an Expo access token, add it as the Supabase secret `EXPO_ACCESS_TOKEN`, then switch the setting on.
+- Next Play build (9.0.1): EAS Update code signing; test photo picking before also blocking the old storage permissions.
+- Later: double opt-in for the newsletter; an in-app "delete my account" (Google Play policy); CAPTCHA on sign-in and the public forms; a "forget this person" function and retention rules in Church Care; admins with two-step sign-in; move Church Care to its own Supabase project owned by a church account, with a counts-only Support role.
+- Replace the Supabase legacy JWT secret with the new API keys and signing keys (a staged job: update the app, website and Church Care first, then retire the old key).
+- Delete the Supabase access token created on 19 November once the database work is finished.
+
 ## Version 9 (Play Store), started 18 November 2026
 - Done: Expo SDK 58 / React Native 0.88 (the app now displays edge-to-edge on Android 15; Play still shows a "recommended" note about deprecated edge-to-edge APIs inside React Native 0.88, expo-image-picker's crop screen and Google libraries, which clears when those are updated); app version 9.0.0 (new runtime, so
   over-the-air updates for version 8 phones stay separate until they update).
