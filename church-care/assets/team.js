@@ -137,7 +137,14 @@
 
   /* ---------- start / sign in ---------- */
   function start() {
-    $('signout').onclick = function () { Store.signOut().then(function () { location.reload(); }); };
+    $('signout').onclick = function () {
+      var done = function () { Store.signOut().then(function () { location.reload(); }, function () { location.reload(); }); };
+      // Switch this phone's notifications off first, so the next person to use it doesn't get this person's updates.
+      if (Store.mode === 'demo' || !('serviceWorker' in navigator)) return done();
+      swReg().then(function (reg) { return reg.pushManager.getSubscription(); })
+        .then(function (sub) { return sub ? Store.dropPush(sub.endpoint).then(function () { return sub.unsubscribe(); }) : null; })
+        .then(done, done);
+    };
     if (Store.mode === 'demo') {
       $('demo-roles').hidden = false;
       $('banner').innerHTML = '<div class="banner"><b>Preview</b> with sample people. Nothing leaves this phone. <button class="back" id="reset">Reset</button> · <a href="team.html?signin=1">See the sign-in screen</a></div>';

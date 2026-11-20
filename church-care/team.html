@@ -2,6 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-masokasvALXFfPyT09+yRkHnIQfqSroN/fJbhRGN3i0=' 'sha256-gjZQrQ1ROl/LN+lI5qLT+7PhDEQH2L+WSyGJjdkOmnY='; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://huxvyimncwbeqnsugszm.supabase.co wss://huxvyimncwbeqnsugszm.supabase.co; worker-src 'self'; manifest-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'">
+<style id="afm-frame">html{display:none}</style>
+<script>if(self===top){var s=document.getElementById('afm-frame');s.parentNode.removeChild(s)}else{top.location=self.location}</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Church Care · The AFM Church</title>
 <meta name="robots" content="noindex">
@@ -45,7 +48,7 @@
 <div class="veil" id="veil"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
 <div class="toast" id="toast" role="status"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="assets/supabase-2.45.4.js"></script>
 <script src="assets/config.js"></script>
 <script src="assets/common.js"></script>
 <script src="assets/messages.js"></script>

@@ -113,3 +113,12 @@ Serve the folder (for example `python3 -m http.server`) and open `team.html`; sw
 The forms record consent with a timestamp and explain who sees the details. Records are kept while someone is part
 of the church; the pastor deletes a record (with its notes and prayer requests) when someone asks.
 Leaders' phone numbers are never shown publicly.
+
+## Security fixes (20 November 2026)
+`supabase/patch-2026-11-20-security.sql` (already applied; `schema.sql` has the same code): leaders can no longer link members to
+other groups by typing a sign-in email or phone number (only `accept_invite` sets them), invite links expire after 30 days, headcounts
+use `care.stats_key` (a phone typed by a leader is never used to share attendance or replies between groups), the growth figures no
+longer carry a reversible key, lock-screen notifications carry no names or reasons, and a push address can only be taken over by the
+browser that holds its secret. The web pages load their own copy of supabase-js (`assets/supabase-2.45.4.js`, the exact npm file), carry a
+content-security policy, blank themselves when framed by another site (`team.html`), and sign-out also switches the phone's notifications off.
+Rebuild the practice copy after changing the pages: `python3 scripts/make-practice.py church-care <afm-church>/welcome/practice`.

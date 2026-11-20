@@ -285,8 +285,17 @@ create trigger note_author before insert on care.visitor_notes for each row exec
 
 create or replace function care.member_rules() returns trigger language plpgsql security definer set search_path = care, public as $$
 begin
-  -- a leader's own edits stay in their group (not updates the database makes for them, such as "last seen" in another group)
-  if care.my_role() = 'leader' and pg_trigger_depth() = 1 then new.group_id := care.my_group(); end if;
+  -- A leader's own edits stay in their group (not updates the database makes for them, such as "last seen" in another group).
+  -- A leader can never set or change a member's sign-in links: only accept_invite (when the person joins) sets them.
+  -- Otherwise a leader could attach someone from another group by typing their email or phone number.
+  if care.my_role() = 'leader' and pg_trigger_depth() = 1 and current_setting('care.invite', true) is distinct from '1' then
+    new.group_id := care.my_group();
+    if tg_op = 'INSERT' then
+      new.login_phone := null; new.login_email := null; new.joined_app_at := null;
+    else
+      new.login_phone := old.login_phone; new.login_email := old.login_email; new.joined_app_at := old.joined_app_at;
+    end if;
+  end if;
   new.name := btrim(new.name);
   return new;
 end $$;
@@ -366,6 +375,10 @@ create trigger update_last_seen after insert or delete on care.attendance for ea
 -- One person can be in more than one group (the choir and a fellowship, say): each group has its own entry for them.
 -- They are the same person when they share a sign-in, or the same phone number.
 create or replace function care.person_key(m care.members) returns text language sql immutable as $$
+  select coalesce(m.login_phone, m.login_email, m.id::text)
+$$;
+-- For headcounts only (never for sharing anything between groups): a typed phone number also counts as the same person.
+create or replace function care.stats_key(m care.members) returns text language sql immutable as $$
   select coalesce(m.login_phone, m.login_email, care.intl_phone(m.phone), m.id::text)
 $$;
 create or replace function care.same_person(p_member uuid) returns setof uuid language sql stable security definer set search_path = care, public as $$
@@ -585,7 +598,7 @@ begin
     return t;
   elsif p_kind = 'member' then
     if not coalesce(care.has_area('groups') or (r = 'leader' and care.my_group() = p_group), false) then raise exception 'You can only invite people to your own group'; end if;
-    select token into t from care.invites where group_id = p_group and kind = 'member' and not revoked order by created_at desc limit 1;
+    select token into t from care.invites where group_id = p_group and kind = 'member' and not revoked and created_at >= now() - interval '30 days' order by created_at desc limit 1;
     if t is null then insert into care.invites (kind, group_id, created_by) values ('member', p_group, coalesce(care.my_name(), '')) returning token into t; end if;
     return t;
   end if;
@@ -603,7 +616,7 @@ end $$;
 -- What an invite link is for, shown before signing in. Says nothing private.
 create or replace function care.invite_info(p_token text) returns jsonb language sql stable security definer set search_path = care, public as $$
   select jsonb_build_object('kind', i.kind, 'group', g.name, 'tag', g.tag, 'leader', g.leader_name,
-    'valid', not i.revoked and (i.kind = 'member' or i.used_at is null))
+    'valid', not i.revoked and i.created_at >= now() - interval '30 days' and (i.kind = 'member' or i.used_at is null))
   from care.invites i join care.groups g on g.id = i.group_id where i.token = p_token
 $$;
 
@@ -613,7 +626,7 @@ declare i care.invites; ph text := care.my_login_phone(); em text := care.my_log
 begin
   if ph is null and em is null then raise exception 'Please sign in first'; end if;
   select * into i from care.invites where token = p_token for update;
-  if i.token is null or i.revoked then raise exception 'This invite link is no longer valid. Ask for a new one.'; end if;
+  if i.token is null or i.revoked or i.created_at < now() - interval '30 days' then raise exception 'This invite link is no longer valid. Ask for a new one.'; end if;
   if i.kind = 'leader' then
     if i.used_at is not null then raise exception 'This invite link has already been used. Ask the pastor for a new one.'; end if;
     if st.id is not null and st.role in ('pastor', 'pa') then raise exception 'You are already on the team as %', st.role; end if;
@@ -627,6 +640,7 @@ begin
     return jsonb_build_object('kind', 'leader', 'group_id', i.group_id);
   end if;
   -- member: link to an existing entry the leader made with the same number, or add them
+  perform set_config('care.invite', '1', true);
   select id into mid from care.members where group_id = i.group_id
     and ((login_phone is not null and login_phone = ph) or (login_email is not null and login_email = em));
   if mid is null and ph is not null then
@@ -640,6 +654,7 @@ begin
     insert into care.members (name, phone, group_id, login_phone, login_email, joined_app_at)
     values (n, coalesce(case when ph is not null then '+' || ph end, ''), i.group_id, ph, em, now()) returning id into mid;
   end if;
+  perform set_config('care.invite', '', true);
   return jsonb_build_object('kind', 'member', 'group_id', i.group_id);
 end $$;
 
@@ -716,8 +731,10 @@ begin
   if r is null or r not in ('pastor', 'pa', 'leader') then raise exception 'You don''t have access to the growth figures'; end if;
   return jsonb_build_object(
     'scope', case when g is null then 'church' else 'group' end, 'group', g, 'today', current_date,
-    'members', coalesce((select jsonb_agg(jsonb_build_array(m.group_id, m.joined_at, m.joined_app_at is not null, m.last_seen, left(md5(care.person_key(m)), 12)))
-                         from care.members m where g is null or m.group_id = g), '[]'::jsonb),
+    -- the last item says who is the same person (a number, not anything that could be turned back into a phone number)
+    'members', coalesce((select jsonb_agg(jsonb_build_array(x.group_id, x.joined_at, x.on_app, x.last_seen, x.who))
+                         from (select m.group_id, m.joined_at, m.joined_app_at is not null as on_app, m.last_seen, dense_rank() over (order by care.stats_key(m)) as who
+                               from care.members m where g is null or m.group_id = g) x), '[]'::jsonb),
     'visitors', coalesce((select jsonb_agg(jsonb_build_array(v.assigned_to, v.created_at::date, v.status, v.due, v.reached_at))
                           from care.visitors v where g is null or v.assigned_to = g), '[]'::jsonb),
     'attendance', coalesce((select jsonb_agg(jsonb_build_array(x.group_id, x.seen_on, x.kind, x.n)) from (
@@ -726,7 +743,7 @@ begin
                               group by 1, 2, 3) x), '[]'::jsonb),
     -- the same, counting each person once however many groups they are in
     'people_attendance', coalesce((select jsonb_agg(jsonb_build_array(x.seen_on, x.kind, x.n)) from (
-                              select a.seen_on, a.kind, count(distinct care.person_key(m)) as n from care.attendance a join care.members m on m.id = a.member_id
+                              select a.seen_on, a.kind, count(distinct care.stats_key(m)) as n from care.attendance a join care.members m on m.id = a.member_id
                               where a.seen_on >= since and a.kind in ('sunday', 'tuesday', 'friday', 'online') and (g is null or m.group_id = g)
                               group by 1, 2) x), '[]'::jsonb),
     'prayers', coalesce((select jsonb_agg(jsonb_build_array(p.assigned_to, p.to_pastor, p.created_at::date, p.status))
@@ -771,7 +788,8 @@ begin
   else raise exception 'Please join your group first'; end if;
   if p_endpoint !~ '^https://' then raise exception 'That notification address doesn''t look right'; end if;
   insert into care.push_subs (endpoint, staff_id, member_login, p256dh, auth) values (p_endpoint, st, ml, p_p256dh, p_auth)
-  on conflict (endpoint) do update set staff_id = excluded.staff_id, member_login = excluded.member_login, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now();
+  on conflict (endpoint) do update set staff_id = excluded.staff_id, member_login = excluded.member_login, p256dh = excluded.p256dh, auth = excluded.auth, created_at = now()
+    where care.push_subs.auth = excluded.auth;   -- knowing the address is not enough: you need the subscription's secret too
 end $$;
 create or replace function care.drop_push(p_endpoint text) returns void language sql security definer set search_path = care, public as $$
   delete from care.push_subs where endpoint = p_endpoint
@@ -810,7 +828,7 @@ begin
       if pr.kind = 'test' then
         msg := 'Notifications are working. You''ll get a short update after each service.';
       elsif s.role in ('pastor', 'pa') then
-        select count(distinct care.person_key(m)) into pres from care.attendance a join care.members m on m.id = a.member_id
+        select count(distinct care.stats_key(m)) into pres from care.attendance a join care.members m on m.id = a.member_id
           where a.seen_on = p_day and a.kind = pr.kind and a.program_id is not distinct from pr.id;
         select array_agg(g.name order by g.sort) into unmarked from care.groups g
           where exists (select 1 from care.members m where m.group_id = g.id)
@@ -833,7 +851,7 @@ begin
           where m.group_id = s.group_id and (m.joined_at <= p_day or a.member_id is not null);
         select count(*) into todo from care.visitors v where v.assigned_to = s.group_id and v.status = 'new';
         msg := pres || ' of ' || total || ' from ' || coalesce((select name from care.groups where id = s.group_id), 'your group') || ' marked present.'
-          || case when missed is not null then ' Not marked: ' || care.name_list(missed) || '.' else '' end
+          || case when missed is not null then ' ' || array_length(missed, 1) || ' not marked yet. Tap to see who.' else '' end
           || case when todo > 0 then ' ' || todo || ' visitor' || case when todo = 1 then '' else 's' end || ' to contact.' else '' end;
       else
         continue;
@@ -962,9 +980,10 @@ begin
       if why is null and came is null then continue; end if;
       endpoint := s.ep; p256dh := s.k1; auth := s.k2;
       title := pr.label || ', ' || to_char(p_day, 'FMDay FMDD Mon') || ': members replied';
-      body := case when why is not null then 'Couldn''t come: ' || care.name_list(why) || '.' else '' end
-           || case when why is not null and came is not null then ' ' else '' end
-           || case when came is not null then 'Said they came: ' || care.name_list(came) || '. Please check and mark them present if they were there.' else '' end;
+      -- no names or reasons on the lock screen: they are shown inside the signed-in app
+      body := case when why is not null then array_length(why, 1) || case when array_length(why, 1) = 1 then ' member' else ' members' end || ' told you why they couldn''t come. ' else '' end
+           || case when came is not null then array_length(came, 1) || ' said they came: please check and mark them present if they were there. ' else '' end
+           || 'Tap to see.';
       url := 'team.html#after=' || pr.kind || '|' || p_day || coalesce('|' || pr.id, '');
       return next;
     end loop;
