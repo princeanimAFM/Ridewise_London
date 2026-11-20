@@ -4,10 +4,14 @@ import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { BackendComingSoon } from './ComingSoon';
 import { Notice } from './form';
+import { SecondStep } from './TwoStep';
 import { Screen, Title } from './ui';
 import { space, useTheme } from '@/theme';
 
-/** Shows its children only to the signed-in owner/admin; with `ownerOnly`, only to the owner accounts. */
+/**
+ * Shows its children only to the signed-in owner/admin, after two-step sign-in; with `ownerOnly`, only to the owner
+ * accounts. The database enforces all of this; the app only shows what would work.
+ */
 export function RequireOwner({ title, children, ownerOnly }: { title: string; children: ReactNode; ownerOnly?: boolean }) {
   const t = useTheme();
   const { session, profile, isOwner, loading } = useAuth();
@@ -21,13 +25,16 @@ export function RequireOwner({ title, children, ownerOnly }: { title: string; ch
       </Screen>
     );
   }
-  if (ownerOnly && !isOwner) {
-    return (
-      <Screen>
-        <Title>{title}</Title>
-        <Notice kind="info">Only the owner accounts can change this. Ask the owner if something here needs to change.</Notice>
-      </Screen>
-    );
-  }
-  return <>{children}</>;
+  return (
+    <SecondStep title={title}>
+      {ownerOnly && !isOwner ? (
+        <Screen>
+          <Title>{title}</Title>
+          <Notice kind="info">Only the owner accounts can change this. Ask the owner if something here needs to change.</Notice>
+        </Screen>
+      ) : (
+        children
+      )}
+    </SecondStep>
+  );
 }

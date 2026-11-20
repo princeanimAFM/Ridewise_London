@@ -10,6 +10,7 @@ import { formatDate } from '@/lib/links';
 import { parseClock } from '@/lib/serviceTime';
 import { BackendComingSoon } from '@/components/ComingSoon';
 import { LiveControl } from '@/components/LiveControl';
+import { SecondStep } from '@/components/TwoStep';
 import { Field, Notice, Toggle } from '@/components/form';
 import { Artwork, Body, Button, Screen, SectionHeader, Title } from '@/components/ui';
 import { radius, space, useTheme } from '@/theme';
@@ -17,8 +18,17 @@ import { radius, space, useTheme } from '@/theme';
 type Counts = { total: number; email: number; sms: number; push: number };
 type Picked = { uri: string; mimeType?: string | null; fileName?: string | null };
 
-/** Owner dashboard: upload a flyer, let AI write the message, send to subscribers. */
+/** Owner dashboard, after two-step sign-in. */
 export default function Admin() {
+  return (
+    <SecondStep title="Owner dashboard">
+      <OwnerDashboard />
+    </SecondStep>
+  );
+}
+
+/** Owner dashboard: upload a flyer, let AI write the message, send to subscribers. */
+function OwnerDashboard() {
   const t = useTheme();
   const { session, profile, isOwner, loading } = useAuth();
 

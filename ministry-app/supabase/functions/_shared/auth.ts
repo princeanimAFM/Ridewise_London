@@ -27,16 +27,22 @@ export function adminClient(): SupabaseClient {
   });
 }
 
-/** Returns the signed-in caller if they are the owner/admin, otherwise null. */
+/**
+ * Returns the signed-in caller if they are an owner/admin, otherwise null. The database's own is_admin() decides, asked as
+ * the caller, so the same rule applies here as everywhere else (including two-step sign-in for admins).
+ */
 export async function requireAdmin(req: Request): Promise<{ id: string } | null> {
   const authHeader = req.headers.get('Authorization') ?? '';
   const token = authHeader.replace(/^Bearer\s+/i, '');
   if (!token) return null;
-  const db = adminClient();
-  const { data, error } = await db.auth.getUser(token);
+  const { data, error } = await adminClient().auth.getUser(token);
   if (error || !data.user) return null;
-  const { data: profile } = await db.from('profiles').select('is_admin').eq('id', data.user.id).single();
-  return profile?.is_admin ? { id: data.user.id } : null;
+  const asCaller = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+    auth: { persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data: ok, error: rpcError } = await asCaller.rpc('is_admin');
+  return !rpcError && ok === true ? { id: data.user.id } : null;
 }
 
 export function publicUrl(bucket: string, path: string) {
