@@ -11,9 +11,18 @@ import { createClient } from 'npm:@supabase/supabase-js@2.45.4';
 
 const KINDS = ['sunday', 'tuesday', 'friday', 'online', 'special', 'test', 'missed', 'reasons', 'report_due', 'report_check'];
 
+/** Compares two secrets without leaking, through timing, how much of them matched. */
+function safeEqual(a: string, b: string): boolean {
+  const enc = new TextEncoder();
+  const x = enc.encode(a), y = enc.encode(b);
+  let diff = x.length ^ y.length;
+  for (let i = 0; i < Math.max(x.length, y.length); i++) diff |= (x[i] ?? 0) ^ (y[i] ?? 0);
+  return diff === 0;
+}
+
 Deno.serve(async (req) => {
   const secret = Deno.env.get('CARE_CRON_SECRET');
-  if (!secret || req.headers.get('x-care-cron') !== secret) return new Response('Not allowed', { status: 401 });
+  if (!secret || !safeEqual(req.headers.get('x-care-cron') ?? '', secret)) return new Response('Not allowed', { status: 401 });
   let kind = '', daysAgo = 0;
   try { const b = await req.json(); kind = b.kind; daysAgo = Math.min(7, Math.max(0, Number(b.days_ago) || 0)); } catch { /* no body */ }
   if (!KINDS.includes(kind)) return new Response('Unknown service', { status: 400 });

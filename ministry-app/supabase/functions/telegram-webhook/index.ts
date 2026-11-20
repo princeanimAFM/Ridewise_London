@@ -14,7 +14,7 @@
  *   3. Open <project>.supabase.co/functions/v1/telegram-webhook?setup=<TELEGRAM_WEBHOOK_SECRET>
  *      once in a browser. It registers this function with Telegram and reports the result.
  */
-import { adminClient, json } from '../_shared/auth.ts';
+import { adminClient, json, safeEqual } from '../_shared/auth.ts';
 import { sendPush } from '../_shared/push.ts';
 
 const env = (k: string) => Deno.env.get(k) ?? '';
@@ -91,10 +91,10 @@ Deno.serve(async (req) => {
   if (!secret) return json({ error: 'Add the TELEGRAM_WEBHOOK_SECRET secret first.' }, 500);
 
   if (req.method === 'GET') {
-    return new URL(req.url).searchParams.get('setup') === secret ? await setup() : json({ error: 'Not found' }, 404);
+    return safeEqual(new URL(req.url).searchParams.get('setup') ?? '', secret) ? await setup() : json({ error: 'Not found' }, 404);
   }
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
-  if (req.headers.get('x-telegram-bot-api-secret-token') !== secret) return json({ error: 'Unauthorized' }, 401);
+  if (!safeEqual(req.headers.get('x-telegram-bot-api-secret-token') ?? '', secret)) return json({ error: 'Unauthorized' }, 401);
 
   // From here on always answer 200, or Telegram keeps re-sending the same post.
   let update: { channel_post?: Message };
