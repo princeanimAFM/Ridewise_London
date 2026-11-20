@@ -14,5 +14,6 @@ def edit(rel, pairs):
 edit('assets/team.js', [('<b>Preview</b> with sample people. Nothing leaves this phone.',
                          '<b>Practice mode</b> with sample people. Nothing here is real, and nothing you do is saved for anyone else.')])
 edit('team.html', [('<title>Church Care · The AFM Church</title>', '<title>Practice · Church Care</title>')])
-edit('index.html', [('<title>Welcome · The AFM Church</title>', '<title>Practice · Church Care</title>\n<meta name="robots" content="noindex">')])
+edit('index.html', [('<title>Welcome · The AFM Church</title>', '<title>Practice · Church Care</title>'),
+                    ('<meta name="robots" content="noai, noimageai">', '<meta name="robots" content="noindex, noai, noimageai">')])
 print('practice copy rebuilt in', dst)
