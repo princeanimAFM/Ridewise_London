@@ -152,7 +152,7 @@
       demoRoles();
       $('role').onchange = function () { Store.setRole(this.value); S.tab = 'overview'; S.groupId = null; S.missed = null; closeSheet(); signedIn(); };
       Store.subscribe(reload);
-      if (inviteToken()) { $('demo-roles').hidden = true; $('banner').innerHTML = '<div class="banner"><b>Preview</b> of an invite link. No real code is sent; type any 6 digits.</div>'; return inviteFlow(inviteToken()); }
+      if (inviteToken()) { $('demo-roles').hidden = true; $('banner').innerHTML = '<div class="banner"><b>Preview</b> of an invite link. No real code is sent; type any digits.</div>'; return inviteFlow(inviteToken()); }
       if (/[?&]signin/.test(location.search)) { $('demo-roles').hidden = true; return signInScreen(); }
       return signedIn();
     }
@@ -183,7 +183,7 @@
       '<button class="btn wide blue" type="submit">Send me a sign-in code</button></form>' +
       (ways.google && Store.google ? '<div id="g-wrap"><p class="meta" style="text-align:center;margin:12px 0 8px">or</p><button class="btn wide alt" type="button" id="g-btn">' +
         '<svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3.1l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg> Continue with Google</button></div>' : '') +
-      '<form id="f-code" hidden><p>We sent a 6-digit code to <b id="sent-to"></b>.</p>' +
+      '<form id="f-code" hidden><p>We sent a sign-in code to <b id="sent-to"></b>.</p>' +
       '<div class="field"><label for="code">Code</label><input id="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="10" style="font-size:1.4rem;letter-spacing:.3em;text-align:center"></div>' +
       '<button class="btn wide blue" type="submit">Sign in</button> <button class="back" type="button" id="again">Send to a different number or email</button></form>' +
       '<div id="sign-msg"></div></div>';
@@ -626,17 +626,40 @@
   var seenSent = {};
 
   /* ---------- invite links ---------- */
-  S.links = {}; S.leaderLinks = {}; var linkBusy = {};
+  // Links work for 12 hours (the database decides). S.linkEnds: token → when it stops working, on this phone's clock.
+  S.links = {}; S.leaderLinks = {}; S.linkEnds = {}; var linkBusy = {}, linkTried = {}, HOUR = 3600000;
   function inviteToken() { var m = /[?&]invite=([a-z0-9]{8,64})/i.exec(location.search) || /#invite-([a-z0-9]{8,64})/i.exec(location.hash); return m ? m[1] : null; }
   function appUrl() { return location.href.split('#')[0].split('?')[0]; }
   function inviteUrl(t) { return appUrl() + '?invite=' + t; }
+  /** Asks the database how long a new link has left (in seconds, so a phone with the wrong time still gets it right). */
+  function withEnd(t) {
+    function guess() { S.linkEnds[t] = Date.now() + 6 * HOUR; return t; } // a link the app is given always has at least 6 hours left
+    return Store.inviteInfo(t).then(function (info) {
+      if (!info || typeof info.seconds_left !== 'number') return guess();
+      S.linkEnds[t] = Date.now() + info.seconds_left * 1000; return t;
+    }, guess);
+  }
+  /** True when the link has more than an hour left. */
+  function linkFresh(t) { return !!t && (S.linkEnds[t] || 0) - Date.now() > HOUR; }
+  function linkGone(t) { return !t || (S.linkEnds[t] || 0) <= Date.now(); }
+  function untilText(t) {
+    return new Date(S.linkEnds[t] || Date.now()).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
+  }
+  function signInWays() {
+    var w = C.signIn || { email: true }, ways = [];
+    if (w.whatsapp) ways.push('your WhatsApp number');
+    if (w.email || !ways.length) ways.push('your email');
+    if (w.google) ways.push('your Google account');
+    return ways.length > 1 ? ways.slice(0, -1).join(', ') + ' or ' + ways[ways.length - 1] : ways[0];
+  }
   function memberInviteText(g, t) {
     return 'You are invited to join ' + g.name + ' on The AFM Church app 🙏\n' +
-      'Tap the link and sign in with your WhatsApp number. You will see our group and our leader, and you can send prayer requests.\n' + inviteUrl(t);
+      'Tap the link and sign in with ' + signInWays() + '. You will see our group and our leader, and you can send prayer requests.\n' +
+      'The link works until ' + untilText(t) + '.\n' + inviteUrl(t);
   }
   function leaderInviteText(g, t) {
     return 'Hello' + (g.leader_name ? ' ' + g.leader_name : '') + ', ' + C.pastor + ' has invited you to lead ' + g.name + ' on The AFM Church app. ' +
-      'Tap the link and sign in with your WhatsApp number. You will go straight to your group:\n' + inviteUrl(t);
+      'Tap the link and sign in with ' + signInWays() + '. You will go straight to your group. The link works until ' + untilText(t) + ':\n' + inviteUrl(t);
   }
   function shareLink(text) { return 'https://wa.me/?text=' + encodeURIComponent(text); }
   function linkBox(url, text, extra) {
@@ -645,33 +668,47 @@
       '<a class="btn sm wa" href="' + esc(shareLink(text)) + '" target="_blank" rel="noopener">💬 Send on WhatsApp</a>' + (extra || '') +
       (Store.mode === 'demo' ? '<a class="btn sm alt" href="' + esc(url) + '">▶ Try the link (preview)</a>' : '') + '</div>';
   }
+  /** Fetches the group's join link when there is none or it has an hour or less left (at most once a minute). */
   function getMemberLink(gid) {
-    if (S.links[gid] || linkBusy[gid]) return;
-    linkBusy[gid] = true;
-    Store.createInvite(gid, 'member').then(function (t) { S.links[gid] = t; linkBusy[gid] = false; render(); }, function (e) { linkBusy[gid] = false; fail(e); });
+    if (linkBusy[gid] || Date.now() - (linkTried[gid] || 0) < 60000) return;
+    linkBusy[gid] = true; linkTried[gid] = Date.now();
+    Store.createInvite(gid, 'member').then(withEnd).then(function (t) { S.links[gid] = t; linkBusy[gid] = false; render(); }, function (e) { linkBusy[gid] = false; fail(e); });
   }
   function inviteCard(gid) {
     var g = group(gid), t = S.links[gid];
     if (!g || !(can('groups') || isLeader())) return '';
-    if (!t) getMemberLink(gid);
+    if (!linkFresh(t)) { getMemberLink(gid); if (linkGone(t)) t = null; }
     var ms = S.members.filter(function (m) { return m.group_id === gid; }), on = ms.filter(function (m) { return m.joined_app_at; }).length;
     return '<div class="card top green"><div class="kicker">Invite your group</div>' +
       '<h3 style="font-size:1.1rem;color:var(--navy-800);margin:4px 0 2px">' + on + ' of ' + ms.length + (ms.length === 1 ? ' member is' : ' members are') + ' on the app</h3>' +
-      '<p class="meta" style="margin:0 0 6px">Send this link to your group\'s WhatsApp, or to each member. When they join, they see only this group.</p>' +
+      '<p class="meta" style="margin:0 0 6px">Send this link to your group\'s WhatsApp, or to each member. When they join, they see only this group.' +
+      (t ? ' It works until <b>' + esc(untilText(t)) + '</b>. After that, open this page again for a new one.' : '') + '</p>' +
       (t ? linkBox(inviteUrl(t), memberInviteText(g, t), '<button class="btn sm alt" data-reset-link="' + gid + '">New link</button>') : '<p class="meta">Making the link…</p>') + '</div>';
   }
   function sheetLeaderLink(gid) {
     var g = group(gid), t = S.leaderLinks[gid];
     if (!g) return null;
-    if (!t && !linkBusy['L' + gid]) {
-      linkBusy['L' + gid] = true;
-      Store.createInvite(gid, 'leader').then(function (tok) { S.leaderLinks[gid] = tok; linkBusy['L' + gid] = false; openSheet('leaderlink:' + gid, true); }, function (e) { linkBusy['L' + gid] = false; fail(e); });
+    if (!linkFresh(t)) { delete S.leaderLinks[gid]; t = null; }
+    if (!t && !linkBusy['L' + gid] && Date.now() - (linkTried['L' + gid] || 0) > 60000) {
+      linkBusy['L' + gid] = true; linkTried['L' + gid] = Date.now();
+      Store.createInvite(gid, 'leader').then(withEnd).then(function (tok) { S.leaderLinks[gid] = tok; linkBusy['L' + gid] = false; if (S.sheet === 'leaderlink:' + gid) openSheet(S.sheet, true); },
+        function (e) { linkBusy['L' + gid] = false; fail(e); });
     }
     return '<button class="back" data-open="team">‹ Team & groups</button><h2>Invite a leader</h2>' +
-      '<p>For <b>' + esc(g.name) + '</b>. Send this link to ' + esc(g.leader_name || 'the leader') + '. When they open it and sign in with their WhatsApp number, they become this group\'s leader and see only this group.</p>' +
+      '<p>For <b>' + esc(g.name) + '</b>. Send this link to ' + esc(g.leader_name || 'the leader') + '. When they open it and sign in, they become this group\'s leader and see only this group.</p>' +
       (t ? linkBox(inviteUrl(t), leaderInviteText(g, t)) : '<p class="meta">Making the link…</p>') +
-      '<p class="meta">The link works once, for one person. Making a new link cancels this one.</p>';
+      '<p class="meta">The link works once, for one person, until ' + (t ? '<b>' + esc(untilText(t)) + '</b>' : '12 hours after it is made') + '. Making a new link cancels this one.</p>';
   }
+  // Coming back to the app after a while: links that ran out are replaced the next time they are shown.
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState !== 'visible' || !S.me) return;
+    var stale = Object.keys(S.links).some(function (g) { return !linkFresh(S.links[g]); });
+    Object.keys(S.leaderLinks).forEach(function (g) { if (!linkFresh(S.leaderLinks[g])) { delete S.leaderLinks[g]; stale = true; } });
+    if (!stale) return;
+    linkTried = {};
+    if (S.sheet && /^leaderlink:/.test(S.sheet)) openSheet(S.sheet, true);
+    render();
+  });
 
   /* ---------- joining from an invite link ---------- */
   function inviteFlow(token) {
@@ -680,7 +717,7 @@
     $('main').innerHTML = '<p class="empty">Opening your invite…</p>';
     Store.inviteInfo(token).then(function (info) {
       if (!info || !info.valid) {
-        $('main').innerHTML = '<div class="card top red" style="margin-top:16px"><h3 style="color:var(--navy-800)">This link no longer works</h3><p>It may have been used already or replaced by a new one. Ask ' +
+        $('main').innerHTML = '<div class="card top red" style="margin-top:16px"><h3 style="color:var(--navy-800)">This link no longer works</h3><p>Links work for 12 hours, and may have been used already or replaced by a new one. Ask ' +
           (info && info.kind === 'leader' ? 'the pastor' : 'your group leader') + ' to send you a new link.</p></div>';
         return;
       }
@@ -920,7 +957,7 @@
     return h + ms.map(function (m) {
       var a = attended(m.id, S.day, S.kind, pid), w = weeksAway(m);
       return '<div class="card"><div class="row">' + avatar(m.name) + '<div class="grow tap" data-open="member:' + m.id + '" style="cursor:pointer"><div class="name">' + esc(m.name) + '</div>' +
-        '<div class="meta">' + (m.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : (m.phone && S.links[m.group_id] ? '<a class="pill new" href="' + esc(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(group(m.group_id), S.links[m.group_id]))) + '" target="_blank" rel="noopener">💬 Invite to the app</a> ' : '')) +
+        '<div class="meta">' + (m.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : (m.phone && linkFresh(S.links[m.group_id]) ? '<a class="pill new" href="' + esc(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(group(m.group_id), S.links[m.group_id]))) + '" target="_blank" rel="noopener">💬 Invite to the app</a> ' : '')) +
         statsText(m) + (w >= C.awayWeeks ? ' · <b style="color:var(--red)">away ' + w + ' weeks</b>' : '') + '</div></div>' +
         '<div style="text-align:right"><button class="btn sm ' + (a ? 'on' : 'alt') + '" data-present="' + m.id + '" aria-pressed="' + !!a + '">' + (a ? '✓ Present' : 'Present') + '</button>' +
         (a && a.by_self ? '<div class="meta" style="margin-top:3px">said they came</div>' : '') + '</div></div></div>';
@@ -1417,11 +1454,11 @@
       try { navigator.clipboard.writeText(d.copy).then(done, function () { Care.toast('Press and hold the link to copy it.'); }); } catch (x) { Care.toast('Press and hold the link to copy it.'); }
     } else if (d.resetLink) {
       ask('Make a new join link? The old link will stop working for anyone who hasn\'t joined yet.', function () {
-        Store.resetInvite(d.resetLink).then(function (t) { S.links[d.resetLink] = t; Care.toast('New link ready.'); render(); }, fail);
+        Store.resetInvite(d.resetLink).then(withEnd).then(function (t) { S.links[d.resetLink] = t; Care.toast('New link ready.'); render(); }, fail);
       });
     } else if (d.inviteOne) {
       var m = S.members.filter(function (x) { return x.id === d.inviteOne; })[0], g = group(m.group_id), t = S.links[m.group_id];
-      if (!t) return Care.toast('One moment, the link is still being made.');
+      if (!linkFresh(t)) { getMemberLink(m.group_id); return Care.toast('One moment, making a fresh link.'); }
       window.open(Care.waLink(m.phone, 'Hello ' + Care.first(m.name) + '! ' + memberInviteText(g, t)), '_blank', 'noopener');
     }
   }, true);

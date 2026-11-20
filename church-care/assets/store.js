@@ -105,6 +105,8 @@
     try { role = localStorage.getItem(KEY + '-role') || 'pastor'; } catch (e) { /* not kept */ }
     function uid() { return 'd' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
     function now() { return new Date().toISOString(); }
+    var LINK_HOURS = 12; // invite links stop working after this, as in the database
+    function linkAge(i) { return (Date.now() - Date.parse(i.created_at)) / 3600000; }
     function read() {
       try { var s = JSON.parse(localStorage.getItem(KEY)); if (s && s.visitors && s.groups) return s; } catch (e) { /* private window */ }
       return seed();
@@ -352,7 +354,8 @@
             data.invites.forEach(function (i) { if (i.group_id === group && i.kind === 'leader' && !i.used_at) i.revoked = true; });
           } else {
             check(has(m, 'groups') || (m.role === 'leader' && m.group_id === group));
-            var ex = data.invites.filter(function (i) { return i.group_id === group && i.kind === 'member' && !i.revoked; })[0];
+            // like the database: reuse the group's link only while it has at least half its time left
+            var ex = data.invites.filter(function (i) { return i.group_id === group && i.kind === 'member' && !i.revoked && linkAge(i) < LINK_HOURS / 2; })[0];
             if (ex) return ex.token;
           }
           var t = (uid() + uid()).replace(/[^a-z0-9]/g, '').slice(0, 32);
@@ -368,15 +371,16 @@
       inviteInfo: function (token) {
         var i = find('invites', 'token', token);
         if (!i) return Promise.resolve(null);
-        var g = find('groups', 'id', i.group_id) || {};
-        return Promise.resolve({ kind: i.kind, group: g.name, tag: g.tag, leader: g.leader_name, valid: !i.revoked && (i.kind === 'member' || !i.used_at) });
+        var g = find('groups', 'id', i.group_id) || {}, left = Math.max(0, Math.floor((LINK_HOURS - linkAge(i)) * 3600));
+        return Promise.resolve({ kind: i.kind, group: g.name, tag: g.tag, leader: g.leader_name, valid: !i.revoked && left > 0 && (i.kind === 'member' || !i.used_at),
+          expires_at: new Date(Date.parse(i.created_at) + LINK_HOURS * 3600000).toISOString(), seconds_left: left });
       },
       // target: the WhatsApp number or email they signed in with (preview only; live uses the sign-in itself)
       acceptInvite: function (token, name, target) {
         var self = this;
         return Promise.resolve().then(function () {
           var i = find('invites', 'token', token);
-          if (!i || i.revoked) throw new Error('This invite link is no longer valid. Ask for a new one.');
+          if (!i || i.revoked || linkAge(i) >= LINK_HOURS) throw new Error('This invite link is no longer valid. Ask for a new one.');
           var login = /@/.test(target) ? target.toLowerCase() : Care.intl(target);
           if (!name) throw new Error('Please enter your name');
           if (i.kind === 'leader') {

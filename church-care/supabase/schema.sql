@@ -586,7 +586,11 @@ begin
     (select name from care.members where (login_phone = ph or login_email = em) order by joined_app_at limit 1), 'groups', gs);
 end $$;
 
--- Make (or fetch) an invite link token.
+-- How long an invite link works.
+create or replace function care.invite_hours() returns int language sql immutable as $$ select 12 $$;
+revoke all on function care.invite_hours() from public, anon, authenticated;
+
+-- Make (or fetch) an invite link token. A group's join link is reused only while it has at least half its time left.
 create or replace function care.create_invite(p_group text, p_kind text) returns text language plpgsql security definer set search_path = care, public as $$
 declare r text := care.my_role(); t text;
 begin
@@ -598,7 +602,8 @@ begin
     return t;
   elsif p_kind = 'member' then
     if not coalesce(care.has_area('groups') or (r = 'leader' and care.my_group() = p_group), false) then raise exception 'You can only invite people to your own group'; end if;
-    select token into t from care.invites where group_id = p_group and kind = 'member' and not revoked and created_at >= now() - interval '30 days' order by created_at desc limit 1;
+    select token into t from care.invites where group_id = p_group and kind = 'member' and not revoked
+      and created_at >= now() - make_interval(hours => care.invite_hours()) / 2 order by created_at desc limit 1;
     if t is null then insert into care.invites (kind, group_id, created_by) values ('member', p_group, coalesce(care.my_name(), '')) returning token into t; end if;
     return t;
   end if;
@@ -613,10 +618,13 @@ begin
   return care.create_invite(p_group, 'member');
 end $$;
 
--- What an invite link is for, shown before signing in. Says nothing private.
+-- What an invite link is for, shown before signing in, and when it stops working. Says nothing private.
 create or replace function care.invite_info(p_token text) returns jsonb language sql stable security definer set search_path = care, public as $$
   select jsonb_build_object('kind', i.kind, 'group', g.name, 'tag', g.tag, 'leader', g.leader_name,
-    'valid', not i.revoked and i.created_at >= now() - interval '30 days' and (i.kind = 'member' or i.used_at is null))
+    'valid', not i.revoked and i.created_at >= now() - make_interval(hours => care.invite_hours()) and (i.kind = 'member' or i.used_at is null),
+    'expires_at', i.created_at + make_interval(hours => care.invite_hours()),
+    -- counted here, so a phone with the wrong time still knows how long the link has left
+    'seconds_left', greatest(0, floor(extract(epoch from i.created_at + make_interval(hours => care.invite_hours()) - now())))::int)
   from care.invites i join care.groups g on g.id = i.group_id where i.token = p_token
 $$;
 
@@ -626,7 +634,7 @@ declare i care.invites; ph text := care.my_login_phone(); em text := care.my_log
 begin
   if ph is null and em is null then raise exception 'Please sign in first'; end if;
   select * into i from care.invites where token = p_token for update;
-  if i.token is null or i.revoked or i.created_at < now() - interval '30 days' then raise exception 'This invite link is no longer valid. Ask for a new one.'; end if;
+  if i.token is null or i.revoked or i.created_at < now() - make_interval(hours => care.invite_hours()) then raise exception 'This invite link is no longer valid. Ask for a new one.'; end if;
   if i.kind = 'leader' then
     if i.used_at is not null then raise exception 'This invite link has already been used. Ask the pastor for a new one.'; end if;
     if st.id is not null and st.role in ('pastor', 'pa') then raise exception 'You are already on the team as %', st.role; end if;
