@@ -20,7 +20,7 @@ type Picked = { uri: string; mimeType?: string | null; fileName?: string | null 
 /** Owner dashboard: upload a flyer, let AI write the message, send to subscribers. */
 export default function Admin() {
   const t = useTheme();
-  const { session, profile, loading } = useAuth();
+  const { session, profile, isOwner, loading } = useAuth();
 
   const [counts, setCounts] = useState<Counts | null>(null);
   const [recent, setRecent] = useState<Announcement[]>([]);
@@ -193,7 +193,7 @@ export default function Admin() {
       <Body muted style={{ marginTop: space.xs }}>Books, perfumes, quotes, giving details, links, service times and the theme.</Body>
       <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.sm }}>
         <Button label="Subscribers" icon="people-circle-outline" variant="outline" onPress={() => router.push('/subscribers')} style={{ flex: 1 }} />
-        <Button label="Admins" icon="people-outline" variant="outline" onPress={() => router.push('/admins')} style={{ flex: 1 }} />
+        {isOwner && <Button label="Admins" icon="people-outline" variant="outline" onPress={() => router.push('/admins')} style={{ flex: 1 }} />}
       </View>
 
       <SectionHeader title="Live service" />

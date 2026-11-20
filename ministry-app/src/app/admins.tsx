@@ -11,7 +11,7 @@ type Admin = { email: string; first_name: string | null; is_owner: boolean; is_m
 /** Admins: add or remove people who can use the Owner dashboard. */
 export default function Admins() {
   return (
-    <RequireOwner title="Admins">
+    <RequireOwner title="Admins" ownerOnly>
       <AdminList />
     </RequireOwner>
   );

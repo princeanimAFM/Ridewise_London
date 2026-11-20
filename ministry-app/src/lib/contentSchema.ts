@@ -53,6 +53,9 @@ const linkFields: FieldDef[] = [
   { key: 'description', label: 'Small text under the name', placeholder: 'e.g. @thebrandafm' },
 ];
 
+/** Areas only the owner accounts can change (the database enforces it): giving details and contact/settings. */
+export const OWNER_ONLY_SECTIONS = ['giving', 'details'];
+
 export const sections: Section[] = [
   {
     key: 'books',

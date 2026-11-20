@@ -10,6 +10,8 @@ export type Profile = { first_name: string | null; last_name: string | null; pho
 type AuthContext = {
   session: Session | null;
   profile: Profile | null;
+  /** True for the owner accounts (managing admins, giving and contact details). The database enforces this; the app only hides what wouldn't work. */
+  isOwner: boolean;
   loading: boolean;
   refreshProfile: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
@@ -38,12 +40,21 @@ export function completeGoogleSignIn(code: string) {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isOwner, setIsOwner] = useState(false);
   const [loading, setLoading] = useState(!!supabase);
 
   const loadProfile = useCallback(async (s: Session | null) => {
-    if (!supabase || !s) return setProfile(null);
+    if (!supabase || !s) {
+      setIsOwner(false);
+      return setProfile(null);
+    }
     const { data } = await supabase.from('profiles').select('first_name, last_name, phone, is_admin, avatar_url').eq('id', s.user.id).maybeSingle();
-    setProfile((data as Profile) ?? { first_name: null, last_name: null, phone: null, is_admin: false, avatar_url: null });
+    const p = (data as Profile) ?? { first_name: null, last_name: null, phone: null, is_admin: false, avatar_url: null };
+    setProfile(p);
+    if (p.is_admin) {
+      const { data: owner } = await supabase.rpc('is_owner');
+      setIsOwner(owner === true);
+    } else setIsOwner(false);
   }, []);
 
   useEffect(() => {
@@ -82,6 +93,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const value: AuthContext = {
     session,
     profile,
+    isOwner,
     loading,
     refreshProfile: () => loadProfile(session),
     signInWithGoogle,

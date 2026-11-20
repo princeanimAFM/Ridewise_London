@@ -7,7 +7,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { RequireOwner } from '@/components/RequireOwner';
 import { Field, Notice, Toggle } from '@/components/form';
 import { Artwork, Body, Button, Chip, Screen, SectionHeader, Title } from '@/components/ui';
-import { type FieldDef, type ListSection, type ObjectSection, sections } from '@/lib/contentSchema';
+import { type FieldDef, type ListSection, OWNER_ONLY_SECTIONS, type ObjectSection, sections } from '@/lib/contentSchema';
 import { resetContent, saveContent } from '@/lib/contentSync';
 import { editableValue, imageFrom } from '@/lib/liveContent';
 import { friendlyError, storageUrl, uploadPickedImage } from '@/lib/supabase';
@@ -21,7 +21,7 @@ export default function EditSection() {
   const def = sections.find((s) => s.key === section);
   if (!def) return <Screen><Body>Not found.</Body></Screen>;
   return (
-    <RequireOwner title={def.title}>
+    <RequireOwner title={def.title} ownerOnly={OWNER_ONLY_SECTIONS.includes(def.key)}>
       <Stack.Screen options={{ title: def.title }} />
       {def.type === 'list' ? <ListEditor def={def} /> : <ObjectEditor def={def} />}
     </RequireOwner>

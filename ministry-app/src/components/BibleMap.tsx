@@ -51,11 +51,14 @@ export function BibleMap({ hash, selected, onPlace, style }: { hash: string; sel
   return (
     <View style={[styles.frame, { backgroundColor: t.surfaceAlt }, style]}>
       {Platform.OS === 'web'
-        ? createElement('iframe', { ref: setFrame, src: `${MAP_PAGE}#${hash}`, title: 'Bible map', style: { width: '100%', height: '100%', border: 0 } })
+        ? createElement('iframe', { ref: setFrame, src: `${MAP_PAGE}#${hash}`, title: 'Bible map', sandbox: 'allow-scripts allow-same-origin', style: { width: '100%', height: '100%', border: 0 } })
         : (
           <WebView
             ref={web}
             source={{ uri: `${MAP_PAGE}#${first}` }}
+            // The map page may not send the view anywhere else (a fake sign-in page, say).
+            originWhitelist={['https://theafmchurch.org']}
+            onShouldStartLoadWithRequest={(r: { url: string }) => r.url.startsWith('https://theafmchurch.org/bible/map/')}
             style={{ flex: 1, backgroundColor: 'transparent' }}
             onMessage={(e: { nativeEvent: { data: string } }) => receive(e.nativeEvent.data)}
             onError={() => setState('error')}

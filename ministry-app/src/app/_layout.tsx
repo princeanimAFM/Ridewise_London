@@ -6,6 +6,7 @@ import { AuthProvider } from '@/lib/auth';
 import { maybeAskForReview } from '@/lib/review';
 import { refreshNotifications, supported as notificationsSupported } from '@/lib/notifications';
 import { syncContent } from '@/lib/contentSync';
+import { notificationTarget } from '@/lib/notificationRoutes';
 import { UpdatePrompt } from '@/components/UpdatePrompt';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
@@ -21,11 +22,11 @@ export default function RootLayout() {
     if (!notificationsSupported) return;
     // Tapping a notification opens the matching screen.
     const open = (response: Notifications.NotificationResponse | null) => {
-      const url = response?.notification.request.content.data?.url;
-      if (typeof url !== 'string') return;
-      if (url.startsWith('/')) router.push(url as never);
-      // Telegram posts and other outside links open in their own app (t.me opens Telegram).
-      else if (/^https:\/\//.test(url)) Linking.openURL(url).catch(() => {});
+      const target = notificationTarget(response?.notification.request.content.data?.url);
+      if (!target) return;
+      if (target.kind === 'screen') router.push(target.path as never);
+      // Telegram posts and a few trusted sites open in their own app (t.me opens Telegram).
+      else Linking.openURL(target.url).catch(() => {});
     };
     open(Notifications.getLastNotificationResponse());
     const sub = Notifications.addNotificationResponseReceivedListener(open);

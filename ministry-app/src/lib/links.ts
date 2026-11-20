@@ -2,10 +2,17 @@ import { Alert, Linking, Platform, Share } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { liveMinistry as ministry } from './liveContent';
 
+/** The kinds of link the app will open. Anything else (javascript:, data:, file:, intent: ...) is refused. */
+export const isSafeLink = (url: string) => /^(https?:|mailto:|tel:|sms:|whatsapp:|market:)/i.test(url.trim());
+
 /** Opens a link: web pages in an in-app browser, everything else (mailto, whatsapp, apps) externally. */
 export async function openLink(url: string | undefined) {
   if (!url) {
     Alert.alert('Coming soon', 'This link has not been added yet.');
+    return;
+  }
+  if (!isSafeLink(url)) {
+    Alert.alert('Unable to open link', 'This kind of link can\'t be opened from the app.');
     return;
   }
   try {

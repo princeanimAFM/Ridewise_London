@@ -12,6 +12,7 @@
  */
 import { adminClient, corsHeaders, json, publicUrl, requireAdmin } from '../_shared/auth.ts';
 import { liveBrand } from '../_shared/liveBrand.ts';
+import { sendPush } from '../_shared/push.ts';
 import { type Brand, renderEmail, renderSms } from '../_shared/newsletter.ts';
 
 type Subscriber = { id: string; first_name: string; email: string | null; phone: string | null; unsubscribe_token: string };
@@ -46,37 +47,6 @@ async function sendSms(to: string, body: string) {
     body: form,
   });
   if (!res.ok) throw new Error(`SMS ${res.status}: ${(await res.text()).slice(0, 200)}`);
-}
-
-/** Sends push notifications through Expo (100 per request). Returns sent/failed and dead tokens. */
-async function sendPush(tokens: string[], title: string, body: string) {
-  let sent = 0, failed = 0;
-  const dead: string[] = [];
-  for (let i = 0; i < tokens.length; i += 100) {
-    const batch = tokens.slice(i, i + 100);
-    const res = await fetch('https://exp.host/--/api/v2/push/send', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        accept: 'application/json',
-        ...(env('EXPO_ACCESS_TOKEN') ? { Authorization: `Bearer ${env('EXPO_ACCESS_TOKEN')}` } : {}),
-      },
-      body: JSON.stringify(batch.map((to) => ({ to, title, body, sound: 'default', channelId: 'default', data: { url: '/announcements' } }))),
-    });
-    if (!res.ok) {
-      failed += batch.length;
-      continue;
-    }
-    const { data } = (await res.json()) as { data: { status: string; details?: { error?: string } }[] };
-    data.forEach((ticket, j) => {
-      if (ticket.status === 'ok') sent++;
-      else {
-        failed++;
-        if (ticket.details?.error === 'DeviceNotRegistered') dead.push(batch[j]);
-      }
-    });
-  }
-  return { sent, failed, dead };
 }
 
 /** Runs `task` over `items` with at most `limit` running at once. */
@@ -189,7 +159,7 @@ Deno.serve(async (req) => {
       if (!data || data.length < 1000) break;
     }
     const body = (a.sms_text && a.sms_text.trim()) || a.body.replace(/\s+/g, ' ').slice(0, 170);
-    const push = await sendPush(tokens, a.title, body);
+    const push = await sendPush(tokens, a.title, body, '/announcements');
     results.pushSent = push.sent;
     results.pushFailed = push.failed;
     if (push.dead.length) await db.from('push_tokens').delete().in('token', push.dead);
