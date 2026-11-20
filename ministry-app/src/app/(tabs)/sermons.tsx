@@ -4,6 +4,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { ministry } from '@/content/ministry';
 import { useEpisodes } from '@/lib/podcast';
+import { useSermonsPhoto } from '@/lib/homePhoto';
 import { sermonsByDate } from '@/lib/content';
 import { ArchiveCard } from '@/components/ArchiveCard';
 import { PhotoHero } from '@/components/PhotoHero';
@@ -17,6 +18,7 @@ const PAGE = 30;
 
 export default function Sermons() {
   const t = useTheme();
+  const photo = useSermonsPhoto();
   const { episodes, loading, error, refresh } = useEpisodes();
   const [query, setQuery] = useState('');
   const [limit, setLimit] = useState(PAGE);
@@ -28,7 +30,7 @@ export default function Sermons() {
 
   return (
     <Screen>
-      <PhotoHero source={ministry.photos.sermons} height={250} position="top" style={styles.hero}>
+      <PhotoHero source={photo} height={250} position="top" style={styles.hero}>
         <Text style={[styles.kicker, { color: t.gold }]}>{ministry.podcast.title.toUpperCase()}</Text>
         <Text style={styles.heroTitle}>Sermons & Teachings</Text>
         <Text style={[styles.heroSub, { color: t.onPrimaryMuted }]}>{episodes.length ? `${episodes.length} messages to play in the app` : '500+ audio messages'}</Text>
