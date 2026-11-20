@@ -164,12 +164,105 @@
     Store.session().then(function (session) {
       if (!session) return signInScreen();
       $('signout').hidden = false;
-      return Store.me(session).then(function (me) {
-        if (!me) return notOnTeam(session.user.email || (session.user.phone ? '+' + session.user.phone : 'This account'));
-        if (!S.me) Store.subscribe(reload);
-        signedIn(me);
+      return Store.twoStep().then(function (two) {
+        // the app is set up: its code is needed before anything opens
+        if (two.factor && two.level !== 'aal2') return twoStepCode(two.factor, boot);
+        return Store.me(session).then(function (me) {
+          if (me && me.kind === 'second_step') return two.factor ? twoStepCode(two.factor, boot) : twoStepSetup({ required: true });
+          if (!me) return notOnTeam(session.user.email || (session.user.phone ? '+' + session.user.phone : 'This account'));
+          // team members who haven't set it up yet are asked each time the app opens, until the date it becomes needed
+          if (me.kind === 'staff' && me.second_step === 'due' && !S.twoStepLater) return twoStepSetup({ required: false, until: me.second_step_from });
+          if (!S.me) Store.subscribe(reload);
+          signedIn(me);
+        });
       });
     }).catch(fail);
+  }
+
+  /* ---------- two-step sign-in (an authenticator app) ---------- */
+  function codeField(id) {
+    return '<div class="field"><label for="' + id + '">6-digit code from the app</label><input id="' + id + '" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" ' +
+      'style="font-size:1.4rem;letter-spacing:.3em;text-align:center" required></div>';
+  }
+  function codeValue(id) { return $(id).value.replace(/\D/g, ''); }
+  /** After the email code or Google: the code from the authenticator app. */
+  function twoStepCode(factor, then) {
+    $('nav').hidden = true; $('fab').hidden = true;
+    $('hello').textContent = 'One more step'; $('sub').textContent = C.church;
+    $('main').innerHTML = '<div class="card top" style="margin-top:16px"><div class="kicker">2-step sign-in</div>' +
+      '<p>Open your authenticator app (Google Authenticator or Microsoft Authenticator) and type the code it shows for <b>AFM Church Care</b>.</p>' +
+      '<form id="f-2s">' + codeField('code-2s') + '<button class="btn wide blue" type="submit">Continue</button></form><div id="msg-2s"></div>' +
+      '<p class="meta" style="margin-top:14px">Lost your phone or deleted the app? Ask ' + esc(C.pastor) + ' to reset your 2-step sign-in, then sign in again ' +
+      '(the pastor asks the person who looks after the app). <button class="back" type="button" id="out-2s">Sign out</button></p></div>';
+    $('code-2s').focus();
+    $('f-2s').onsubmit = function (e) {
+      e.preventDefault();
+      var c = codeValue('code-2s'), b = this.querySelector('button');
+      if (c.length !== 6) return Care.toast('Type the 6 digits the app shows.');
+      b.disabled = true;
+      Store.twoStepVerify(factor, c).then(function () { (then || boot)(); }, function () {
+        b.disabled = false; $('code-2s').value = '';
+        $('msg-2s').innerHTML = '<div class="banner bad">That code didn\'t work. The code changes every 30 seconds: type the one showing now.</div>';
+      });
+    };
+    $('out-2s').onclick = function () { $('signout').click(); };
+  }
+  function dayText(iso) { return iso ? new Date(iso).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }) : 'soon'; }
+  /** Setting up the authenticator app. required: no "Not now". */
+  function twoStepSetup(opts) {
+    $('nav').hidden = true; $('fab').hidden = true;
+    $('hello').textContent = 'Protect your account'; $('sub').textContent = C.church;
+    var demo = Store.mode === 'demo', key = null;
+    $('main').innerHTML = '<div class="card top gold" style="margin-top:16px"><div class="kicker">2-step sign-in</div>' +
+      '<h3 style="font-size:1.15rem;color:var(--navy-800);margin:4px 0">Add a second step to your sign-in</h3>' +
+      '<p style="margin:6px 0 0">Church Care holds people\'s names, phone numbers and prayer requests. With 2-step sign-in you also type a code from an app on your phone, ' +
+      'so no one else can open your account, even if they get into your email.</p>' +
+      (opts.required ? '<p class="meta" style="margin:8px 0 0">Everyone on the church team needs this to open Church Care. It takes about 2 minutes, once.</p>' : '') + '</div>' +
+      '<div class="card"><b>1. Install a free authenticator app</b><p class="meta" style="margin:4px 0 8px">Google Authenticator or Microsoft Authenticator. Skip this if you already have one.</p>' +
+      '<div class="actions" style="margin:0"><a class="btn sm alt" href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" target="_blank" rel="noopener">Android</a>' +
+      '<a class="btn sm alt" href="https://apps.apple.com/app/google-authenticator/id388497605" target="_blank" rel="noopener">iPhone</a></div></div>' +
+      '<div class="card" id="add-2s"><b>2. Add Church Care to the app</b><p class="meta">Making your key…</p></div>' +
+      '<form class="card" id="f-2s"><b>3. Type the code the app now shows</b>' + codeField('code-2s') +
+      '<button class="btn wide blue" type="submit">Turn on 2-step sign-in</button><div id="msg-2s"></div></form>' +
+      (opts.required ? '<p class="meta" style="text-align:center"><button class="back" type="button" id="out-2s">Sign out</button></p>'
+        : '<div class="actions" style="justify-content:center"><button class="btn alt" type="button" id="later-2s">Not now</button></div>' +
+          '<p class="meta" style="text-align:center">From ' + esc(dayText(opts.until)) + ' you will need it to open Church Care.</p>');
+    Store.twoStepStart().then(function (k) {
+      key = k;
+      var spaced = k.secret.replace(/(.{4})/g, '$1 ').trim();
+      $('add-2s').innerHTML = '<b>2. Add Church Care to the app</b>' +
+        '<div class="actions"><a class="btn sm blue" ' + (k.uri && !demo ? 'href="' + esc(k.uri) + '"' : 'href="#" data-practice-2s') + '>➕ Add to my authenticator app</a>' +
+        '<button class="btn sm alt" type="button" data-copy-key="' + esc(k.secret) + '">📋 Copy key</button></div>' +
+        '<p class="meta" style="margin:0">If the button doesn\'t open the app: in the app tap <b>+</b>, choose <b>Enter a setup key</b>, paste the key and choose <b>Time based</b>. Your key:</p>' +
+        '<p style="margin:4px 0 0;font:600 1.05rem/1.5 ui-monospace,Menlo,Consolas,monospace;letter-spacing:.04em;user-select:all">' + esc(spaced) + '</p>' +
+        (k.qr ? '<details style="margin-top:8px"><summary class="meta">Setting it up on another phone? Scan this</summary>' +
+          '<img src="' + esc(k.qr) + '" alt="QR code for the authenticator app" width="200" height="200" style="background:#fff;padding:8px;border-radius:8px;margin-top:8px"></details>' : '');
+    }, function (e) { $('add-2s').innerHTML = '<b>2. Add Church Care to the app</b><div class="banner bad">' + esc(Care.errText(e)) + '</div>'; });
+    $('f-2s').onsubmit = function (e) {
+      e.preventDefault();
+      if (!key) return Care.toast('One moment, the key is still being made.');
+      var c = codeValue('code-2s'), b = this.querySelector('button');
+      if (c.length !== 6) return Care.toast('Type the 6 digits the app shows.');
+      b.disabled = true;
+      Store.twoStepVerify(key.id, c).then(function () {
+        Care.toast('2-step sign-in is on. Thank you!');
+        if (opts.done) return opts.done();
+        boot();
+      }, function () {
+        b.disabled = false; $('code-2s').value = '';
+        $('msg-2s').innerHTML = '<div class="banner bad">That code didn\'t work. Check that you added Church Care in the app, then type the code showing now (it changes every 30 seconds).</div>';
+      });
+    };
+    if ($('later-2s')) $('later-2s').onclick = function () { S.twoStepLater = true; if (opts.done) return opts.done(); boot(); };
+    if ($('out-2s')) $('out-2s').onclick = function () { $('signout').click(); };
+    $('main').onclick = function (e) {
+      var c = e.target.closest('[data-copy-key]'), p = e.target.closest('[data-practice-2s]');
+      if (p) { e.preventDefault(); Care.toast('Practice mode: in the real app this opens your authenticator app.'); }
+      if (c) {
+        var ok = function () { Care.toast('Key copied. Paste it in the authenticator app.'); };
+        try { navigator.clipboard.writeText(c.dataset.copyKey).then(ok, function () { Care.toast('Press and hold the key to copy it.'); }); } catch (x) { Care.toast('Press and hold the key to copy it.'); }
+      }
+    };
   }
   function signInScreen(opts) {
     opts = opts || {};
@@ -222,7 +315,10 @@
     };
     $('f-code').onsubmit = function (e) {
       e.preventDefault();
-      Store.verify(how, target, $('code').value.trim()).then(opts.onDone ? function () { opts.onDone(target); } : Store.mode === 'demo' ? function () { location.href = 'team.html'; } : boot, function () { $('sign-msg').innerHTML = '<div class="banner bad">That code didn\'t work. Check it, or send a new one.</div>'; });
+      Store.verify(how, target, $('code').value.trim()).then(opts.onDone ? function () { opts.onDone(target); } : Store.mode === 'demo' ? function () {
+        // practice: show the two-step set-up screen the team will see, then the app
+        twoStepSetup({ required: false, until: new Date(Date.now() + 7 * 864e5).toISOString(), done: function () { location.href = 'team.html'; } });
+      } : boot, function () { $('sign-msg').innerHTML = '<div class="banner bad">That code didn\'t work. Check it, or send a new one.</div>'; });
     };
     $('again').onclick = function () {
       $('f-start').hidden = false; $('f-code').hidden = true; $('f-start').querySelector('button').disabled = false;
@@ -740,9 +836,13 @@
             function (err) { $('join-msg').innerHTML = '<div class="banner bad">' + esc(Care.errText(err)) + '</div>'; });
         };
       }
+      // someone who already uses 2-step sign-in types the app's code before joining
+      function secondStepFirst(then) {
+        return Store.twoStep().then(function (two) { if (two.factor && two.level !== 'aal2') return twoStepCode(two.factor, then); then(); }, function () { then(); });
+      }
       Store.session().then(function (session) {
-        if (session && Store.mode !== 'demo') { $('signout').hidden = false; return nameStep(); }
-        signInScreen({ intro: intro, onDone: nameStep });
+        if (session && Store.mode !== 'demo') { $('signout').hidden = false; return secondStepFirst(nameStep); }
+        signInScreen({ intro: intro, onDone: function (target) { secondStepFirst(function () { nameStep(target); }); } });
       });
     }, fail);
   }
@@ -1178,12 +1278,16 @@
     var url = location.href.split('#')[0].split('?')[0];
     var order = { pastor: 0, pa: 1, leader: 2, welcome: 3 };
     var people = S.staff.slice().sort(function (a, b) { return order[a.role] - order[b.role] || a.name.localeCompare(b.name); });
-    return '<h2>Team & groups</h2><p class="meta">Only people on the team list can sign in, at <b>' + esc(url) + '</b>, with a code sent to their WhatsApp or email. ' +
-      'Group leaders see only their own group.</p>' +
+    teamTwoStep();
+    var two = S.twoStepOn || {};
+    return '<h2>Team & groups</h2><p class="meta">Only people on the team list can sign in, at <b>' + esc(url) + '</b>, with ' + signInWays().replace(/your /g, 'their ') + '. ' +
+      'Everyone on the team also uses 2-step sign-in: a code from an authenticator app on their phone. Group leaders see only their own group.</p>' +
       '<div class="banner ok">To bring a leader in, tap <b>Invite leader</b> on their group below and send them the link. They choose their own sign-in.</div>' +
       '<h2 class="sec">Team</h2>' + people.map(function (x) {
         return '<div class="card tap" data-open="staff:' + x.id + '"><div class="row">' + avatar(x.name) + '<div class="grow"><div class="name">' + esc(x.name) + '</div>' +
-          '<div class="meta">' + esc(roleText(x)) + '</div><div class="meta">' + (x.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : '<span class="pill new">Not joined yet</span> ') + esc([x.phone ? '+' + x.phone : '', x.email || ''].filter(Boolean).join(' · ')) + '</div></div><span class="meta">Edit ›</span></div></div>';
+          '<div class="meta">' + esc(roleText(x)) + '</div><div class="meta">' + (x.joined_app_at ? '<span class="pill reached">📱 On the app</span> ' : '<span class="pill new">Not joined yet</span> ') +
+          (!S.twoStepOn ? '' : two[x.id] ? '<span class="pill reached">🔐 2-step on</span> ' : x.joined_app_at ? '<span class="pill new">2-step not set up</span> ' : '') +
+          esc([x.phone ? '+' + x.phone : '', x.email || ''].filter(Boolean).join(' · ')) + '</div></div><span class="meta">Edit ›</span></div></div>';
       }).join('') +
       '<div class="actions"><button class="btn" data-act="new-staff">+ Add a leader, PA or helper</button></div>' +
       '<h2 class="sec">Groups</h2>' + S.groups.map(function (g) {
@@ -1212,7 +1316,27 @@
         return '<label class="check" style="margin-bottom:6px"><input type="checkbox" name="ns-area" value="' + a[0] + '"' + (areas.indexOf(a[0]) >= 0 ? ' checked' : '') + '><span><b>' + a[1] + '</b><br>' + a[2] + '</span></label>';
       }).join('') + '<p class="meta">Only you can change the team list.</p></div>' +
       '<div class="actions"><button class="btn" type="submit">' + (x ? 'Save changes' : 'Add to the team') + '</button></div></form>' +
+      (x ? twoStepCard(x) : '') +
       (x && x.id !== S.me.id ? '<div class="actions" style="margin-top:18px"><button class="btn sm danger" data-del-staff="' + x.id + '">Remove from the team</button></div>' : '');
+  }
+  /** The pastor sees who has 2-step sign-in on (loaded when the team list opens, at most once a minute). */
+  function teamTwoStep() {
+    if (!isPastor() || S.twoStepBusy || (S.twoStepOn && Date.now() - S.twoStepAt < 60000)) return;
+    S.twoStepBusy = true;
+    Store.twoStepTeam().then(function (rows) {
+      S.twoStepOn = {}; S.twoStepAt = Date.now(); S.twoStepBusy = false;
+      (rows || []).forEach(function (r) { S.twoStepOn[r.staff_id] = r.since; });
+      if (S.sheet && /^(team|staff:)/.test(S.sheet)) openSheet(S.sheet, true);
+    }, function () { S.twoStepBusy = false; });
+  }
+  function twoStepCard(x) {
+    if (!isPastor()) return '';
+    teamTwoStep();
+    var on = S.twoStepOn && S.twoStepOn[x.id];
+    return '<div class="card" style="margin-top:16px"><b>🔐 2-step sign-in</b><p class="meta" style="margin:4px 0 0">' +
+      (!S.twoStepOn ? 'Checking…' : on ? 'On since ' + esc(dayText(on)) + '.' : 'Not set up yet. They are asked to set it up when they open Church Care.') + '</p>' +
+      (on && x.id !== S.me.id ? '<p class="meta" style="margin:6px 0">Lost their phone? Reset it: they are signed out on every phone and set it up again when they next sign in.</p>' +
+        '<button class="btn sm alt" data-reset-step="' + x.id + '">Reset 2-step sign-in</button>' : '') + '</div>';
   }
   function sheetGroup(id) {
     var g = id ? group(id) : null;
@@ -1264,10 +1388,10 @@
     if (/^(staff|new-staff)/.test(key)) syncRole();
   }
   /** In-app confirmation (browser pop-ups are blocked in some views). */
-  function ask(text, yes) {
+  function ask(text, yes, label) {
     var sh = $('sheet');
     sh.innerHTML = '<div class="grab"></div><h2 style="margin-top:8px">Are you sure?</h2><p>' + esc(text) + '</p>' +
-      '<div class="actions"><button class="btn danger" id="ask-yes">Yes, remove</button><button class="btn alt" id="ask-no">Cancel</button></div>';
+      '<div class="actions"><button class="btn danger" id="ask-yes">' + esc(label || 'Yes, remove') + '</button><button class="btn alt" id="ask-no">Cancel</button></div>';
     $('veil').className = 'veil open';
     var back = S.sheet; S.sheet = null;
     $('ask-yes').onclick = function () { closeSheet(); yes(); };
@@ -1443,11 +1567,16 @@
       if ('gg' in gg.dataset) { S.growthGroup = gg.dataset.gg || null; render(); } else Care.toast(gg.dataset.tip);
       return;
     }
-    var el = e.target.closest('[data-invite-leader],[data-invite-one],[data-copy],[data-reset-link],[data-mg]');
+    var el = e.target.closest('[data-invite-leader],[data-invite-one],[data-copy],[data-reset-link],[data-mg],[data-reset-step]');
     if (!el) return;
     e.preventDefault(); e.stopPropagation();
     var d = el.dataset;
-    if (d.inviteLeader) openSheet('leaderlink:' + d.inviteLeader);
+    if (d.resetStep) {
+      var who = S.staff.filter(function (x) { return x.id === d.resetStep; })[0];
+      ask('Reset 2-step sign-in for ' + (who ? who.name : 'this person') + '? They will be signed out on every phone, and set it up again with their new phone when they next sign in.', function () {
+        Store.twoStepReset(d.resetStep).then(function () { S.twoStepAt = 0; Care.toast('Done. They can now sign in and set it up again.'); openSheet('staff:' + d.resetStep); }, fail);
+      }, 'Yes, reset');
+    } else if (d.inviteLeader) openSheet('leaderlink:' + d.inviteLeader);
     else if (d.mg) { S.groupId = d.mg; reload(); }
     else if (d.copy) {
       var done = function () { Care.toast('Invite copied. Paste it in WhatsApp.'); };
@@ -1455,7 +1584,7 @@
     } else if (d.resetLink) {
       ask('Make a new join link? The old link will stop working for anyone who hasn\'t joined yet.', function () {
         Store.resetInvite(d.resetLink).then(withEnd).then(function (t) { S.links[d.resetLink] = t; Care.toast('New link ready.'); render(); }, fail);
-      });
+      }, 'Yes, make a new link');
     } else if (d.inviteOne) {
       var m = S.members.filter(function (x) { return x.id === d.inviteOne; })[0], g = group(m.group_id), t = S.links[m.group_id];
       if (!linkFresh(t)) { getMemberLink(m.group_id); return Care.toast('One moment, making a fresh link.'); }

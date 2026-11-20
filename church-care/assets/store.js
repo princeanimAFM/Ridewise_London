@@ -35,6 +35,32 @@
       },
       signOut: function () { return sb.auth.signOut(); },
       onAuth: function (cb) { sb.auth.onAuthStateChange(function () { cb(); }); },
+      // Two-step sign-in with an authenticator app. Supabase calls a sign-in that passed it "aal2".
+      // The factor list comes fresh from the server (the copy kept in the session can be out of date after a reset).
+      twoStep: function () {
+        return Promise.all([sb.auth.mfa.getAuthenticatorAssuranceLevel(), sb.auth.mfa.listFactors()]).then(function (r) {
+          var aal = must(r[0]), f = must(r[1]);
+          return {
+            level: aal.currentLevel,
+            factor: (f.totp || [])[0] ? f.totp[0].id : null,
+            pending: (f.all || []).filter(function (x) { return x.factor_type === 'totp' && x.status !== 'verified'; }).map(function (x) { return x.id; })
+          };
+        });
+      },
+      // Starts setting up the app: clears a set-up that was started but not finished, then makes a new key.
+      twoStepStart: function () {
+        return this.twoStep().then(function (st) {
+          return Promise.all(st.pending.map(function (id) { return sb.auth.mfa.unenroll({ factorId: id }); }));
+        }).then(function () {
+          return sb.auth.mfa.enroll({ factorType: 'totp', issuer: 'AFM Church Care', friendlyName: 'Church Care ' + new Date().toISOString().slice(0, 16) }).then(must);
+        }).then(function (d) {
+          var svg = String(d.totp.qr_code || '').replace(/^data:image\/svg\+xml;utf-8,/, '');
+          return { id: d.id, secret: d.totp.secret, uri: d.totp.uri, qr: svg ? 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg) : null };
+        });
+      },
+      twoStepVerify: function (factorId, code) { return sb.auth.mfa.challengeAndVerify({ factorId: factorId, code: code }).then(must); },
+      twoStepTeam: function () { return sb.rpc('team_second_step').then(must); },
+      twoStepReset: function (staffId) { return sb.rpc('reset_second_step', { p_staff: staffId }).then(must); },
       me: function () {
         return sb.rpc('whoami').then(must).then(function (r) {
           if (!r) return null;
@@ -249,6 +275,14 @@
       // Preview only: no code is really sent; any code signs in.
       sendCode: function () { return Promise.resolve(); },
       verify: function () { return Promise.resolve(); },
+      // Practice: the two-step screens can be seen, but no real key is made and any 6 digits work.
+      twoStep: function () { return Promise.resolve({ level: 'aal1', factor: null, pending: [] }); },
+      twoStepStart: function () { return Promise.resolve({ id: 'practice', secret: 'PRACTICEKEYONLYNOTREALPRACTICE23', uri: null, qr: null }); },
+      twoStepVerify: function (id, code) { return /^\d{6}$/.test(code) ? Promise.resolve() : Promise.reject(new Error('Type the 6 digits the app shows.')); },
+      twoStepTeam: function () {
+        return Promise.resolve(data.staff.filter(function (x, i) { return x.joined_app_at && i % 2 === 0; }).map(function (x) { return { staff_id: x.id, since: x.joined_app_at }; }));
+      },
+      twoStepReset: function () { return Promise.resolve(); },
       signOut: function () { return Promise.resolve(); },
       onAuth: function () {},
       me: function () { return Promise.resolve(Object.assign({}, me())); },

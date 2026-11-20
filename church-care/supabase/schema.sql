@@ -173,11 +173,36 @@ create or replace function care.intl_phone(p text) returns text language sql imm
   from (select regexp_replace(coalesce(p, ''), '\D', '', 'g') as d) x
 $$;
 
-create or replace function care.me() returns care.staff language sql stable security definer set search_path = care, public as $$
+-- ---------- two-step sign-in ----------
+-- Everyone on the team (pastor, PA, welcome team, leaders) uses an authenticator app as a second step after their email
+-- code or Google sign-in, so someone who gets into their email still can't open Church Care. Team members who haven't set
+-- it up yet can still come in without it until care.second_step_from() (the app asks them each time). A member may turn
+-- it on too; then they need it as well. Supabase marks a sign-in that passed the second step with aal = 'aal2'.
+create or replace function care.second_step_from() returns timestamptz language sql immutable as $$ select timestamptz '2026-11-28 00:00:00+00' $$;
+create or replace function care.has_second_step() returns boolean language sql stable security definer set search_path = care, public as $$
+  select exists (select 1 from auth.mfa_factors f where f.user_id = auth.uid() and f.status = 'verified')
+$$;
+create or replace function care.passed_second_step() returns boolean language sql stable as $$
+  select coalesce(auth.jwt() ->> 'aal', '') = 'aal2'
+$$;
+
+-- The team member this sign-in belongs to, second step or not (whoami uses it to say what is still needed).
+create or replace function care.me_any() returns care.staff language sql stable security definer set search_path = care, public as $$
   select s.* from care.staff s
   where (s.email is not null and s.email = lower(nullif(auth.jwt() ->> 'email', '')))
      or (s.phone is not null and s.phone = care.intl_phone(nullif(auth.jwt() ->> 'phone', '')))
   order by s.created_at limit 1
+$$;
+revoke all on function care.me_any() from public, anon, authenticated;
+-- The signed-in team member: once they have passed the second step (or while they may still come in without it).
+-- Every team check (my_role, has_area, my_group, the table rules) goes through here.
+create or replace function care.me() returns care.staff language sql stable security definer set search_path = care, public as $$
+  select s.* from care.me_any() s
+  where s.id is not null and (care.passed_second_step() or (not care.has_second_step() and now() < care.second_step_from()))
+$$;
+-- A member who turned the second step on needs it too.
+create or replace function care.member_ok() returns boolean language sql stable as $$
+  select care.passed_second_step() or not care.has_second_step()
 $$;
 create or replace function care.my_id()    returns uuid language sql stable as $$ select (care.me()).id $$;
 create or replace function care.my_role()  returns text language sql stable as $$ select (care.me()).role $$;
@@ -558,8 +583,8 @@ revoke all on function care.mark_welcomed(uuid) from public, anon;
 grant execute on function care.mark_welcomed(uuid) to authenticated;
 
 -- ---------- the app for everyone: who am I, invite links, members ----------
-create or replace function care.my_login_phone() returns text language sql stable as $$ select care.intl_phone(nullif(auth.jwt() ->> 'phone', '')) $$;
-create or replace function care.my_login_email() returns text language sql stable as $$ select lower(nullif(auth.jwt() ->> 'email', '')) $$;
+create or replace function care.my_login_phone() returns text language sql stable as $$ select care.intl_phone(nullif(auth.jwt() ->> 'phone', '')) where care.member_ok() $$;
+create or replace function care.my_login_email() returns text language sql stable as $$ select lower(nullif(auth.jwt() ->> 'email', '')) where care.member_ok() $$;
 
 -- Group memberships of the signed-in person (a person can be in more than one group).
 create or replace function care.my_member_groups() returns setof text language sql stable security definer set search_path = care, public as $$
@@ -569,12 +594,19 @@ $$;
 
 -- Called when the app opens: says who you are and records that you use the app.
 create or replace function care.whoami() returns jsonb language plpgsql security definer set search_path = care, public as $$
-declare st care.staff := care.me(); ph text := care.my_login_phone(); em text := care.my_login_email(); gs jsonb;
+declare st care.staff := care.me(); anyone care.staff := care.me_any(); ph text := care.my_login_phone(); em text := care.my_login_email(); gs jsonb;
+  two boolean := care.has_second_step();
 begin
+  -- signed in, but the second step is still to do: 'code' (type the app's code) or 'setup' (set the app up first)
+  if (anyone.id is not null and st.id is null) or (auth.uid() is not null and two and not care.passed_second_step()) then
+    return jsonb_build_object('kind', 'second_step', 'need', case when two then 'code' else 'setup' end,
+                              'role', coalesce(anyone.role, 'member'), 'name', anyone.name);
+  end if;
   if ph is null and em is null then return null; end if;
   if st.id is not null then
     update care.staff set joined_app_at = coalesce(joined_app_at, now()), last_app_at = now() where id = st.id;
-    return jsonb_build_object('kind', 'staff', 'id', st.id, 'name', st.name, 'role', st.role, 'group_id', st.group_id, 'areas', to_jsonb(st.areas), 'email', st.email, 'phone', st.phone);
+    return jsonb_build_object('kind', 'staff', 'id', st.id, 'name', st.name, 'role', st.role, 'group_id', st.group_id, 'areas', to_jsonb(st.areas), 'email', st.email, 'phone', st.phone,
+                              'second_step', case when two then 'on' else 'due' end, 'second_step_from', care.second_step_from());
   end if;
   update care.members set last_app_at = now()
    where (login_phone is not null and login_phone = ph) or (login_email is not null and login_email = em);
@@ -583,8 +615,35 @@ begin
    where (m.login_phone is not null and m.login_phone = ph) or (m.login_email is not null and m.login_email = em);
   if gs is null then return null; end if;
   return jsonb_build_object('kind', 'member', 'role', 'member', 'name',
-    (select name from care.members where (login_phone = ph or login_email = em) order by joined_app_at limit 1), 'groups', gs);
+    (select name from care.members where (login_phone = ph or login_email = em) order by joined_app_at limit 1), 'groups', gs,
+    'second_step', case when two then 'on' else 'off' end);
 end $$;
+
+-- For the pastor: when each team member turned on 2-step sign-in (no row: not yet).
+create or replace function care.team_second_step() returns table (staff_id uuid, since timestamptz) language sql stable security definer set search_path = care, public as $$
+  select s.id, min(f.created_at) from care.staff s
+    join auth.users u on (s.email is not null and lower(u.email) = s.email) or (s.phone is not null and u.phone = s.phone)
+    join auth.mfa_factors f on f.user_id = u.id and f.status = 'verified'
+  where care.my_role() = 'pastor'
+  group by s.id
+$$;
+
+-- For the pastor, when someone loses their phone: turns off their 2-step sign-in and signs them out on every phone.
+-- They set it up again when they next sign in.
+create or replace function care.reset_second_step(p_staff uuid) returns void language plpgsql security definer set search_path = care, public as $$
+declare s care.staff;
+begin
+  if care.my_role() is distinct from 'pastor' then raise exception 'Only the pastor can reset 2-step sign-in'; end if;
+  select * into s from care.staff where id = p_staff;
+  if s.id is null then raise exception 'That person is not on the team'; end if;
+  if s.id = care.my_id() then raise exception 'You can''t reset your own 2-step sign-in. Ask the person who looks after the app.'; end if;
+  delete from auth.mfa_factors f using auth.users u
+   where f.user_id = u.id and ((s.email is not null and lower(u.email) = s.email) or (s.phone is not null and u.phone = s.phone));
+  delete from auth.sessions x using auth.users u
+   where x.user_id = u.id and ((s.email is not null and lower(u.email) = s.email) or (s.phone is not null and u.phone = s.phone));
+end $$;
+revoke all on function care.team_second_step(), care.reset_second_step(uuid) from public, anon;
+grant execute on function care.team_second_step(), care.reset_second_step(uuid) to authenticated;
 
 -- How long an invite link works.
 create or replace function care.invite_hours() returns int language sql immutable as $$ select 12 $$;

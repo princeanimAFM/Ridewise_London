@@ -124,3 +124,13 @@ longer carry a reversible key, lock-screen notifications carry no names or reaso
 browser that holds its secret. The web pages load their own copy of supabase-js (`assets/supabase-2.45.4.js`, the exact npm file), carry a
 content-security policy, blank themselves when framed by another site (`team.html`), and sign-out also switches the phone's notifications off.
 Rebuild the practice copy after changing the pages: `python3 scripts/make-practice.py church-care <afm-church>/welcome/practice`.
+
+## Two-step sign-in (from November 2026)
+`supabase/patch-2026-11-20c-two-step.sql` (`schema.sql` has the same code). Everyone on the team (pastor, PA, welcome team, leaders)
+uses an authenticator app (Google or Microsoft Authenticator; Supabase's free TOTP factor) as a second step after their email code
+or Google sign-in. `care.me()`, which every team rule goes through, only returns the team member once the sign-in passed the second
+step (`aal2`), or, until `care.second_step_from()`, when they haven't set it up yet; the app asks them each time it opens, with
+"Not now" until that date and no way round it after. Members may turn it on as well (`care.member_ok()`); then they need it too.
+The pastor sees who has it on in *Team & groups* and can reset it for someone who lost their phone (`care.reset_second_step`), which
+also signs them out on every phone. The pastor's own reset is done by whoever looks after the app (Supabase dashboard →
+Authentication → the user → remove the MFA factor). To change the date, change `care.second_step_from()`.
