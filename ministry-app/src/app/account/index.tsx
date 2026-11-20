@@ -7,6 +7,7 @@ import { useContent } from '@/lib/liveContent';
 import { displayName, useAuth } from '@/lib/auth';
 import { friendlyError, storageUrl, supabase, uploadPickedImage } from '@/lib/supabase';
 import { openLink } from '@/lib/links';
+import { breachCount, leakedSignInMessage, setSignInLeak, useSignInLeak } from '@/lib/pwned';
 import { BackendComingSoon } from '@/components/ComingSoon';
 import { Divider, Field, Notice } from '@/components/form';
 import { Artwork, Button, Chip, ListRow, Screen, SectionHeader, Title, Body } from '@/components/ui';
@@ -47,8 +48,11 @@ function SignIn() {
   const emailSignIn = () =>
     run(async () => {
       if (!email.trim() || !password) throw new Error('Enter your email and password.');
+      const leaked = breachCount(password); // checked alongside the sign-in, never holding it up
       const { error } = await supabase!.auth.signInWithPassword({ email: email.trim(), password });
       if (error) throw error;
+      const n = await leaked;
+      if (n) setSignInLeak(n);
     });
 
   const sendPhoneCode = () =>
@@ -126,6 +130,7 @@ function MyAccount() {
   const [saved, setSaved] = useState('');
   const [error, setError] = useState('');
   const [photoBusy, setPhotoBusy] = useState(false);
+  const leaked = useSignInLeak();
 
   const setPhoto = async (url: string | null, keepPath?: string) => {
     const uid = session!.user.id;
@@ -203,6 +208,13 @@ function MyAccount() {
           </View>
         </View>
       </View>
+
+      {leaked > 0 && (
+        <>
+          <Notice kind="error">{leakedSignInMessage(leaked)}</Notice>
+          <Button label="Change my password" icon="key-outline" onPress={() => router.push('/account/forgot')} style={{ marginBottom: space.md }} />
+        </>
+      )}
 
       {profile?.is_admin && (
         <ListRow icon="megaphone-outline" title="Owner dashboard" subtitle="Upload flyers and send announcements" onPress={() => router.push('/admin')} />

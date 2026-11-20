@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { router } from 'expo-router';
 import { useAuth } from '@/lib/auth';
 import { friendlyError, supabase } from '@/lib/supabase';
+import { breachCount, leakedMessage, setSignInLeak } from '@/lib/pwned';
 import { BackendComingSoon } from '@/components/ComingSoon';
 import { Field, Notice } from '@/components/form';
 import { Body, Button, Screen, Title } from '@/components/ui';
@@ -43,10 +44,13 @@ export default function Forgot() {
   const reset = () =>
     run(async () => {
       if (password.length < 8) throw new Error('Your new password needs to be at least 8 characters.');
+      const leaked = await breachCount(password);
+      if (leaked) throw new Error(leakedMessage(leaked));
       const { error } = await supabase!.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'recovery' });
       if (error) throw error;
       const { error: updateError } = await supabase!.auth.updateUser({ password });
       if (updateError) throw updateError;
+      setSignInLeak(0);
       setDone(true);
     });
 
@@ -69,7 +73,7 @@ export default function Forgot() {
         <>
           <Body muted style={{ marginBottom: space.md }}>Enter the code we sent to {email.trim()} and choose a new password.</Body>
           <Field label="Code from the email" value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))} keyboardType="number-pad" autoComplete="one-time-code" textContentType="oneTimeCode" maxLength={10} placeholder="e.g. 12345678" />
-          <Field label="New password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" hint="At least 8 characters." />
+          <Field label="New password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" hint="At least 8 characters. We check it hasn't leaked in a data breach." />
           <Button label={busy ? 'Saving…' : 'Set new password'} icon="key-outline" onPress={reset} />
           <Button label="Send a new code" variant="outline" onPress={sendCode} style={{ marginTop: space.sm }} />
         </>

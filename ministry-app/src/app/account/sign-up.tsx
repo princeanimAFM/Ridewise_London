@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { router } from 'expo-router';
 import { friendlyError, supabase } from '@/lib/supabase';
+import { breachCount, leakedMessage } from '@/lib/pwned';
 import { BackendComingSoon } from '@/components/ComingSoon';
 import { Field, Notice, Toggle } from '@/components/form';
 import { Body, Button, Screen, Title } from '@/components/ui';
@@ -41,6 +42,8 @@ export default function SignUp() {
       if (!first.trim()) throw new Error('Please enter your first name.');
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) throw new Error('Please enter a valid email address.');
       if (password.length < 8) throw new Error('Your password needs to be at least 8 characters.');
+      const leaked = await breachCount(password);
+      if (leaked) throw new Error(leakedMessage(leaked));
       const { data, error } = await supabase!.auth.signUp({
         email: email.trim(),
         password,
@@ -73,7 +76,7 @@ export default function SignUp() {
           <Field label="First name" value={first} onChangeText={setFirst} autoComplete="given-name" textContentType="givenName" />
           <Field label="Last name (optional)" value={last} onChangeText={setLast} autoComplete="family-name" textContentType="familyName" />
           <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" textContentType="emailAddress" />
-          <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" hint="At least 8 characters." />
+          <Field label="Password" value={password} onChangeText={setPassword} secureTextEntry autoComplete="new-password" textContentType="newPassword" hint="At least 8 characters. We check it hasn't leaked in a data breach." />
           <Toggle label="Send me the AFM newsletter" hint="Announcements and upcoming programmes by email" value={newsletter} onValueChange={setNewsletter} />
           <Button label={busy ? 'Creating…' : 'Create account'} icon="person-add-outline" onPress={create} style={{ marginTop: space.sm }} />
         </>
