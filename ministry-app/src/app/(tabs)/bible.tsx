@@ -8,7 +8,7 @@ import { applyPrefs, getPrefs, permissionStatus, supported } from '@/lib/notific
 import { Screen, SectionHeader } from '@/components/ui';
 import { fonts, radius, space, useTheme } from '@/theme';
 
-/** Bible home: continue reading first, then search, the study tools as tiles, verse of the day and the 66 books. */
+/** Bible home: continue reading first, then search, the study tools as tiles, the 66 books and the verse of the day. */
 export default function BibleHome() {
   const t = useTheme();
   const prefs = useBiblePrefs();
@@ -141,23 +141,6 @@ export default function BibleHome() {
         ))}
       </View>
 
-      <Pressable
-        onPress={() => router.push({ pathname: '/bible/read', params: { book: votd.book, chapter: votd.chapter, verse: votd.verse } })}
-        style={({ pressed }) => [styles.votd, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.9 }]}
-      >
-        <Text style={[styles.kicker, { color: t.accent }]}>VERSE OF THE DAY</Text>
-        <Text style={[styles.votdText, { color: t.text }]}>“{votd.text}”</Text>
-        <Text style={[styles.votdRef, { color: t.textMuted }]}>{votd.ref} · KJV</Text>
-      </Pressable>
-      {verseReminder !== 'hidden' && (
-        <Pressable onPress={remindMe} disabled={verseReminder === 'on'} style={styles.remind} hitSlop={6}>
-          <Ionicons name={verseReminder === 'on' ? 'checkmark-circle' : 'notifications-outline'} size={18} color={t.accent} />
-          <Text style={{ color: t.accent, fontWeight: '700' }}>
-            {verseReminder === 'on' ? 'Done: you will get the Verse of the Day every morning' : 'Send me the Verse of the Day every morning'}
-          </Text>
-        </Pressable>
-      )}
-
       <SectionHeader title="Books of the Bible" />
       <View style={[styles.segment, { backgroundColor: t.surfaceAlt }]}>
         {(['old', 'new'] as const).map((k) => (
@@ -173,6 +156,23 @@ export default function BibleHome() {
         ))}
       </View>
       {shown === 'old' ? bookGrid(0, NEW_TESTAMENT_START) : bookGrid(NEW_TESTAMENT_START, BOOKS.length)}
+
+      <Pressable
+        onPress={() => router.push({ pathname: '/bible/read', params: { book: votd.book, chapter: votd.chapter, verse: votd.verse } })}
+        style={({ pressed }) => [styles.votd, { marginTop: space.lg }, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.9 }]}
+      >
+        <Text style={[styles.kicker, { color: t.accent }]}>VERSE OF THE DAY</Text>
+        <Text style={[styles.votdText, { color: t.text }]}>“{votd.text}”</Text>
+        <Text style={[styles.votdRef, { color: t.textMuted }]}>{votd.ref} · KJV</Text>
+      </Pressable>
+      {verseReminder !== 'hidden' && (
+        <Pressable onPress={remindMe} disabled={verseReminder === 'on'} style={styles.remind} hitSlop={6}>
+          <Ionicons name={verseReminder === 'on' ? 'checkmark-circle' : 'notifications-outline'} size={18} color={t.accent} />
+          <Text style={{ color: t.accent, fontWeight: '700' }}>
+            {verseReminder === 'on' ? 'Done: you will get the Verse of the Day every morning' : 'Send me the Verse of the Day every morning'}
+          </Text>
+        </Pressable>
+      )}
     </Screen>
   );
 }
