@@ -10,6 +10,9 @@ const homeBackdrops: Partial<Record<Colour, number>> = {
   brown: require('../../assets/photos/micah-red-suit-smile-brown.jpg'),
   purple: require('../../assets/photos/micah-red-suit-smile-purple.jpg'),
   wine: require('../../assets/photos/micah-red-suit-smile-wine.jpg'),
+  emerald: require('../../assets/photos/micah-red-suit-smile-emerald.jpg'),
+  rust: require('../../assets/photos/micah-red-suit-smile-rust.jpg'),
+  crimson: require('../../assets/photos/micah-red-suit-smile-crimson.jpg'),
 };
 const sermonsBackdrops: Partial<Record<Colour, number>> = {
   blue: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
@@ -18,6 +21,9 @@ const sermonsBackdrops: Partial<Record<Colour, number>> = {
   brown: require('../../assets/photos/micah-red-suit-full-brown.jpg'),
   purple: require('../../assets/photos/micah-red-suit-full-purple.jpg'),
   wine: require('../../assets/photos/micah-red-suit-full-wine.jpg'),
+  emerald: require('../../assets/photos/micah-red-suit-full-emerald.jpg'),
+  rust: require('../../assets/photos/micah-red-suit-full-rust.jpg'),
+  crimson: require('../../assets/photos/micah-red-suit-full-crimson.jpg'),
 };
 
 /** The welcome photo, with the backdrop in the member's chosen colour. */

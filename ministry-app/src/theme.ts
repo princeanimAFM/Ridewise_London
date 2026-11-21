@@ -75,7 +75,24 @@ const brown = { primary: '#4E2F20', primaryLight: '#B98D6C', gold: '#D9AE98', on
 const purple = { primary: '#4A2470', primaryLight: '#B9A0DA', gold: '#CDB0E6', onPrimaryMuted: '#E5DCF1', deep: '22,10,36' }; // + orchid
 const wine = { primary: '#6A1E2F', primaryLight: '#D99BA7', gold: '#E3B0B6', onPrimaryMuted: '#F1D9DE', deep: '36,9,15' }; // + dusty rose
 
+// Looks built from a colour-pair chart: a main colour with the partner it goes with (November 2026).
+const emerald = { primary: '#18794E', primaryLight: '#7FD1A5', gold: '#D4F3E2', onPrimaryMuted: '#D8EFE3', deep: '6,34,22' }; // + deep navy
+const rust = { primary: '#A4481F', primaryLight: '#E39B75', gold: '#CBD3D5', onPrimaryMuted: '#F1DDD2', deep: '40,18,8' }; // + cool grey
+const crimson = { primary: '#9B2D24', primaryLight: '#E08A82', gold: '#9CCBEA', onPrimaryMuted: '#F3DAD7', deep: '40,10,10' }; // + light sky blue
+
 const looks = {
+  emerald: {
+    light: { ...emerald, background: '#F2F7F4', surface: '#FFFFFF', surfaceAlt: '#E3ECF4', text: '#0A1F33', textMuted: '#566A7A', border: '#D9E3EA', onPrimary: '#FFFFFF', accent: '#14365A' },
+    dark: { ...emerald, background: '#0A1822', surface: '#10232F', surfaceAlt: '#17303D', text: '#EAF3EF', textMuted: '#9DB5B0', border: '#1F3A47', onPrimary: '#FFFFFF', accent: '#8FD5B0' },
+  },
+  rust: {
+    light: { ...rust, background: '#F7F5F3', surface: '#FFFFFF', surfaceAlt: '#E8EDEE', text: '#22282A', textMuted: '#667075', border: '#E3E6E7', onPrimary: '#FFFFFF', accent: '#4F6166' },
+    dark: { ...rust, background: '#141211', surface: '#1E1B1A', surfaceAlt: '#272B2C', text: '#F3F0EE', textMuted: '#AAB2B5', border: '#33383A', onPrimary: '#FFFFFF', accent: '#B7C3C6' },
+  },
+  crimson: {
+    light: { ...crimson, background: '#FBF7F6', surface: '#FFFFFF', surfaceAlt: '#E6F1F9', text: '#2A1514', textMuted: '#7B6361', border: '#EEDDDB', onPrimary: '#FFFFFF', accent: '#2F78AB' },
+    dark: { ...crimson, background: '#170D0D', surface: '#231414', surfaceAlt: '#1F2A33', text: '#F8EEEE', textMuted: '#C7ABAA', border: '#402626', onPrimary: '#FFFFFF', accent: '#9CCBEA' },
+  },
   forest: {
     light: { ...forest, background: '#F6F4EE', surface: '#FFFFFF', surfaceAlt: '#E7F0EA', text: '#17211B', textMuted: '#5E6B63', border: '#DDE5DF', onPrimary: '#FFFFFF', accent: '#3B7A5C' },
     dark: { ...forest, background: '#0C1410', surface: '#141F19', surfaceAlt: '#1F2F27', text: '#EEF3EF', textMuted: '#9DB0A4', border: '#27382E', onPrimary: '#FFFFFF', accent: '#A8CDB6' },

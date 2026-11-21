@@ -20,6 +20,9 @@ const colours: { value: Colour; label: string; note: string; swatch: [string, st
   { value: 'brown', label: 'Mahogany & Clay', note: 'Rich brown with warm clay', swatch: ['#4E2F20', '#D9AE98', '#F0D2B0'] },
   { value: 'purple', label: 'Royal Purple & Orchid', note: 'Royal purple with soft orchid', swatch: ['#4A2470', '#CDB0E6', '#E4D6F6'] },
   { value: 'wine', label: 'Wine & Dusty Rose', note: 'Deep wine red with dusty rose', swatch: ['#6A1E2F', '#E3B0B6', '#F5D3C8'] },
+  { value: 'emerald', label: 'Emerald & Navy', note: 'Emerald green with deep navy', swatch: ['#18794E', '#14365A', '#D4F3E2'] },
+  { value: 'rust', label: 'Burnt Orange & Slate', note: 'Burnt orange with cool grey', swatch: ['#A4481F', '#CBD3D5', '#E8EDEE'] },
+  { value: 'crimson', label: 'Deep Red & Sky', note: 'Deep red with light sky blue', swatch: ['#9B2D24', '#9CCBEA', '#E6F1F9'] },
 ];
 
 /** Each member picks light or dark and one of the colour looks. Saved on this phone only. */
