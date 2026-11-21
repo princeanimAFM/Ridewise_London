@@ -23,7 +23,9 @@ const colours: { value: Colour; label: string; note: string; swatch: [string, st
   { value: 'emerald', label: 'Emerald & Navy', note: 'Emerald green with deep navy', swatch: ['#18794E', '#14365A', '#D4F3E2'] },
   { value: 'rust', label: 'Burnt Orange & Slate', note: 'Burnt orange with cool grey', swatch: ['#A4481F', '#CBD3D5', '#E8EDEE'] },
   { value: 'crimson', label: 'Deep Red & Sky', note: 'Deep red with light sky blue', swatch: ['#9B2D24', '#9CCBEA', '#E6F1F9'] },
-  { value: 'tide', label: 'Living Water', note: 'Ocean gradients and glass, blue by day, indigo by night', swatch: ['#0D66AC', '#8BE6F7', '#13A0C8'] },
+  { value: 'tide', label: 'Living Water · Ocean', note: 'Glass and blue sea water, bright by day, deep by night', swatch: ['#0D66AC', '#8BE6F7', '#13A0C8'] },
+  { value: 'sky', label: 'Living Water · Sky', note: 'Glass and open sky, clouds by day, stars by night', swatch: ['#2272D6', '#CDE9FF', '#62B0F5'] },
+  { value: 'dusk', label: 'Evening Glow', note: 'Warm brown and copper glass, sunset by day, dusk by night', swatch: ['#4A2C26', '#FFB78C', '#D8763F'] },
 ];
 
 /** Each member picks light or dark and one of the colour looks. Saved on this phone only. */

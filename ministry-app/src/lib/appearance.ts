@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * phone), and AFM green (the default) or church blue and white.
  */
 export type Mode = 'auto' | 'light' | 'dark';
-export const COLOURS = ['green', 'blue', 'forest', 'brown', 'purple', 'wine', 'greenSeafoam', 'blueAqua', 'emerald', 'rust', 'crimson', 'tide'] as const;
+export const COLOURS = ['green', 'blue', 'forest', 'brown', 'purple', 'wine', 'greenSeafoam', 'blueAqua', 'emerald', 'rust', 'crimson', 'tide', 'sky', 'dusk'] as const;
 export type Colour = (typeof COLOURS)[number];
 export type Appearance = { mode: Mode; colour: Colour };
 

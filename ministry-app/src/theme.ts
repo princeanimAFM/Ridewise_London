@@ -129,6 +129,36 @@ const looks = {
       backdrop: ['#2B2A82', '#1B2A7E', '#101C5A', '#080F33'], glass: true, glow: '130,150,255', glow2: '170,110,255',
     },
   },
+  // Living Water, sky edition: the same glass, over open sky. Day is clear blue with white clouds; night is stars and moonlight.
+  sky: {
+    light: {
+      primary: '#2272D6', primaryLight: '#A4D4FF', gold: '#CDE9FF', onPrimaryMuted: '#E4F1FF', deep: '8,32,78',
+      background: '#1E64B8', surface: 'rgba(255,255,255,0.15)', surfaceAlt: 'rgba(255,255,255,0.11)', text: '#FFFFFF', textMuted: 'rgba(232,243,255,0.80)',
+      border: 'rgba(255,255,255,0.28)', onPrimary: '#FFFFFF', accent: '#B6E0FF',
+      backdrop: ['#2A6CBE', '#2260B4', '#184C96', '#103672'], glass: true, glow: '255,246,228', glow2: '120,178,255',
+    },
+    dark: {
+      primary: '#4A63D8', primaryLight: '#A9B8FF', gold: '#C9D4FF', onPrimaryMuted: '#E0E6FF', deep: '6,9,34',
+      background: '#161C58', surface: 'rgba(255,255,255,0.09)', surfaceAlt: 'rgba(255,255,255,0.065)', text: '#F2F5FF', textMuted: 'rgba(214,224,252,0.74)',
+      border: 'rgba(255,255,255,0.17)', onPrimary: '#FFFFFF', accent: '#B4C6FF',
+      backdrop: ['#141A52', '#10174A', '#0B1038', '#070A22'], glass: true, glow: '205,218,255', glow2: '120,130,230',
+    },
+  },
+  // Evening Glow: warm brown and copper glass with a peach glow, like the light just after sunset. No yellow.
+  dusk: {
+    light: {
+      primary: '#B5562F', primaryLight: '#F2A47F', gold: '#FFCBA6', onPrimaryMuted: '#F6E1D4', deep: '30,14,12',
+      background: '#3A2321', surface: 'rgba(255,236,222,0.12)', surfaceAlt: 'rgba(255,236,222,0.085)', text: '#FFF6EE', textMuted: 'rgba(250,228,214,0.76)',
+      border: 'rgba(255,226,205,0.24)', onPrimary: '#FFFFFF', accent: '#FFB78C',
+      backdrop: ['#4A2C26', '#3B2424', '#2B1B1E', '#1B1216'], glass: true, glow: '255,168,120', glow2: '214,112,120',
+    },
+    dark: {
+      primary: '#9C4A55', primaryLight: '#E9A4A4', gold: '#F5C6B8', onPrimaryMuted: '#F0DAD6', deep: '14,8,12',
+      background: '#1F1419', surface: 'rgba(255,236,226,0.075)', surfaceAlt: 'rgba(255,236,226,0.055)', text: '#FBF1EC', textMuted: 'rgba(238,214,206,0.72)',
+      border: 'rgba(255,226,214,0.15)', onPrimary: '#FFFFFF', accent: '#F0B1A8',
+      backdrop: ['#2A1B22', '#211620', '#170F18', '#0E0A10'], glass: true, glow: '238,150,140', glow2: '150,100,200',
+    },
+  },
   // Today's AFM Green and Church Blue with a soft third colour instead of gold / light blue (the originals stay as they are).
   greenSeafoam: {
     light: { ...light, gold: '#B5DCC4', surfaceAlt: '#E4F2EA', accent: '#2A7766' },
@@ -157,6 +187,10 @@ export function useTheme(): Theme {
 
 /** A shade of the theme's near-black, e.g. shade(t, 0.5) → "rgba(10,28,18,0.5)". */
 export const shade = (t: Theme, alpha: number) => `rgba(${t.deep},${alpha})`;
+
+/** A "#RRGGBB" colour with some see-through, e.g. withAlpha('#4A2C26', 0) → "rgba(74,44,38,0)" (fades to nothing without turning grey). */
+export const withAlpha = (hex: string, alpha: number) =>
+  `rgba(${parseInt(hex.slice(1, 3), 16)},${parseInt(hex.slice(3, 5), 16)},${parseInt(hex.slice(5, 7), 16)},${alpha})`;
 
 export const fonts = {
   serif: Platform.select({ ios: 'Georgia', android: 'serif', default: 'Georgia, serif' }),

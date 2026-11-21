@@ -2,7 +2,7 @@ import { ReactNode } from 'react';
 import { StyleSheet, View, ViewStyle } from 'react-native';
 import { Image, ImageContentPosition } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
-import { shade, useTheme } from '@/theme';
+import { shade, useTheme, withAlpha } from '@/theme';
 import { Waves } from './Glass';
 
 /**
@@ -33,6 +33,14 @@ export function PhotoHero({
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
+      {t.glass && t.backdrop && (
+        // the scenic pictures start bright at the top, so they ease in from the header's colour instead of showing a seam
+        <LinearGradient
+          pointerEvents="none"
+          colors={[t.backdrop[0], withAlpha(t.backdrop[0], 0)]}
+          style={[StyleSheet.absoluteFill, { bottom: undefined, height: 64 }]}
+        />
+      )}
       <Waves />
       <View style={[styles.content, glassLift > 0 && { paddingBottom: 20 + glassLift }]}>{children}</View>
     </View>
