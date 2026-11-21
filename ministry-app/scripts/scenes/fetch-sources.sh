@@ -3,7 +3,7 @@
 set -e
 cd "$(dirname "$0")"
 mkdir -p sources
-for id in 19294597 813269 3905310; do
+for id in 19294597 813269 3905310 14528921 35327803 19757906; do
   [ -s "sources/px-$id.jpg" ] || curl -fsSL -o "sources/px-$id.jpg" "https://images.pexels.com/photos/$id/pexels-photo-$id.jpeg?auto=compress&cs=tinysrgb&w=3200"
 done
 ls -la sources

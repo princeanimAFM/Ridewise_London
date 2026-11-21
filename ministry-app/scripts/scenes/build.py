@@ -1,7 +1,9 @@
 """Puts the Sunday photos into each scenic look (Living Water Ocean / Sky and Evening Glow), by day and by night.
 
-    sh scripts/scenes/fetch-sources.sh               (once: the free sky, star and moon photos the Sky look is made from)
-    python3 scripts/scenes/build.py [out_dir]        (needs numpy and Pillow; out_dir defaults to assets/photos)
+    sh scripts/scenes/fetch-sources.sh               (once: the free sky, star, moon and sunset photos)
+    python3 scripts/scenes/build.py [out_dir] [--dusk=real] [--dusk-photo=a|b|c]
+        needs numpy and Pillow; out_dir defaults to assets/photos. Evening Glow is the drawn sunset unless --dusk=real,
+        which uses a real sunset photo instead (a = deep brown-red sky and sun path, b = amber clouds, c = burnt orange).
 
 Reads micah-red-suit-smile.jpg (Home) and micah-red-suit-full.jpg (Sermons) from assets/photos, cuts him out of the green studio
 backdrop (matte_lib.py) and sets him in each scene, writing micah-red-suit-{smile,full}-{look}.jpg for
@@ -21,13 +23,18 @@ import scenes  # noqa: E402
 from matte_lib import composite, subject_matte  # noqa: E402
 
 PHOTOS = os.path.normpath(os.path.join(HERE, '..', '..', 'assets', 'photos'))
-OUT = sys.argv[1] if len(sys.argv) > 1 else PHOTOS
+ARGS = [a for a in sys.argv[1:] if not a.startswith('--')]
+OUT = ARGS[0] if ARGS else PHOTOS
 
 BG = {
     'sky': real_scenes.real_sky_day, 'skynight': real_scenes.real_sky_night,
     'tide': lambda: scenes.sea_glass(False), 'tidenight': lambda: scenes.sea_glass(True),
     'dusk': lambda: scenes.sunset(False), 'dusknight': lambda: scenes.sunset(True),
 }
+if '--dusk=real' in sys.argv:
+    which = next((a.split('=')[1] for a in sys.argv if a.startswith('--dusk-photo=')), 'a')
+    BG['dusk'] = lambda: real_scenes.real_dusk_day(which)
+    BG['dusknight'] = lambda: real_scenes.real_dusk_night(which)
 mattes = {k: subject_matte(os.path.join(PHOTOS, n), None) for k, n in (('smile', 'micah-red-suit-smile.jpg'), ('full', 'micah-red-suit-full.jpg'))}
 rng = np.random.default_rng(1)
 for look, make in BG.items():
