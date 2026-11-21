@@ -14,12 +14,12 @@ const modes: { value: Mode; label: string; note: string; icon: 'phone-portrait-o
 const colours: { value: Colour; label: string; note: string; swatch: [string, string, string] }[] = [
   { value: 'green', label: 'AFM Green', note: 'The AFM HUB’s own colours', swatch: ['#2D6A3E', '#C9A227', '#E8F0E6'] },
   { value: 'blue', label: 'Church Blue & White', note: 'The colours of The AFM Church', swatch: ['#0A3A80', '#A9CCFF', '#E6EEF9'] },
-  { value: 'greenCoral', label: 'AFM Green & Coral', note: 'AFM green with a bold coral accent', swatch: ['#2D6A3E', '#FF8C73', '#FDE9E3'] },
-  { value: 'blueOrange', label: 'Church Blue & Orange', note: 'Church blue with a bold orange accent', swatch: ['#0A3A80', '#FF8A33', '#FFEBDA'] },
-  { value: 'forest', label: 'Forest Green & Blush', note: 'Deep forest green with blush pink', swatch: ['#1E4A36', '#FF8FB1', '#E8DCC4'] },
-  { value: 'brown', label: 'Mahogany & Sky', note: 'Rich brown with sky blue', swatch: ['#4E2F20', '#6EC6F5', '#F0D2B0'] },
-  { value: 'purple', label: 'Royal Purple & Mint', note: 'Royal purple with fresh mint', swatch: ['#4A2470', '#4EE0B5', '#E4D6F6'] },
-  { value: 'wine', label: 'Wine & Turquoise', note: 'Deep wine red with turquoise', swatch: ['#6A1E2F', '#33C9BA', '#F5D3C8'] },
+  { value: 'greenSeafoam', label: 'AFM Green & Seafoam', note: 'AFM green with a soft seafoam', swatch: ['#2D6A3E', '#B5DCC4', '#E4F2EA'] },
+  { value: 'blueAqua', label: 'Church Blue & Aqua', note: 'Church blue with a soft aqua', swatch: ['#0A3A80', '#8DD0D8', '#E2F1F4'] },
+  { value: 'forest', label: 'Forest Green & Sage', note: 'Deep forest green with soft sage', swatch: ['#1E4A36', '#A8CDB6', '#E8DCC4'] },
+  { value: 'brown', label: 'Mahogany & Clay', note: 'Rich brown with warm clay', swatch: ['#4E2F20', '#D9AE98', '#F0D2B0'] },
+  { value: 'purple', label: 'Royal Purple & Orchid', note: 'Royal purple with soft orchid', swatch: ['#4A2470', '#CDB0E6', '#E4D6F6'] },
+  { value: 'wine', label: 'Wine & Dusty Rose', note: 'Deep wine red with dusty rose', swatch: ['#6A1E2F', '#E3B0B6', '#F5D3C8'] },
 ];
 
 /** Each member picks light or dark and one of the colour looks. Saved on this phone only. */

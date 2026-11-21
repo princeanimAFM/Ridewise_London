@@ -67,39 +67,39 @@ const blueDark: typeof light = {
   accent: '#7FB2FF',
 };
 
-// Sample looks for the owner to choose from (November 2026). Each has a deep main colour, a soft second colour and a bold
-// third colour (the "pop", never yellow) that carries the highlights, icons, links, play buttons and progress bars.
-// `gold` is the pop on dark surfaces (and for buttons); `accent` is a deeper pop that reads on light backgrounds.
-const forest = { primary: '#1E4A36', primaryLight: '#7FAE93', gold: '#FF8FB1', onPrimaryMuted: '#D4E3DA', deep: '8,26,18' }; // + blush pink
-const brown = { primary: '#4E2F20', primaryLight: '#B98D6C', gold: '#6EC6F5', onPrimaryMuted: '#EADCCF', deep: '30,18,12' }; // + sky blue
-const purple = { primary: '#4A2470', primaryLight: '#B9A0DA', gold: '#4EE0B5', onPrimaryMuted: '#E5DCF1', deep: '22,10,36' }; // + mint
-const wine = { primary: '#6A1E2F', primaryLight: '#D99BA7', gold: '#33C9BA', onPrimaryMuted: '#F1D9DE', deep: '36,9,15' }; // + turquoise
+// Sample looks for the owner to choose from (November 2026). Each has a deep main colour, a soft second colour and a gentle
+// third colour: a lighter, softer neighbour of the main colour on the colour wheel, so they go together instead of clashing.
+// `gold` is that third colour on dark surfaces (and for buttons); `accent` is a deeper shade that reads on light backgrounds.
+const forest = { primary: '#1E4A36', primaryLight: '#7FAE93', gold: '#A8CDB6', onPrimaryMuted: '#D4E3DA', deep: '8,26,18' }; // + sage
+const brown = { primary: '#4E2F20', primaryLight: '#B98D6C', gold: '#D9AE98', onPrimaryMuted: '#EADCCF', deep: '30,18,12' }; // + clay
+const purple = { primary: '#4A2470', primaryLight: '#B9A0DA', gold: '#CDB0E6', onPrimaryMuted: '#E5DCF1', deep: '22,10,36' }; // + orchid
+const wine = { primary: '#6A1E2F', primaryLight: '#D99BA7', gold: '#E3B0B6', onPrimaryMuted: '#F1D9DE', deep: '36,9,15' }; // + dusty rose
 
 const looks = {
   forest: {
-    light: { ...forest, background: '#F6F4EE', surface: '#FFFFFF', surfaceAlt: '#FBE9EF', text: '#17211B', textMuted: '#5E6B63', border: '#E8DDE0', onPrimary: '#FFFFFF', accent: '#C2335F' },
-    dark: { ...forest, background: '#0C1410', surface: '#141F19', surfaceAlt: '#22302A', text: '#EEF3EF', textMuted: '#9DB0A4', border: '#27382E', onPrimary: '#FFFFFF', accent: '#FF8FB1' },
+    light: { ...forest, background: '#F6F4EE', surface: '#FFFFFF', surfaceAlt: '#E7F0EA', text: '#17211B', textMuted: '#5E6B63', border: '#DDE5DF', onPrimary: '#FFFFFF', accent: '#3B7A5C' },
+    dark: { ...forest, background: '#0C1410', surface: '#141F19', surfaceAlt: '#1F2F27', text: '#EEF3EF', textMuted: '#9DB0A4', border: '#27382E', onPrimary: '#FFFFFF', accent: '#A8CDB6' },
   },
   brown: {
-    light: { ...brown, background: '#FAF6F1', surface: '#FFFFFF', surfaceAlt: '#E4F2FB', text: '#2A1D16', textMuted: '#7A6657', border: '#E9DCCE', onPrimary: '#FFFFFF', accent: '#1D78A8' },
-    dark: { ...brown, background: '#15100C', surface: '#211812', surfaceAlt: '#2A2A2E', text: '#F5EDE6', textMuted: '#BDA998', border: '#3A2C22', onPrimary: '#FFFFFF', accent: '#6EC6F5' },
+    light: { ...brown, background: '#FAF6F1', surface: '#FFFFFF', surfaceAlt: '#F6EAE3', text: '#2A1D16', textMuted: '#7A6657', border: '#E9DCCE', onPrimary: '#FFFFFF', accent: '#9C5A3E' },
+    dark: { ...brown, background: '#15100C', surface: '#211812', surfaceAlt: '#2B211B', text: '#F5EDE6', textMuted: '#BDA998', border: '#3A2C22', onPrimary: '#FFFFFF', accent: '#D9AE98' },
   },
   purple: {
-    light: { ...purple, background: '#F8F6FB', surface: '#FFFFFF', surfaceAlt: '#DFF7EF', text: '#1E1529', textMuted: '#6B6078', border: '#E3DAEE', onPrimary: '#FFFFFF', accent: '#0C8561' },
-    dark: { ...purple, background: '#110C18', surface: '#1A1424', surfaceAlt: '#1F2B33', text: '#F3EFF8', textMuted: '#B3A8C3', border: '#322646', onPrimary: '#FFFFFF', accent: '#4EE0B5' },
+    light: { ...purple, background: '#F8F6FB', surface: '#FFFFFF', surfaceAlt: '#F0E8F8', text: '#1E1529', textMuted: '#6B6078', border: '#E3DAEE', onPrimary: '#FFFFFF', accent: '#7B4DAA' },
+    dark: { ...purple, background: '#110C18', surface: '#1A1424', surfaceAlt: '#261C33', text: '#F3EFF8', textMuted: '#B3A8C3', border: '#322646', onPrimary: '#FFFFFF', accent: '#CDB0E6' },
   },
   wine: {
-    light: { ...wine, background: '#FBF6F6', surface: '#FFFFFF', surfaceAlt: '#DDF4F1', text: '#2A1318', textMuted: '#7D6066', border: '#EEDCE0', onPrimary: '#FFFFFF', accent: '#0C8076' },
-    dark: { ...wine, background: '#170C0F', surface: '#231317', surfaceAlt: '#1D2D2E', text: '#F8EEF0', textMuted: '#C4A9AF', border: '#40242A', onPrimary: '#FFFFFF', accent: '#33C9BA' },
+    light: { ...wine, background: '#FBF6F6', surface: '#FFFFFF', surfaceAlt: '#F9E9EB', text: '#2A1318', textMuted: '#7D6066', border: '#EEDCE0', onPrimary: '#FFFFFF', accent: '#A33C50' },
+    dark: { ...wine, background: '#170C0F', surface: '#231317', surfaceAlt: '#301C21', text: '#F8EEF0', textMuted: '#C4A9AF', border: '#40242A', onPrimary: '#FFFFFF', accent: '#E3B0B6' },
   },
-  // Today's AFM Green and Church Blue with a bold third colour instead of gold / light blue (the originals stay as they are).
-  greenCoral: {
-    light: { ...light, gold: '#FF8C73', surfaceAlt: '#FDE9E3', accent: '#CC4126' },
-    dark: { ...dark, gold: '#FF8C73', surfaceAlt: '#2A2A22', accent: '#FF9A82' },
+  // Today's AFM Green and Church Blue with a soft third colour instead of gold / light blue (the originals stay as they are).
+  greenSeafoam: {
+    light: { ...light, gold: '#B5DCC4', surfaceAlt: '#E4F2EA', accent: '#2A7766' },
+    dark: { ...dark, gold: '#B5DCC4', surfaceAlt: '#1F2E26', accent: '#B5DCC4' },
   },
-  blueOrange: {
-    light: { ...blueLight, gold: '#FF8A33', surfaceAlt: '#FFEBDA', accent: '#C25A0A' },
-    dark: { ...blueDark, gold: '#FF8A33', surfaceAlt: '#2A2A33', accent: '#FFA05C' },
+  blueAqua: {
+    light: { ...blueLight, gold: '#8DD0D8', surfaceAlt: '#E2F1F4', accent: '#1B7482' },
+    dark: { ...blueDark, gold: '#8DD0D8', surfaceAlt: '#1C2A3B', accent: '#8DD0D8' },
   },
 } satisfies Record<string, { light: typeof light; dark: typeof light }>;
 
