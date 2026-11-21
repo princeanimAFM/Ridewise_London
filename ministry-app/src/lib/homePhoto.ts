@@ -1,21 +1,33 @@
+import type { Colour } from './appearance';
 import { useAppearance } from './appearance';
 import { useContent } from './liveContent';
 
-// The same photo with the studio backdrop recoloured from AFM green to church blue.
-const blueBackdrop = require('../../assets/photos/micah-red-suit-smile-blue.jpg');
+// The same photos with the green studio backdrop recoloured to each look's colour.
+const homeBackdrops: Partial<Record<Colour, number>> = {
+  blue: require('../../assets/photos/micah-red-suit-smile-blue.jpg'),
+  forest: require('../../assets/photos/micah-red-suit-smile-forest.jpg'),
+  brown: require('../../assets/photos/micah-red-suit-smile-brown.jpg'),
+  purple: require('../../assets/photos/micah-red-suit-smile-purple.jpg'),
+  wine: require('../../assets/photos/micah-red-suit-smile-wine.jpg'),
+};
+const sermonsBackdrops: Partial<Record<Colour, number>> = {
+  blue: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
+  forest: require('../../assets/photos/micah-red-suit-full-forest.jpg'),
+  brown: require('../../assets/photos/micah-red-suit-full-brown.jpg'),
+  purple: require('../../assets/photos/micah-red-suit-full-purple.jpg'),
+  wine: require('../../assets/photos/micah-red-suit-full-wine.jpg'),
+};
 
-const sermonsBlueBackdrop = require('../../assets/photos/micah-red-suit-full-blue.jpg');
-
-/** The welcome photo, with a blue backdrop when the member has chosen Church Blue & White. */
+/** The welcome photo, with the backdrop in the member's chosen colour. */
 export function useHomePhoto() {
   const ministry = useContent();
   const { colour } = useAppearance();
-  return colour === 'blue' ? blueBackdrop : ministry.photos.home;
+  return homeBackdrops[colour] ?? ministry.photos.home;
 }
 
-/** The Sermons photo, recoloured the same way for Church Blue & White. */
+/** The Sermons photo, recoloured the same way. */
 export function useSermonsPhoto() {
   const ministry = useContent();
   const { colour } = useAppearance();
-  return colour === 'blue' ? sermonsBlueBackdrop : ministry.photos.sermons;
+  return sermonsBackdrops[colour] ?? ministry.photos.sermons;
 }

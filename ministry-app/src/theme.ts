@@ -67,9 +67,34 @@ const blueDark: typeof light = {
   accent: '#7FB2FF',
 };
 
+// Sample looks for the owner to choose from (November 2026): deep colours with soft, non-yellow highlights.
+const forest = { primary: '#1E4A36', primaryLight: '#7FAE93', gold: '#E8DCC4', onPrimaryMuted: '#D4E3DA', deep: '8,26,18' };
+const brown = { primary: '#4E2F20', primaryLight: '#B98D6C', gold: '#F0D2B0', onPrimaryMuted: '#EADCCF', deep: '30,18,12' };
+const purple = { primary: '#4A2470', primaryLight: '#B9A0DA', gold: '#E4D6F6', onPrimaryMuted: '#E5DCF1', deep: '22,10,36' };
+const wine = { primary: '#6A1E2F', primaryLight: '#D99BA7', gold: '#F5D3C8', onPrimaryMuted: '#F1D9DE', deep: '36,9,15' };
+
+const looks = {
+  forest: {
+    light: { ...forest, background: '#F6F4EE', surface: '#FFFFFF', surfaceAlt: '#E7EEE8', text: '#17211B', textMuted: '#5E6B63', border: '#DCE4DD', onPrimary: '#FFFFFF', accent: '#2C6B4E' },
+    dark: { ...forest, background: '#0C1410', surface: '#141F19', surfaceAlt: '#1D2C23', text: '#EEF3EF', textMuted: '#9DB0A4', border: '#27382E', onPrimary: '#FFFFFF', accent: '#86C8A6' },
+  },
+  brown: {
+    light: { ...brown, background: '#FAF6F1', surface: '#FFFFFF', surfaceAlt: '#F2E7DC', text: '#2A1D16', textMuted: '#7A6657', border: '#E9DCCE', onPrimary: '#FFFFFF', accent: '#9A5A30' },
+    dark: { ...brown, background: '#15100C', surface: '#211812', surfaceAlt: '#2D2219', text: '#F5EDE6', textMuted: '#BDA998', border: '#3A2C22', onPrimary: '#FFFFFF', accent: '#E3A57C' },
+  },
+  purple: {
+    light: { ...purple, background: '#F8F6FB', surface: '#FFFFFF', surfaceAlt: '#EEE7F7', text: '#1E1529', textMuted: '#6B6078', border: '#E3DAEE', onPrimary: '#FFFFFF', accent: '#6B3FA3' },
+    dark: { ...purple, background: '#110C18', surface: '#1A1424', surfaceAlt: '#251C33', text: '#F3EFF8', textMuted: '#B3A8C3', border: '#322646', onPrimary: '#FFFFFF', accent: '#C4A8F2' },
+  },
+  wine: {
+    light: { ...wine, background: '#FBF6F6', surface: '#FFFFFF', surfaceAlt: '#F5E6E9', text: '#2A1318', textMuted: '#7D6066', border: '#EEDCE0', onPrimary: '#FFFFFF', accent: '#9C2C45' },
+    dark: { ...wine, background: '#170C0F', surface: '#231317', surfaceAlt: '#301B20', text: '#F8EEF0', textMuted: '#C4A9AF', border: '#40242A', onPrimary: '#FFFFFF', accent: '#F2A5B4' },
+  },
+} satisfies Record<string, { light: typeof light; dark: typeof light }>;
+
 export type Theme = typeof light;
 
-const themes = { green: { light, dark }, blue: { light: blueLight, dark: blueDark } };
+const themes = { green: { light, dark }, blue: { light: blueLight, dark: blueDark }, ...looks };
 
 /** The colours for this member's chosen look (Owner dashboard and every screen use these). */
 export function useTheme(): Theme {

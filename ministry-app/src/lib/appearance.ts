@@ -6,7 +6,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * phone), and AFM green (the default) or church blue and white.
  */
 export type Mode = 'auto' | 'light' | 'dark';
-export type Colour = 'green' | 'blue';
+export const COLOURS = ['green', 'blue', 'forest', 'brown', 'purple', 'wine'] as const;
+export type Colour = (typeof COLOURS)[number];
 export type Appearance = { mode: Mode; colour: Colour };
 
 const KEY = 'afm-appearance';
@@ -20,7 +21,7 @@ AsyncStorage.getItem(KEY)
     const v = JSON.parse(saved) as Partial<Appearance>;
     current = {
       mode: v.mode === 'light' || v.mode === 'dark' ? v.mode : 'auto',
-      colour: v.colour === 'blue' ? 'blue' : 'green',
+      colour: COLOURS.includes(v.colour as Colour) ? (v.colour as Colour) : 'green',
     };
     emit();
   })

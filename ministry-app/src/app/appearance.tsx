@@ -14,9 +14,13 @@ const modes: { value: Mode; label: string; note: string; icon: 'phone-portrait-o
 const colours: { value: Colour; label: string; note: string; swatch: [string, string] }[] = [
   { value: 'green', label: 'AFM Green', note: 'The AFM HUB’s own colours', swatch: ['#2D6A3E', '#C9A227'] },
   { value: 'blue', label: 'Church Blue & White', note: 'The colours of The AFM Church', swatch: ['#0A3A80', '#A9CCFF'] },
+  { value: 'forest', label: 'Forest Green & Ivory', note: 'Deep green with soft ivory', swatch: ['#1E4A36', '#E8DCC4'] },
+  { value: 'brown', label: 'Mahogany & Cream', note: 'Rich brown with warm cream', swatch: ['#4E2F20', '#F0D2B0'] },
+  { value: 'purple', label: 'Royal Purple', note: 'Royal purple with soft lilac', swatch: ['#4A2470', '#E4D6F6'] },
+  { value: 'wine', label: 'Wine & Rose', note: 'Deep wine red with rose', swatch: ['#6A1E2F', '#F5D3C8'] },
 ];
 
-/** Each member picks light or dark and green or blue. Saved on this phone only. */
+/** Each member picks light or dark and one of the colour looks. Saved on this phone only. */
 export default function AppearanceScreen() {
   const t = useTheme();
   const { mode, colour } = useAppearance();
