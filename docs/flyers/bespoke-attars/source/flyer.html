@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bespoke Attars Flyer</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+  :root { --navy:#0B1F3A; --navy2:#16325C; --gold:#C9A227; --gold-l:#E4C979; --cream:#F7F1E3; --ink:#F3EBDA; --muted:#C9BFA6; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  html, body { background:var(--navy); }
+  body { font-family:'Montserrat', system-ui, sans-serif; color:var(--ink); }
+  .page { width:var(--w); height:var(--h); position:relative; overflow:hidden; display:flex; flex-direction:column; align-items:center; padding:calc(var(--u)*2.2) calc(var(--u)*2.6) calc(var(--u)*1.6); background:radial-gradient(ellipse at 50% 0%, #1B3A66 0%, var(--navy) 55%, #071528 100%); }
+  .frame { position:absolute; inset:calc(var(--u)*1.2); border:1px solid rgba(201,162,39,.55); pointer-events:none; }
+  .frame::after { content:''; position:absolute; inset:calc(var(--u)*.35); border:1px solid rgba(201,162,39,.22); }
+
+  /* top */
+  .brand { text-align:center; z-index:2; flex:none; }
+  .brand img { width:calc(var(--u)*3.4); filter:brightness(0) invert(84%) sepia(40%) saturate(560%) hue-rotate(5deg); }
+  .brand .house { font-size:calc(var(--u)*.62); letter-spacing:.42em; font-weight:600; color:var(--gold-l); margin-top:calc(var(--u)*.4); }
+
+  /* hero photo */
+  .hero { flex:none; width:calc(100% + var(--u)*5.2); height:var(--hero-h); margin:calc(var(--u)*-.6) 0 calc(var(--u)*-2.2);
+          -webkit-mask-image:linear-gradient(transparent 0%, #000 22%, #000 62%, transparent 100%), linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent);
+          -webkit-mask-composite:source-in; mask-image:linear-gradient(transparent 0%, #000 22%, #000 62%, transparent 100%), linear-gradient(90deg, transparent, #000 18%, #000 82%, transparent); mask-composite:intersect; }
+  .hero img { width:100%; height:100%; object-fit:cover; object-position:50% 60%; }
+
+  .copy { width:100%; text-align:center; z-index:2; flex:none; }
+  .spacer { flex:1; min-height:calc(var(--u)*.8); }
+  .kicker { font-size:calc(var(--u)*.62); letter-spacing:.38em; font-weight:700; color:var(--gold); }
+  h1 { font-family:'Cormorant Garamond', Georgia, serif; font-weight:600; font-size:calc(var(--u)*4.1); line-height:.98; margin:calc(var(--u)*.45) 0 0; color:var(--cream); letter-spacing:-.005em; }
+  h1 em { font-style:italic; color:var(--gold-l); font-weight:500; }
+  .lede { font-size:calc(var(--u)*.86); line-height:1.6; color:var(--muted); margin:calc(var(--u)*.8) auto 0; max-width:calc(var(--u)*30); }
+
+  .rule { display:flex; align-items:center; gap:calc(var(--u)*.6); justify-content:center; margin:calc(var(--u)*1.1) 0 calc(var(--u)*.9); color:var(--gold); font-size:calc(var(--u)*.6); letter-spacing:.32em; font-weight:700; }
+  .rule::before, .rule::after { content:''; height:1px; width:calc(var(--u)*4.5); background:linear-gradient(90deg, rgba(201,162,39,0), var(--gold)); }
+  .rule::after { transform:scaleX(-1); }
+
+  .steps { display:grid; grid-template-columns:repeat(3, 1fr); gap:calc(var(--u)*1); text-align:center; }
+  .step b { display:block; font-family:'Cormorant Garamond', serif; font-size:calc(var(--u)*1.9); line-height:1; color:var(--gold-l); font-weight:600; }
+  .step h3 { font-size:calc(var(--u)*.74); letter-spacing:.06em; font-weight:700; color:var(--cream); margin:calc(var(--u)*.3) 0 calc(var(--u)*.25); text-transform:uppercase; }
+  .step p { font-size:calc(var(--u)*.7); line-height:1.5; color:var(--muted); }
+
+  .notes { display:flex; flex-wrap:wrap; justify-content:center; gap:calc(var(--u)*.35) calc(var(--u)*.4); max-width:calc(var(--u)*31); margin:0 auto; }
+  .notes span { border:1px solid rgba(201,162,39,.55); color:var(--cream); border-radius:99px; padding:calc(var(--u)*.22) calc(var(--u)*.7); font-size:calc(var(--u)*.66); font-weight:500; white-space:nowrap; }
+  .for { font-size:calc(var(--u)*.76); color:var(--muted); line-height:1.6; }
+  .for i { color:var(--gold); font-style:normal; padding:0 .35em; }
+
+  .verse { font-family:'Cormorant Garamond', serif; font-style:italic; font-size:calc(var(--u)*1.12); color:var(--cream); margin-top:calc(var(--u)*1.1); }
+  .verse small { display:block; font-family:'Montserrat'; font-style:normal; font-size:calc(var(--u)*.56); letter-spacing:.28em; color:var(--gold); margin-top:calc(var(--u)*.3); font-weight:600; }
+
+  /* call to action */
+  .cta { width:100%; flex:none; z-index:2; display:flex; align-items:center; gap:calc(var(--u)*1.1);
+         background:linear-gradient(135deg, rgba(201,162,39,.16), rgba(201,162,39,.05)); border:1px solid rgba(201,162,39,.6); border-radius:calc(var(--u)*.6); padding:calc(var(--u)*.9) calc(var(--u)*1.1); }
+  .qr { flex:none; width:calc(var(--u)*5); height:calc(var(--u)*5); background:#fff; border-radius:calc(var(--u)*.3); padding:calc(var(--u)*.25); }
+  .qr img { width:100%; height:100%; display:block; }
+  .cta .t { flex:1; text-align:left; }
+  .cta .t .k { font-size:calc(var(--u)*.56); letter-spacing:.3em; font-weight:700; color:var(--gold); }
+  .cta .t h2 { font-family:'Cormorant Garamond', serif; font-weight:600; font-size:calc(var(--u)*1.7); line-height:1.05; color:var(--cream); margin:calc(var(--u)*.2) 0 calc(var(--u)*.35); }
+  .cta .t p { font-size:calc(var(--u)*.72); line-height:1.55; color:var(--muted); }
+  .cta .t p b { color:var(--cream); font-weight:700; letter-spacing:.02em; }
+  .foot { flex:none; margin-top:calc(var(--u)*.9); text-align:center; font-size:calc(var(--u)*.5); letter-spacing:.3em; color:rgba(228,201,121,.75); z-index:2; font-weight:600; }
+
+  /* A4 print (794 × 1123 at 96 dpi) */
+  .a4 { --w:794px; --h:1123px; --u:16.6px; --hero-h:330px; }
+  /* WhatsApp Status / Instagram portrait (1080 × 1350) */
+  .social { --w:1080px; --h:1350px; --u:20px; --hero-h:400px; }
+  .social .qr { width:calc(var(--u)*7); height:calc(var(--u)*7); }
+
+</style>
+</head>
+<body>
+<div class="page" id="page">
+  <div class="frame"></div>
+  <div class="brand"><img src="logo.png" alt=""><div class="house">THE HOUSE OF RABBI AZANDUNA</div></div>
+  <div class="hero"><img src="yakar-adonai-oud.jpg" alt="Rabbi Azanduna attar bottles"></div>
+  <div class="copy">
+    <div class="kicker">BESPOKE ATTARS · OUD OILS</div>
+    <h1>An attar <em>made for you</em></h1>
+    <p class="lede">A rich, concentrated oud oil, composed around your story: the notes you love, the moment you are marking, the person you want to bless.</p>
+
+    <div class="rule">HOW IT WORKS</div>
+    <div class="steps">
+      <div class="step"><b>1</b><h3>Tell us about you</h3><p>The scents you love, who it is for and the occasion.</p></div>
+      <div class="step"><b>2</b><h3>We compose your blend</h3><p>We suggest a blend of fine notes and agree it with you.</p></div>
+      <div class="step"><b>3</b><h3>Receive your attar</h3><p>Your own oil, poured and bottled with care.</p></div>
+    </div>
+
+    <div class="rule">CHOOSE YOUR NOTES</div>
+    <div class="notes"><span>Oud</span><span>Rose</span><span>Vanilla</span><span>Sandalwood</span><span>Jasmine</span><span>Amber &amp; balms</span><span>Incense</span><span>Cardamom &amp; spice</span><span>Fresh fruits</span><span>Orange blossom</span><span>Patchouli</span></div>
+
+    <div class="rule">PERFECT FOR</div>
+    <p class="for">A signature scent<i>✦</i>Weddings &amp; anniversaries<i>✦</i>Gifts for loved ones<i>✦</i>Honouring a minister<i>✦</i>Celebrations</p>
+
+    <p class="verse">“Ointment and perfume rejoice the heart.”<small>PROVERBS 27:9</small></p>
+  </div>
+
+  <div class="spacer"></div>
+  <div class="cta">
+    <div class="qr"><img src="qr.svg" alt="QR code to WhatsApp"></div>
+    <div class="t">
+      <div class="k">REQUEST YOUR BESPOKE ATTAR</div>
+      <h2>Scan to start on WhatsApp</h2>
+      <p>Or message <b>055 518 1555</b><br>Shop our attars at <b>rabbiazanduna.com</b></p>
+    </div>
+  </div>
+  <div class="foot">ALL OF OUR FRAGRANCES ARE FAITH INSPIRED</div>
+</div>
+<script>document.getElementById('page').classList.add(location.hash === '#social' ? 'social' : 'a4');</script>
+</body>
+</html>

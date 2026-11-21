@@ -1,0 +1,21 @@
+{
+  "name": "afm-assistant-server",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AI backend for the AFM Assistant in The AFM HUB app (Cloudflare Worker).",
+  "type": "module",
+  "scripts": {
+    "knowledge": "node ../scripts/build-assistant-knowledge.js",
+    "dev": "npm run knowledge && wrangler dev",
+    "deploy": "npm run knowledge && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260926.1",
+    "typescript": "^7.0.2",
+    "wrangler": "^4.141.0"
+  }
+}
