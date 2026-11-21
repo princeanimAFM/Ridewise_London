@@ -5,6 +5,7 @@ import { useContent } from './liveContent';
 // The same photos with the green studio backdrop recoloured to each look's colour.
 const homeBackdrops: Partial<Record<Colour, number>> = {
   blue: require('../../assets/photos/micah-red-suit-smile-blue.jpg'),
+  blueOrange: require('../../assets/photos/micah-red-suit-smile-blue.jpg'),
   forest: require('../../assets/photos/micah-red-suit-smile-forest.jpg'),
   brown: require('../../assets/photos/micah-red-suit-smile-brown.jpg'),
   purple: require('../../assets/photos/micah-red-suit-smile-purple.jpg'),
@@ -12,6 +13,7 @@ const homeBackdrops: Partial<Record<Colour, number>> = {
 };
 const sermonsBackdrops: Partial<Record<Colour, number>> = {
   blue: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
+  blueOrange: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
   forest: require('../../assets/photos/micah-red-suit-full-forest.jpg'),
   brown: require('../../assets/photos/micah-red-suit-full-brown.jpg'),
   purple: require('../../assets/photos/micah-red-suit-full-purple.jpg'),
