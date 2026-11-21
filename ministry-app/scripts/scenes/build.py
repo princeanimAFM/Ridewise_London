@@ -7,7 +7,8 @@
 
 Reads micah-red-suit-smile.jpg (Home) and micah-red-suit-full.jpg (Sermons) from assets/photos, cuts him out of the green studio
 backdrop (matte_lib.py) and sets him in each scene, writing micah-red-suit-{smile,full}-{look}.jpg for
-look = sky, skynight (real photos, real_scenes.py), tide, tidenight, dusk, dusknight (drawn, scenes.py).
+look = sky, skynight (real photos, real_scenes.py); golden, mist, twilight, rose, aurora, storm, redsky and their night
+versions (real photos, colour_scenes.py); tide, tidenight, dusk, dusknight (drawn, scenes.py).
 Everything happens on this computer: his photos are never sent to any service.
 """
 import os
@@ -18,6 +19,7 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import colour_scenes  # noqa: E402
 import real_scenes  # noqa: E402
 import scenes  # noqa: E402
 from matte_lib import composite, subject_matte  # noqa: E402
@@ -31,6 +33,9 @@ BG = {
     'tide': lambda: scenes.sea_glass(False), 'tidenight': lambda: scenes.sea_glass(True),
     'dusk': lambda: scenes.sunset(False), 'dusknight': lambda: scenes.sunset(True),
 }
+for _key, _fn in colour_scenes.LOOKS.items():          # one real scene for every colour (golden, mist, twilight, rose, aurora, storm, redsky)
+    BG[_key] = (lambda f=_fn: f(False))
+    BG[_key + 'night'] = (lambda f=_fn: f(True))
 if '--dusk=real' in sys.argv:
     which = next((a.split('=')[1] for a in sys.argv if a.startswith('--dusk-photo=')), 'a')
     BG['dusk'] = lambda: real_scenes.real_dusk_day(which)

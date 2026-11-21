@@ -26,6 +26,13 @@ const colours: { value: Colour; label: string; note: string; swatch: [string, st
   { value: 'tide', label: 'Living Water · Ocean', note: 'Glass and blue sea water, bright by day, deep by night', swatch: ['#0D66AC', '#8BE6F7', '#13A0C8'] },
   { value: 'sky', label: 'Living Water · Sky', note: 'Glass and open sky, clouds by day, stars by night', swatch: ['#2272D6', '#CDE9FF', '#62B0F5'] },
   { value: 'dusk', label: 'Evening Glow', note: 'Warm brown and copper glass, sunset by day, dusk by night', swatch: ['#4A2C26', '#FFB78C', '#D8763F'] },
+  { value: 'golden', label: 'AFM Green · Golden Forest', note: 'Glass over sunlit green leaves, a moonlit wood at night', swatch: ['#2F7A45', '#F0D27A', '#D9E8C8'] },
+  { value: 'mist', label: 'Forest Green & Sage · Misty Pines', note: 'Glass over pines in mist, a moonlit wood at night', swatch: ['#2F6150', '#C3E3CD', '#9CB5A6'] },
+  { value: 'twilight', label: 'Royal Purple & Orchid · Twilight', note: 'Glass over violet clouds, a crescent moon and stars at night', swatch: ['#6B42B8', '#E4C8F5', '#F1D8EE'] },
+  { value: 'rose', label: 'Wine & Dusty Rose · Rose Clouds', note: 'Glass over rose clouds, a wine-dark sky with the moon at night', swatch: ['#8F3050', '#F6C6D0', '#E7A8C0'] },
+  { value: 'aurora', label: 'Emerald & Navy · Aurora', note: 'Glass over emerald water, northern lights at night', swatch: ['#14845F', '#0A2C48', '#A8F0D2'] },
+  { value: 'storm', label: 'Burnt Orange & Slate · Storm Light', note: 'Glass over slate clouds lit orange, a dark storm at night', swatch: ['#B5521F', '#40445A', '#FFB27F'] },
+  { value: 'redsky', label: 'Deep Red & Sky · Red Sky', note: 'Glass over a red evening sky, crimson dusk and stars at night', swatch: ['#B2342C', '#A9D4F2', '#2F5088'] },
 ];
 
 /** Each member picks light or dark and one of the colour looks. Saved on this phone only. */

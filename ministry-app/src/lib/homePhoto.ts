@@ -5,9 +5,9 @@ import { useContent } from './liveContent';
 
 // The same photos with the green studio backdrop recoloured to each look's colour. The Living Water and Evening Glow looks
 // put him in a scene instead (ocean, sky, sunset), each with a day and a night version for light and dark.
-type PhotoKey = Colour | 'tideNight' | 'skyNight' | 'duskNight';
-const SCENES: readonly Colour[] = ['tide', 'sky', 'dusk'];
-const photoKey = (colour: Colour, dark: boolean): PhotoKey => (dark && SCENES.includes(colour) ? (`${colour}Night` as PhotoKey) : colour);
+const SCENES = ['tide', 'sky', 'dusk', 'golden', 'mist', 'twilight', 'rose', 'aurora', 'storm', 'redsky'] as const;
+type PhotoKey = Colour | `${(typeof SCENES)[number]}Night`;
+const photoKey = (colour: Colour, dark: boolean): PhotoKey => (dark && (SCENES as readonly string[]).includes(colour) ? (`${colour}Night` as PhotoKey) : colour);
 
 const homeBackdrops: Partial<Record<PhotoKey, number>> = {
   blue: require('../../assets/photos/micah-red-suit-smile-blue.jpg'),
@@ -25,6 +25,20 @@ const homeBackdrops: Partial<Record<PhotoKey, number>> = {
   skyNight: require('../../assets/photos/micah-red-suit-smile-skynight.jpg'),
   dusk: require('../../assets/photos/micah-red-suit-smile-dusk.jpg'),
   duskNight: require('../../assets/photos/micah-red-suit-smile-dusknight.jpg'),
+  golden: require('../../assets/photos/micah-red-suit-smile-golden.jpg'),
+  goldenNight: require('../../assets/photos/micah-red-suit-smile-goldennight.jpg'),
+  mist: require('../../assets/photos/micah-red-suit-smile-mist.jpg'),
+  mistNight: require('../../assets/photos/micah-red-suit-smile-mistnight.jpg'),
+  twilight: require('../../assets/photos/micah-red-suit-smile-twilight.jpg'),
+  twilightNight: require('../../assets/photos/micah-red-suit-smile-twilightnight.jpg'),
+  rose: require('../../assets/photos/micah-red-suit-smile-rose.jpg'),
+  roseNight: require('../../assets/photos/micah-red-suit-smile-rosenight.jpg'),
+  aurora: require('../../assets/photos/micah-red-suit-smile-aurora.jpg'),
+  auroraNight: require('../../assets/photos/micah-red-suit-smile-auroranight.jpg'),
+  storm: require('../../assets/photos/micah-red-suit-smile-storm.jpg'),
+  stormNight: require('../../assets/photos/micah-red-suit-smile-stormnight.jpg'),
+  redsky: require('../../assets/photos/micah-red-suit-smile-redsky.jpg'),
+  redskyNight: require('../../assets/photos/micah-red-suit-smile-redskynight.jpg'),
 };
 const sermonsBackdrops: Partial<Record<PhotoKey, number>> = {
   blue: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
@@ -42,6 +56,20 @@ const sermonsBackdrops: Partial<Record<PhotoKey, number>> = {
   skyNight: require('../../assets/photos/micah-red-suit-full-skynight.jpg'),
   dusk: require('../../assets/photos/micah-red-suit-full-dusk.jpg'),
   duskNight: require('../../assets/photos/micah-red-suit-full-dusknight.jpg'),
+  golden: require('../../assets/photos/micah-red-suit-full-golden.jpg'),
+  goldenNight: require('../../assets/photos/micah-red-suit-full-goldennight.jpg'),
+  mist: require('../../assets/photos/micah-red-suit-full-mist.jpg'),
+  mistNight: require('../../assets/photos/micah-red-suit-full-mistnight.jpg'),
+  twilight: require('../../assets/photos/micah-red-suit-full-twilight.jpg'),
+  twilightNight: require('../../assets/photos/micah-red-suit-full-twilightnight.jpg'),
+  rose: require('../../assets/photos/micah-red-suit-full-rose.jpg'),
+  roseNight: require('../../assets/photos/micah-red-suit-full-rosenight.jpg'),
+  aurora: require('../../assets/photos/micah-red-suit-full-aurora.jpg'),
+  auroraNight: require('../../assets/photos/micah-red-suit-full-auroranight.jpg'),
+  storm: require('../../assets/photos/micah-red-suit-full-storm.jpg'),
+  stormNight: require('../../assets/photos/micah-red-suit-full-stormnight.jpg'),
+  redsky: require('../../assets/photos/micah-red-suit-full-redsky.jpg'),
+  redskyNight: require('../../assets/photos/micah-red-suit-full-redskynight.jpg'),
 };
 
 /** The welcome photo, with the backdrop in the member's chosen colour. */

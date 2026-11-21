@@ -83,6 +83,25 @@ const emerald = { primary: '#18794E', primaryLight: '#7FD1A5', gold: '#D4F3E2', 
 const rust = { primary: '#A4481F', primaryLight: '#E39B75', gold: '#CBD3D5', onPrimaryMuted: '#F1DDD2', deep: '40,18,8' }; // + cool grey
 const crimson = { primary: '#9B2D24', primaryLight: '#E08A82', gold: '#9CCBEA', onPrimaryMuted: '#F3DAD7', deep: '40,10,10' }; // + light sky blue
 
+/**
+ * A glass look in one colour family: translucent panels over a gradient (`backdrop`) with two soft glows. `night` makes the panels
+ * a little clearer and the text a little softer; `tint` is the colour the panels are tinted with (white, or a warm or rosy white).
+ */
+function glassTheme(c: {
+  primary: string; primaryLight: string; gold: string; accent: string; onPrimaryMuted: string; deep: string; background: string;
+  backdrop: readonly [string, string, ...string[]]; glow: string; glow2: string; night?: boolean; tint?: string; text?: string;
+}): Theme {
+  const tint = c.tint ?? '255,255,255';
+  const n = !!c.night;
+  return {
+    primary: c.primary, primaryLight: c.primaryLight, gold: c.gold, onPrimaryMuted: c.onPrimaryMuted, deep: c.deep,
+    background: c.background, surface: `rgba(${tint},${n ? 0.08 : 0.13})`, surfaceAlt: `rgba(${tint},${n ? 0.06 : 0.09})`,
+    text: c.text ?? (n ? '#F4F6FB' : '#FFFFFF'), textMuted: `rgba(${tint === '255,255,255' ? '230,238,250' : tint},${n ? 0.72 : 0.78})`,
+    border: `rgba(${tint},${n ? 0.16 : 0.24})`, onPrimary: '#FFFFFF', accent: c.accent,
+    backdrop: c.backdrop, glass: true, glow: c.glow, glow2: c.glow2,
+  };
+}
+
 const looks = {
   emerald: {
     light: { ...emerald, background: '#F2F7F4', surface: '#FFFFFF', surfaceAlt: '#E3ECF4', text: '#0A1F33', textMuted: '#566A7A', border: '#D9E3EA', onPrimary: '#FFFFFF', accent: '#14365A' },
@@ -158,6 +177,42 @@ const looks = {
       border: 'rgba(255,226,214,0.15)', onPrimary: '#FFFFFF', accent: '#F0B1A8',
       backdrop: ['#2A1B22', '#211620', '#170F18', '#0E0A10'], glass: true, glow: '238,150,140', glow2: '150,100,200',
     },
+  },
+  // Glass looks for every colour (November 2026): the same glass over a real scene in that colour, bright by day, dark by night.
+  // AFM Green: sunlight through green leaves, with gold highlights.
+  golden: {
+    light: glassTheme({ primary: '#2F7A45', primaryLight: '#A5DAA8', gold: '#F0D27A', accent: '#F0D27A', onPrimaryMuted: '#E6F0E0', deep: '10,26,12', background: '#27401C', backdrop: ['#44521F', '#34501F', '#24401E', '#142B17'], glow: '255,215,120', glow2: '110,190,120' }),
+    dark: glassTheme({ night: true, primary: '#2C6B43', primaryLight: '#93D3A6', gold: '#E4C76E', accent: '#E4C76E', onPrimaryMuted: '#DCEBDD', deep: '5,16,9', background: '#0F1F13', backdrop: ['#243018', '#1A2814', '#101B0E', '#080F08'], glow: '255,214,120', glow2: '80,160,110' }),
+  },
+  // Forest Green & Sage: pines in mist.
+  mist: {
+    light: glassTheme({ primary: '#2F6150', primaryLight: '#B5D9C2', gold: '#D5EBDB', accent: '#C3E3CD', onPrimaryMuted: '#E4EFE7', deep: '9,28,22', background: '#3A5A4C', backdrop: ['#4C6F63', '#3E6054', '#2E4C41', '#1D3229'], glow: '210,235,220', glow2: '110,170,150' }),
+    dark: glassTheme({ night: true, primary: '#2D5B4A', primaryLight: '#A2CDB5', gold: '#C2DECB', accent: '#B9D9C4', onPrimaryMuted: '#DDEBE2', deep: '4,14,11', background: '#14221E', backdrop: ['#34484B', '#1F302F', '#14211F', '#09100F'], glow: '160,205,190', glow2: '90,130,125' }),
+  },
+  // Royal Purple & Orchid: violet and orchid clouds; a crescent moon at night.
+  twilight: {
+    light: glassTheme({ primary: '#6B42B8', primaryLight: '#D2BDF5', gold: '#EBCFF8', accent: '#E4C8F5', onPrimaryMuted: '#EDE3F8', deep: '26,12,52', background: '#4C3A8C', backdrop: ['#7A62B8', '#624AA6', '#493589', '#2E2260'], glow: '255,200,240', glow2: '140,120,255' }),
+    dark: glassTheme({ night: true, primary: '#5B40A8', primaryLight: '#BDAAEC', gold: '#DCC6F3', accent: '#D4BFF0', onPrimaryMuted: '#E3DCF4', deep: '10,8,30', background: '#1C1A44', backdrop: ['#3B3A66', '#2B2954', '#1C1A3C', '#100E26'], glow: '190,170,250', glow2: '110,110,220' }),
+  },
+  // Wine & Dusty Rose: rose clouds; a wine-dark sky with the moon at night.
+  rose: {
+    light: glassTheme({ tint: '255,236,240', text: '#FFF6F8', primary: '#8F3050', primaryLight: '#F2B8C6', gold: '#F8D0D8', accent: '#F6C6D0', onPrimaryMuted: '#F8E3E8', deep: '40,10,24', background: '#6A2C4C', backdrop: ['#85486E', '#6F3A5E', '#552B49', '#361A2E'], glow: '255,190,210', glow2: '200,120,180' }),
+    dark: glassTheme({ night: true, tint: '255,232,238', text: '#FBF1F4', primary: '#7C2C48', primaryLight: '#E6A8B8', gold: '#F0C2CC', accent: '#EBB8C3', onPrimaryMuted: '#F2DDE2', deep: '16,8,16', background: '#241724', backdrop: ['#33223A', '#291A30', '#1B1122', '#0F0A14'], glow: '230,150,180', glow2: '150,100,200' }),
+  },
+  // Emerald & Navy: emerald water by day; the northern lights over a navy sky at night.
+  aurora: {
+    light: glassTheme({ primary: '#14845F', primaryLight: '#93E6C4', gold: '#D2F7E8', accent: '#A8F0D2', onPrimaryMuted: '#DFF6EC', deep: '3,34,38', background: '#0E6E66', backdrop: ['#1B9C88', '#118577', '#0E6264', '#0A3E52'], glow: '170,255,225', glow2: '80,170,230' }),
+    dark: glassTheme({ night: true, primary: '#188A66', primaryLight: '#86E8BE', gold: '#BDF5DC', accent: '#9BEFCB', onPrimaryMuted: '#DDF5EA', deep: '3,12,32', background: '#0A2346', backdrop: ['#0A2C48', '#0A2040', '#081734', '#050C20'], glow: '110,240,175', glow2: '60,130,230' }),
+  },
+  // Burnt Orange & Slate: slate cloud lit orange; a dark storm with an orange rim at night.
+  storm: {
+    light: glassTheme({ primary: '#B5521F', primaryLight: '#F2AB7C', gold: '#FFC9A3', accent: '#FFB27F', onPrimaryMuted: '#F6E2D6', deep: '28,22,32', background: '#44485E', backdrop: ['#6A6680', '#575971', '#40445A', '#282C3C'], glow: '255,170,110', glow2: '150,160,200' }),
+    dark: glassTheme({ night: true, primary: '#A24A1F', primaryLight: '#F0A474', gold: '#FFC49C', accent: '#FFAE78', onPrimaryMuted: '#F1DED2', deep: '8,12,14', background: '#162024', backdrop: ['#4A3626', '#2C2C28', '#1B2225', '#0F1518'], glow: '255,160,100', glow2: '110,140,150' }),
+  },
+  // Deep Red & Sky: red cloud in a blue evening sky; crimson dusk with stars at night.
+  redsky: {
+    light: glassTheme({ primary: '#B2342C', primaryLight: '#F29A92', gold: '#A9D4F2', accent: '#A9D4F2', onPrimaryMuted: '#F6DDDA', deep: '36,10,18', background: '#42305F', backdrop: ['#2F5088', '#40457A', '#4D2F5A', '#32142A'], glow: '255,150,130', glow2: '120,170,240' }),
+    dark: glassTheme({ night: true, primary: '#A02D2B', primaryLight: '#F09A94', gold: '#A3CDEB', accent: '#A3CDEB', onPrimaryMuted: '#F2DAD8', deep: '18,4,8', background: '#240E14', backdrop: ['#2A101C', '#230C16', '#18080F', '#0D0508'], glow: '255,110,100', glow2: '100,140,220' }),
   },
   // Today's AFM Green and Church Blue with a soft third colour instead of gold / light blue (the originals stay as they are).
   greenSeafoam: {
