@@ -1,10 +1,12 @@
 """Puts the Sunday photos into each scenic look (Living Water Ocean / Sky and Evening Glow), by day and by night.
 
+    sh scripts/scenes/fetch-sources.sh               (once: the free sky, star and moon photos the Sky look is made from)
     python3 scripts/scenes/build.py [out_dir]        (needs numpy and Pillow; out_dir defaults to assets/photos)
 
 Reads micah-red-suit-smile.jpg (Home) and micah-red-suit-full.jpg (Sermons) from assets/photos, cuts him out of the green studio
-backdrop (matte_lib.py) and sets him in the scenes drawn by scenes.py, writing micah-red-suit-{smile,full}-{look}.jpg for
-look = sky, skynight, tide, tidenight, dusk, dusknight. Nothing is sent to any service: the scenes are drawn on this computer.
+backdrop (matte_lib.py) and sets him in each scene, writing micah-red-suit-{smile,full}-{look}.jpg for
+look = sky, skynight (real photos, real_scenes.py), tide, tidenight, dusk, dusknight (drawn, scenes.py).
+Everything happens on this computer: his photos are never sent to any service.
 """
 import os
 import sys
@@ -14,6 +16,7 @@ from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import real_scenes  # noqa: E402
 import scenes  # noqa: E402
 from matte_lib import composite, subject_matte  # noqa: E402
 
@@ -21,7 +24,7 @@ PHOTOS = os.path.normpath(os.path.join(HERE, '..', '..', 'assets', 'photos'))
 OUT = sys.argv[1] if len(sys.argv) > 1 else PHOTOS
 
 BG = {
-    'sky': lambda: scenes.sky_day(), 'skynight': lambda: scenes.sky_night(),
+    'sky': real_scenes.real_sky_day, 'skynight': real_scenes.real_sky_night,
     'tide': lambda: scenes.sea_glass(False), 'tidenight': lambda: scenes.sea_glass(True),
     'dusk': lambda: scenes.sunset(False), 'dusknight': lambda: scenes.sunset(True),
 }

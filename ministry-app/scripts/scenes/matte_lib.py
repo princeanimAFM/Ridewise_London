@@ -20,6 +20,21 @@ def smoothstep(e0, e1, x):
     t = np.clip((x - e0) / (e1 - e0), 0, 1)
     return t * t * (3 - 2 * t)
 
+def refine_edges(a, alpha, B):
+    """The first matte says "backdrop or not" from how far a pixel is from the backdrop colour, which cannot tell a pixel that is
+    half suit and half backdrop from a whole suit pixel. Here, for the pixels at the edge, the share of suit is worked out from where
+    the pixel sits on the line between the backdrop colour and the colour of the solid pixels just inside the edge."""
+    solid = (alpha > 0.985).astype(np.float32)
+    deep = (box_blur(solid, 3, passes=1) > 0.999).astype(np.float32)          # solid, and at least 3 px from any edge
+    den = box_blur(deep, 7)
+    Fi = box_blur(a * deep[..., None], 7) / np.maximum(den[..., None], 1e-3)
+    dF = Fi - B
+    denom = (dF ** 2).sum(-1)
+    proj = np.clip(((a - B) * dF).sum(-1) / np.maximum(denom, 1.0), 0, 1)
+    band = (alpha > 0.02) & (deep < 0.5) & (den > 0.02) & (denom > 40.0 ** 2)
+    return np.where(band, proj, alpha).astype(np.float32)
+
+
 def subject_matte(path, centre_hue):
     """Returns (rgb float32 HxWx3, alpha HxW, backdrop estimate HxWx3) for a studio photo with a coloured backdrop."""
     im = Image.open(path).convert('RGB')
@@ -46,12 +61,20 @@ def subject_matte(path, centre_hue):
     # close tiny holes inside the subject, keep soft edges
     solid = (box_blur((alpha > 0.97).astype(np.float32), 3) > 0.5)
     alpha = np.where(solid, 1.0, alpha).astype(np.float32)
+    alpha = refine_edges(a, alpha, B.astype(np.float32))
     return a, alpha, B.astype(np.float32)
 
 def composite(a, alpha, B, bg):
     """Swap the studio backdrop for `bg` (HxWx3 float) keeping the soft edges: out = alpha*F + (1-alpha)*bg."""
     al = alpha[..., None]
     F = np.clip((a - (1 - al) * B) / np.maximum(al, 0.08), 0, 255)
-    # a slight choke takes off the faint grey rim that a mixed edge pixel leaves, and keeps soft hair edges
-    al2 = np.clip((al - 0.18) / 0.74, 0, 1)
+    # colours right on the edge still carry a trace of the studio backdrop (a thin olive line on the red suit shows up against
+    # a dark sky), so edge pixels take the colour of the solid pixels just inside them instead
+    solid = (alpha > 0.985).astype(np.float32)
+    deep = (box_blur(solid, 2, passes=1) > 0.999).astype(np.float32)
+    den = box_blur(deep, 6)
+    Fi = box_blur(a * deep[..., None], 6) / np.maximum(den[..., None], 1e-3)
+    w = smoothstep(0.985, 0.3, alpha)[..., None] * (den[..., None] > 0.03)
+    F = F * (1 - w) + Fi * w
+    al2 = np.clip((al - 0.05) / 0.90, 0, 1)
     return np.clip(al2 * F + (1 - al2) * bg, 0, 255)

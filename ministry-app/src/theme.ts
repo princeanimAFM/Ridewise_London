@@ -129,19 +129,19 @@ const looks = {
       backdrop: ['#2B2A82', '#1B2A7E', '#101C5A', '#080F33'], glass: true, glow: '130,150,255', glow2: '170,110,255',
     },
   },
-  // Living Water, sky edition: the same glass, over open sky. Day is clear blue with white clouds; night is stars and moonlight.
+  // Living Water, sky edition: the same glass, over real sky photographs. Day is clear blue with white clouds; night is stars, the Milky Way and a full moon.
   sky: {
     light: {
       primary: '#2272D6', primaryLight: '#A4D4FF', gold: '#CDE9FF', onPrimaryMuted: '#E4F1FF', deep: '8,32,78',
       background: '#1E64B8', surface: 'rgba(255,255,255,0.15)', surfaceAlt: 'rgba(255,255,255,0.11)', text: '#FFFFFF', textMuted: 'rgba(232,243,255,0.80)',
       border: 'rgba(255,255,255,0.28)', onPrimary: '#FFFFFF', accent: '#B6E0FF',
-      backdrop: ['#2A6CBE', '#2260B4', '#184C96', '#103672'], glass: true, glow: '255,246,228', glow2: '120,178,255',
+      backdrop: ['#0B4A9C', '#0D4E9F', '#0C4287', '#0A2F68'], glass: true, glow: '255,246,228', glow2: '120,178,255',
     },
     dark: {
       primary: '#4A63D8', primaryLight: '#A9B8FF', gold: '#C9D4FF', onPrimaryMuted: '#E0E6FF', deep: '6,9,34',
       background: '#161C58', surface: 'rgba(255,255,255,0.09)', surfaceAlt: 'rgba(255,255,255,0.065)', text: '#F2F5FF', textMuted: 'rgba(214,224,252,0.74)',
       border: 'rgba(255,255,255,0.17)', onPrimary: '#FFFFFF', accent: '#B4C6FF',
-      backdrop: ['#141A52', '#10174A', '#0B1038', '#070A22'], glass: true, glow: '205,218,255', glow2: '120,130,230',
+      backdrop: ['#0D1440', '#0C1340', '#0A0F31', '#070A1F'], glass: true, glow: '205,218,255', glow2: '120,130,230',
     },
   },
   // Evening Glow: warm brown and copper glass with a peach glow, like the light just after sunset. No yellow.
