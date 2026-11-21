@@ -232,26 +232,29 @@ export default function Reader() {
             const bg = mark?.colour ? HIGHLIGHTS[mark.colour][dark ? 'dark' : 'light'] : v === target ? t.surfaceAlt : 'transparent';
             return (
               <Pressable key={v} onPress={studyMode ? undefined : () => toggle(v)} onLayout={(e) => onVerseLayout(v, e.nativeEvent.layout.y)}>
-                <Text
-                  style={[
-                    styles.verse,
-                    { color: t.text, fontSize: prefs.size, lineHeight: Math.round(prefs.size * 1.6), backgroundColor: bg },
-                    isSelected && { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: t.accent },
-                  ]}
-                >
-                  <Text style={[styles.num, { color: t.accent, fontSize: Math.round(prefs.size * 0.65) }]}>{v} </Text>
-                  {studyMode
-                    ? text.split(WORD_SPLIT).map((part, i) =>
-                        i % 2 ? (
-                          <Text key={i} suppressHighlighting onPress={() => setStudy({ word: part, book, chapter, verse: v })}
-                            style={study && study.verse === v && study.word === part ? { color: t.accent, fontWeight: '700' } : { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: t.border }}>
-                            {part}
-                          </Text>
-                        ) : part,
-                      )
-                    : text}
-                  {mark?.bookmark ? <Text style={{ color: t.accent }}>  ★</Text> : null}
-                </Text>
+                {/* The highlight colour sits on a View around the verse: a background colour on the Text itself doesn't always show on phones. */}
+                <View style={[styles.verseBox, { backgroundColor: bg }]}>
+                  <Text
+                    style={[
+                      styles.verse,
+                      { color: t.text, fontSize: prefs.size, lineHeight: Math.round(prefs.size * 1.6) },
+                      isSelected && { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: t.accent },
+                    ]}
+                  >
+                    <Text style={[styles.num, { color: t.accent, fontSize: Math.round(prefs.size * 0.65) }]}>{v} </Text>
+                    {studyMode
+                      ? text.split(WORD_SPLIT).map((part, i) =>
+                          i % 2 ? (
+                            <Text key={i} suppressHighlighting onPress={() => setStudy({ word: part, book, chapter, verse: v })}
+                              style={study && study.verse === v && study.word === part ? { color: t.accent, fontWeight: '700' } : { textDecorationLine: 'underline', textDecorationStyle: 'dotted', textDecorationColor: t.border }}>
+                              {part}
+                            </Text>
+                          ) : part,
+                        )
+                      : text}
+                    {mark?.bookmark ? <Text style={{ color: t.accent }}>  ★</Text> : null}
+                  </Text>
+                </View>
                 {!!mark?.note && (
                   <Pressable
                     onPress={() => editNote(v)}
@@ -404,7 +407,8 @@ const styles = StyleSheet.create({
   page: { padding: space.md, paddingBottom: space.xl * 2 },
   maxWidth: { width: '100%', maxWidth: 720, alignSelf: 'center' },
   heading: { fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', marginBottom: space.md },
-  verse: { fontFamily: fonts.serif, paddingVertical: 3, paddingHorizontal: 4, borderRadius: 4 },
+  verseBox: { paddingVertical: 3, paddingHorizontal: 4, borderRadius: 4 },
+  verse: { fontFamily: fonts.serif },
   num: { fontWeight: '700', fontFamily: undefined },
   bar: { borderTopWidth: StyleSheet.hairlineWidth, padding: space.md, gap: space.sm },
   barRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm },
