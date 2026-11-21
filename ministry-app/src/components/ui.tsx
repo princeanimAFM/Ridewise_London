@@ -3,24 +3,30 @@ import { ImageSourcePropType, Pressable, ScrollView, StyleProp, StyleSheet, Text
 import { Image } from 'expo-image';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import FontAwesome from '@expo/vector-icons/FontAwesome';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { fonts, radius, space, useTheme } from '@/theme';
 import type { LinkItem } from '@/content/ministry';
 import { openLink } from '@/lib/links';
 import { MiniPlayer } from './MiniPlayer';
+import { Backdrop, Sheen, floatingBarSpace } from './Glass';
 
 export type IconName = keyof typeof Ionicons.glyphMap;
 
-export function Screen({ children, padded = true, player = true }: { children: ReactNode; padded?: boolean; player?: boolean }) {
+/** `tab`: one of the five main tabs. In the glass looks the tab bar floats over the screen, so these leave room for it. */
+export function Screen({ children, padded = true, player = true, tab = false }: { children: ReactNode; padded?: boolean; player?: boolean; tab?: boolean }) {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
+  const lift = t.glass && tab ? floatingBarSpace(insets.bottom) : 0;
   return (
     <View style={{ flex: 1, backgroundColor: t.background }}>
+      <Backdrop />
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={[padded && { padding: space.md }, { paddingBottom: space.xl }]}
+        contentContainerStyle={[padded && { padding: space.md }, { paddingBottom: space.xl + lift }]}
       >
         <View style={styles.maxWidth}>{children}</View>
       </ScrollView>
-      {player && <MiniPlayer />}
+      {player && <MiniPlayer lift={lift} />}
     </View>
   );
 }
@@ -52,9 +58,17 @@ export function SectionHeader({ title, action, onAction }: { title: string; acti
 export function Card({ children, onPress, style }: { children: ReactNode; onPress?: () => void; style?: StyleProp<ViewStyle> }) {
   const t = useTheme();
   const base = [styles.card, { backgroundColor: t.surface, borderColor: t.border }, style];
-  if (!onPress) return <View style={base}>{children}</View>;
+  if (!onPress) {
+    return (
+      <View style={base}>
+        <Sheen />
+        {children}
+      </View>
+    );
+  }
   return (
     <Pressable onPress={onPress} style={({ pressed }) => [...base, pressed && { opacity: 0.85 }]}>
+      <Sheen />
       {children}
     </Pressable>
   );

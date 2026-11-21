@@ -39,7 +39,8 @@ export default function RootLayout() {
       <UpdatePrompt />
       <Stack
         screenOptions={{
-          headerStyle: { backgroundColor: t.primary },
+          headerStyle: { backgroundColor: t.glass && t.backdrop ? t.backdrop[0] : t.primary },
+          headerShadowVisible: !t.glass,
           headerTintColor: '#FFFFFF',
           headerTitleStyle: { fontWeight: '700' },
           contentStyle: { backgroundColor: t.background },

@@ -5,11 +5,13 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { BOOKS, NEW_TESTAMENT_START } from '@/content/bible';
 import { bookName, parseReference, reference, TRANSLATIONS, useBible, useBiblePrefs, useDownloads, useMarks } from '@/lib/bible';
 import { Screen, SectionHeader } from '@/components/ui';
+import { Sheen } from '@/components/Glass';
 import { fonts, radius, space, useTheme } from '@/theme';
 
 /** Bible home: continue reading first, then search, the study tools as tiles and the 66 books (the Verse of the Day is on Home). */
 export default function BibleHome() {
   const t = useTheme();
+  const onDark = parseInt(t.background.slice(1, 3), 16) < 80; // the label reads in the accent colour on dark looks
   const prefs = useBiblePrefs();
   const marks = useMarks();
   useBible(prefs.translation); // loads the version so book names show in its language
@@ -58,13 +60,14 @@ export default function BibleHome() {
   ];
 
   return (
-    <Screen>
+    <Screen tab>
       <Pressable
         onPress={openHere}
         accessibilityRole="button"
         accessibilityLabel={`${last ? 'Continue reading' : 'Start reading'} ${reference(here.book, here.chapter)}`}
         style={({ pressed }) => [styles.hero, { backgroundColor: t.primary }, pressed && { opacity: 0.92 }]}
       >
+        <Sheen />
         <View style={styles.heroRow}>
           <View style={styles.heroIcon}>
             <Ionicons name="book" size={26} color={t.gold} />
@@ -112,9 +115,10 @@ export default function BibleHome() {
             accessibilityLabel={x.badge ? `${x.label}: ${x.badge}` : x.label}
             style={({ pressed }) => [styles.tool, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.75 }]}
           >
+            <Sheen />
             <View style={[styles.toolIcon, { backgroundColor: t.surfaceAlt }]}>
               {x.badge ? (
-                <Text style={{ color: t.primary, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>{x.badge}</Text>
+                <Text style={{ color: onDark ? t.accent : t.primary, fontWeight: '800', fontSize: 13 }} numberOfLines={1}>{x.badge}</Text>
               ) : (
                 <Ionicons name={x.icon} size={24} color={t.accent} />
               )}
@@ -149,7 +153,7 @@ export default function BibleHome() {
 }
 
 const styles = StyleSheet.create({
-  hero: { borderRadius: radius.lg, padding: space.md, marginBottom: space.md },
+  hero: { borderRadius: radius.lg, padding: space.md, marginBottom: space.md, overflow: 'hidden' },
   heroRow: { flexDirection: 'row', alignItems: 'center', gap: space.md },
   heroIcon: { width: 52, height: 52, borderRadius: 26, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.14)' },
   heroRef: { color: '#FFFFFF', fontFamily: fonts.serif, fontSize: 24, fontWeight: '700', marginTop: 2 },
@@ -160,7 +164,7 @@ const styles = StyleSheet.create({
   search: { flexDirection: 'row', alignItems: 'center', gap: space.sm, borderWidth: StyleSheet.hairlineWidth, borderRadius: radius.md, paddingHorizontal: space.md, marginBottom: space.md },
   searchInput: { flex: 1, fontSize: 16, paddingVertical: 12 },
   tools: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', rowGap: space.sm, marginBottom: space.md },
-  tool: { width: '31.5%', alignItems: 'center', gap: 6, paddingVertical: space.md, paddingHorizontal: 4, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth },
+  tool: { width: '31.5%', alignItems: 'center', gap: 6, paddingVertical: space.md, paddingHorizontal: 4, borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, overflow: 'hidden' },
   toolIcon: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
   count: { position: 'absolute', top: -4, right: -8, minWidth: 20, height: 20, borderRadius: 10, paddingHorizontal: 5, alignItems: 'center', justifyContent: 'center' },
   kicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },

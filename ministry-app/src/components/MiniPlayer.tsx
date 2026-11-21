@@ -6,13 +6,13 @@ import { space, useTheme } from '@/theme';
 import { Artwork } from './ui';
 
 /** Small "now playing" bar shown at the bottom of every screen while a sermon is loaded. */
-export function MiniPlayer() {
+export function MiniPlayer({ lift = 0 }: { lift?: number }) {
   const t = useTheme();
   const { episode, playing, buffering, position, duration, toggle, stop } = usePlayer();
   if (!episode) return null;
   const progress = duration ? Math.min(1, position / duration) : 0;
   return (
-    <View style={[styles.wrap, { backgroundColor: t.primary }]}>
+    <View style={[styles.wrap, { backgroundColor: t.primary }, lift > 0 && { marginHorizontal: 14, marginBottom: lift, borderRadius: 20 }]}>
       <View style={[styles.progress, { width: `${progress * 100}%`, backgroundColor: t.gold }]} />
       <Pressable style={styles.row} onPress={() => router.push({ pathname: '/episode/[id]', params: { id: episode.id } })}>
         <Artwork uri={episode.image} icon="headset" style={styles.art} />

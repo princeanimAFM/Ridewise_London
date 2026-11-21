@@ -3,6 +3,7 @@ import { StyleSheet, View, ViewStyle } from 'react-native';
 import { Image, ImageContentPosition } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { shade, useTheme } from '@/theme';
+import { Waves } from './Glass';
 
 /**
  * A photo header with text over it. The photo fills the area and a dark
@@ -22,6 +23,7 @@ export function PhotoHero({
   style?: ViewStyle;
 }) {
   const t = useTheme();
+  const glassLift = t.glass ? 30 : 0; // keeps the text clear of the waves
   const src = typeof source === 'string' ? { uri: source } : source;
   return (
     <View style={[{ height, overflow: 'hidden', backgroundColor: t.primary }, style]}>
@@ -31,7 +33,8 @@ export function PhotoHero({
         locations={[0, 0.45, 1]}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.content}>{children}</View>
+      <Waves />
+      <View style={[styles.content, glassLift > 0 && { paddingBottom: 20 + glassLift }]}>{children}</View>
     </View>
   );
 }

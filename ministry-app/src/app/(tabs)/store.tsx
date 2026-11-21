@@ -20,7 +20,7 @@ export default function Store() {
   }, [params.tab]);
 
   return (
-    <Screen>
+    <Screen tab>
       <View style={styles.tabs}>
         <Chip label="AFM Books" active={tab === 'books'} onPress={() => setTab('books')} />
         <Chip label={ministry.fragrances.brandName} active={tab === 'fragrance'} onPress={() => setTab('fragrance')} />

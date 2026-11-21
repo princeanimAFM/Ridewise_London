@@ -1,9 +1,10 @@
 import type { Colour } from './appearance';
 import { useAppearance } from './appearance';
+import { useIsDark } from '@/theme';
 import { useContent } from './liveContent';
 
 // The same photos with the green studio backdrop recoloured to each look's colour.
-const homeBackdrops: Partial<Record<Colour, number>> = {
+const homeBackdrops: Partial<Record<Colour | 'tideNight', number>> = {
   blue: require('../../assets/photos/micah-red-suit-smile-blue.jpg'),
   blueAqua: require('../../assets/photos/micah-red-suit-smile-blue.jpg'),
   forest: require('../../assets/photos/micah-red-suit-smile-forest.jpg'),
@@ -13,8 +14,10 @@ const homeBackdrops: Partial<Record<Colour, number>> = {
   emerald: require('../../assets/photos/micah-red-suit-smile-emerald.jpg'),
   rust: require('../../assets/photos/micah-red-suit-smile-rust.jpg'),
   crimson: require('../../assets/photos/micah-red-suit-smile-crimson.jpg'),
+  tide: require('../../assets/photos/micah-red-suit-smile-tide.jpg'),
+  tideNight: require('../../assets/photos/micah-red-suit-smile-tidenight.jpg'),
 };
-const sermonsBackdrops: Partial<Record<Colour, number>> = {
+const sermonsBackdrops: Partial<Record<Colour | 'tideNight', number>> = {
   blue: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
   blueAqua: require('../../assets/photos/micah-red-suit-full-blue.jpg'),
   forest: require('../../assets/photos/micah-red-suit-full-forest.jpg'),
@@ -24,18 +27,22 @@ const sermonsBackdrops: Partial<Record<Colour, number>> = {
   emerald: require('../../assets/photos/micah-red-suit-full-emerald.jpg'),
   rust: require('../../assets/photos/micah-red-suit-full-rust.jpg'),
   crimson: require('../../assets/photos/micah-red-suit-full-crimson.jpg'),
+  tide: require('../../assets/photos/micah-red-suit-full-tide.jpg'),
+  tideNight: require('../../assets/photos/micah-red-suit-full-tidenight.jpg'),
 };
 
 /** The welcome photo, with the backdrop in the member's chosen colour. */
 export function useHomePhoto() {
   const ministry = useContent();
   const { colour } = useAppearance();
-  return homeBackdrops[colour] ?? ministry.photos.home;
+  const dark = useIsDark();
+  return homeBackdrops[colour === 'tide' && dark ? 'tideNight' : colour] ?? ministry.photos.home;
 }
 
 /** The Sermons photo, recoloured the same way. */
 export function useSermonsPhoto() {
   const ministry = useContent();
   const { colour } = useAppearance();
-  return sermonsBackdrops[colour] ?? ministry.photos.sermons;
+  const dark = useIsDark();
+  return sermonsBackdrops[colour === 'tide' && dark ? 'tideNight' : colour] ?? ministry.photos.sermons;
 }

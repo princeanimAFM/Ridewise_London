@@ -1,5 +1,5 @@
 import { Platform, useColorScheme } from 'react-native';
-import { useAppearance } from '@/lib/appearance';
+import { useAppearance, type Colour } from '@/lib/appearance';
 
 // AFM green, the app's own colours and the default.
 const green = {
@@ -9,6 +9,9 @@ const green = {
   onPrimaryMuted: '#DCE8DC', // soft text on the primary colour
   deep: '10,28,18', // near-black green for photo shades, as "r,g,b"
 };
+
+/** One look's colours. The glass looks (Living Water) also set a gradient `backdrop`, `glass` and the colours of the two glows behind it. */
+export type Theme = typeof light & { backdrop?: readonly [string, string, ...string[]]; glass?: boolean; glow?: string; glow2?: string };
 
 const light = {
   ...green,
@@ -109,6 +112,23 @@ const looks = {
     light: { ...wine, background: '#FBF6F6', surface: '#FFFFFF', surfaceAlt: '#F9E9EB', text: '#2A1318', textMuted: '#7D6066', border: '#EEDCE0', onPrimary: '#FFFFFF', accent: '#A33C50' },
     dark: { ...wine, background: '#170C0F', surface: '#231317', surfaceAlt: '#301C21', text: '#F8EEF0', textMuted: '#C4A9AF', border: '#40242A', onPrimary: '#FFFFFF', accent: '#E3B0B6' },
   },
+  // Living Water: deep ocean gradients, glass panels, glowing cyan highlights and a floating tab bar (inspired by Tide Guide).
+  // `backdrop` is the gradient behind every screen; `glass` turns on the panel sheen, wave shapes and floating bar.
+  // Day is the ocean (teal to deep blue); night is the same sea after dark (indigo).
+  tide: {
+    light: {
+      primary: '#1B7FD0', primaryLight: '#8FD6F5', gold: '#8BE6F7', onPrimaryMuted: '#DCEEFB', deep: '4,22,52',
+      background: '#0D5C9E', surface: 'rgba(255,255,255,0.11)', surfaceAlt: 'rgba(255,255,255,0.08)', text: '#FFFFFF', textMuted: 'rgba(226,240,255,0.76)',
+      border: 'rgba(255,255,255,0.22)', onPrimary: '#FFFFFF', accent: '#7EDDF5',
+      backdrop: ['#1289B4', '#0D66AC', '#0A3F82', '#08265A'], glass: true, glow: '120,225,250', glow2: '90,140,255',
+    },
+    dark: {
+      primary: '#3F66E0', primaryLight: '#9DB4FF', gold: '#A9C4FF', onPrimaryMuted: '#DDE6FF', deep: '5,10,40',
+      background: '#131E5C', surface: 'rgba(255,255,255,0.08)', surfaceAlt: 'rgba(255,255,255,0.06)', text: '#F2F5FF', textMuted: 'rgba(210,222,250,0.72)',
+      border: 'rgba(255,255,255,0.16)', onPrimary: '#FFFFFF', accent: '#9CC2FF',
+      backdrop: ['#2B2A82', '#1B2A7E', '#101C5A', '#080F33'], glass: true, glow: '130,150,255', glow2: '170,110,255',
+    },
+  },
   // Today's AFM Green and Church Blue with a soft third colour instead of gold / light blue (the originals stay as they are).
   greenSeafoam: {
     light: { ...light, gold: '#B5DCC4', surfaceAlt: '#E4F2EA', accent: '#2A7766' },
@@ -118,17 +138,20 @@ const looks = {
     light: { ...blueLight, gold: '#8DD0D8', surfaceAlt: '#E2F1F4', accent: '#1B7482' },
     dark: { ...blueDark, gold: '#8DD0D8', surfaceAlt: '#1C2A3B', accent: '#8DD0D8' },
   },
-} satisfies Record<string, { light: typeof light; dark: typeof light }>;
+} satisfies Record<string, { light: Theme; dark: Theme }>;
 
-export type Theme = typeof light;
-
-const themes = { green: { light, dark }, blue: { light: blueLight, dark: blueDark }, ...looks };
+const themes: Record<Colour, { light: Theme; dark: Theme }> = { green: { light, dark }, blue: { light: blueLight, dark: blueDark }, ...looks };
 
 /** The colours for this member's chosen look (Owner dashboard and every screen use these). */
-export function useTheme(): Theme {
-  const { mode, colour } = useAppearance();
+export function useIsDark(): boolean {
+  const { mode } = useAppearance();
   const system = useColorScheme();
-  const isDark = mode === 'auto' ? system === 'dark' : mode === 'dark';
+  return mode === 'auto' ? system === 'dark' : mode === 'dark';
+}
+
+export function useTheme(): Theme {
+  const { colour } = useAppearance();
+  const isDark = useIsDark();
   return themes[colour][isDark ? 'dark' : 'light'];
 }
 

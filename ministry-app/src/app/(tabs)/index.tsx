@@ -11,6 +11,7 @@ import { QuoteCard } from '@/components/QuoteCard';
 import { SermonCard } from '@/components/SermonCard';
 import { EpisodeRow } from '@/components/EpisodeRow';
 import { PhotoHero } from '@/components/PhotoHero';
+import { Sheen } from '@/components/Glass';
 import { useEpisodes } from '@/lib/podcast';
 import { useAnnouncements } from '@/lib/announcements';
 import { backendReady } from '@/lib/supabase';
@@ -45,8 +46,8 @@ export default function Home() {
   ];
 
   return (
-    <Screen padded={false}>
-      <PhotoHero source={homePhoto} height={430 + insets.top} position="top">
+    <Screen padded={false} tab>
+      <PhotoHero source={homePhoto} height={430 + insets.top} position="top" style={t.glass ? styles.heroGlass : undefined}>
         {session && (
           <Pressable onPress={() => router.push('/account')} style={[styles.avatarButton, { top: insets.top + 12 }]} accessibilityRole="button" accessibilityLabel="My account">
             {profile?.avatar_url ? (
@@ -82,6 +83,7 @@ export default function Home() {
               onPress={s.onPress}
               style={({ pressed }) => [styles.shortcut, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.8 }]}
             >
+              <Sheen />
               <Ionicons name={s.icon} size={26} color={t.accent} />
               <Text style={{ color: t.text, fontWeight: '600', marginTop: 6 }}>{s.label}</Text>
             </Pressable>
@@ -92,6 +94,7 @@ export default function Home() {
           onPress={() => router.push({ pathname: '/bible/read', params: { book: votd.book, chapter: votd.chapter, verse: votd.verse } })}
           style={({ pressed }) => [styles.votd, { backgroundColor: t.surface, borderColor: t.border }, pressed && { opacity: 0.85 }]}
         >
+          <Sheen />
           <View style={styles.votdHead}>
             <Ionicons name="book" size={16} color={t.accent} />
             <Text style={[styles.votdKicker, { color: t.accent }]}>VERSE OF THE DAY</Text>
@@ -246,7 +249,8 @@ export default function Home() {
 }
 
 const styles = StyleSheet.create({
-  votd: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: space.md, marginTop: space.md },
+  votd: { borderRadius: radius.md, borderWidth: StyleSheet.hairlineWidth, padding: space.md, marginTop: space.md, overflow: 'hidden' },
+  heroGlass: { borderBottomLeftRadius: 40, borderBottomRightRadius: 40 },
   votdHead: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   votdKicker: { fontSize: 12, fontWeight: '800', letterSpacing: 1.2 },
   votdText: { fontFamily: fonts.serif, fontSize: 17, lineHeight: 26, marginTop: space.sm },
@@ -272,6 +276,7 @@ const styles = StyleSheet.create({
     paddingVertical: space.md,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
   },
   cover: { width: 130, height: 195, borderRadius: radius.sm },
   assistant: { flexDirection: 'row', alignItems: 'center', gap: space.md, padding: space.md, borderRadius: radius.md, borderWidth: 1, marginTop: space.md },

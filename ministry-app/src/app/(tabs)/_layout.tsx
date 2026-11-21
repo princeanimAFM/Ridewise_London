@@ -1,11 +1,13 @@
 import { useEffect, useRef } from 'react';
 import Tabs from 'expo-router/js-tabs';
 import { Platform, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import type { ColorValue } from 'react-native';
 import type { IconName } from '@/components/ui';
 import { useTheme } from '@/theme';
+import { FLOATING_BAR, GlassBar, floatingBarBottom } from '@/components/Glass';
 import { useAuth } from '@/lib/auth';
 import { backendReady } from '@/lib/supabase';
 import { welcomeDone } from '@/lib/welcome';
@@ -16,6 +18,7 @@ const tab = (icon: IconName) => ({ color, size }: { color: ColorValue; size: num
 
 export default function TabsLayout() {
   const t = useTheme();
+  const insets = useSafeAreaInsets();
   const { session, loading } = useAuth();
   const checked = useRef(false);
 
@@ -32,12 +35,35 @@ export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: t.primary },
+        // glass looks: the header continues the gradient, and the tab bar is a pill that floats over the screen
+        headerStyle: { backgroundColor: t.glass && t.backdrop ? t.backdrop[0] : t.primary },
+        headerShadowVisible: !t.glass,
         headerTintColor: '#FFFFFF',
         headerTitleStyle: { fontWeight: '700' },
         tabBarActiveTintColor: t.accent,
         tabBarInactiveTintColor: t.textMuted,
-        tabBarStyle: { backgroundColor: t.surface, borderTopColor: t.border },
+        tabBarStyle: t.glass
+          ? {
+              position: 'absolute',
+              left: 14,
+              right: 14,
+              bottom: floatingBarBottom(insets.bottom),
+              height: FLOATING_BAR,
+              paddingTop: 6,
+              paddingBottom: 6,
+              borderRadius: FLOATING_BAR / 2,
+              borderTopWidth: 0,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.22)',
+              backgroundColor: 'transparent',
+              shadowColor: '#000',
+              shadowOpacity: 0.35,
+              shadowRadius: 18,
+              shadowOffset: { width: 0, height: 8 },
+              elevation: 14,
+            }
+          : { backgroundColor: t.surface, borderTopColor: t.border },
+        tabBarBackground: t.glass ? () => <GlassBar /> : undefined,
         sceneStyle: { backgroundColor: t.background },
         headerRight: () => (
           <Pressable onPress={() => router.push('/assistant')} hitSlop={10} style={{ marginRight: 16 }} accessibilityLabel="Ask the AFM Assistant">

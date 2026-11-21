@@ -29,7 +29,7 @@ export default function Sermons() {
   }, [episodes, query]);
 
   return (
-    <Screen>
+    <Screen tab>
       <PhotoHero source={photo} height={250} position="top" style={styles.hero}>
         <Text style={[styles.kicker, { color: t.gold }]}>{ministry.podcast.title.toUpperCase()}</Text>
         <Text style={styles.heroTitle}>Sermons & Teachings</Text>

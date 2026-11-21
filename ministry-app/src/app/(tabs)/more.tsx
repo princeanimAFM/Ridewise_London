@@ -13,7 +13,7 @@ export default function More() {
   const t = useTheme();
   const { session, profile } = useAuth();
   return (
-    <Screen>
+    <Screen tab>
       <ListRow
         icon="person-circle-outline"
         title={session ? `Hello, ${displayName(profile, session)}` : 'Sign in or create account'}
