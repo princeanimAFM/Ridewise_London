@@ -3,7 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '@/theme';
 
 /*
- * Building blocks for the "glass" looks (Living Water): a gradient behind every screen, panels that catch the light,
+ * Building blocks for the "glass" looks (Evening Glow, Sunset, Aurora): a gradient behind every screen, panels that catch the light,
  * soft waves on hero pictures and a floating tab bar. Everything is made of translucent colours, gradients and rounded
  * shapes (no blur or drawing library), so it also works on phones that already have the app installed.
  */

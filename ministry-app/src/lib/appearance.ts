@@ -3,10 +3,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * Each member's own look for the app, saved on their phone: light or dark (or follow the
- * phone), and AFM green (the default) or church blue and white.
+ * phone), and a colour: AFM green (the default), church blue and white, or one of the glass looks.
  */
 export type Mode = 'auto' | 'light' | 'dark';
-export const COLOURS = ['green', 'blue', 'forest', 'brown', 'purple', 'wine', 'greenSeafoam', 'blueAqua', 'emerald', 'rust', 'crimson', 'tide', 'sky', 'dusk', 'golden', 'mist', 'twilight', 'rose', 'aurora', 'storm', 'redsky'] as const;
+export const COLOURS = ['green', 'blue', 'dusk', 'sunset', 'aurora'] as const;
 export type Colour = (typeof COLOURS)[number];
 export type Appearance = { mode: Mode; colour: Colour };
 
