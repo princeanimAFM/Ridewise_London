@@ -1,0 +1,7 @@
+name = "afm-assistant"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+# Optional settings (the API key is a secret: `npx wrangler secret put ANTHROPIC_API_KEY`)
+[vars]
+# MODEL = "claude-haiku-4-5"

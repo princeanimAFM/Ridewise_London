@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Church Care has a new address</title>
+<script>
+/* Used as theafmchurch.org/welcome/index.html and /welcome/team.html once Church Care runs at care.theafmchurch.org.
+   Old links, QR cards, invite links and notification taps keep working: the page, the ?query and the #part are passed on. */
+(function () {
+  var page = /team\.html$/.test(location.pathname) ? 'team.html' : '';
+  location.replace('https://care.theafmchurch.org/' + page + location.search + location.hash);
+})();
+</script>
+</head>
+<body style="font-family:system-ui,sans-serif;padding:28px;max-width:520px;margin:auto">
+<h1 style="font-size:22px">Church Care has a new address</h1>
+<p>It is now at <a href="https://care.theafmchurch.org/">care.theafmchurch.org</a>. Taking you there now. Please sign in again, and turn on notifications again.</p>
+</body>
+</html>
