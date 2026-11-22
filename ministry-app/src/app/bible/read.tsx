@@ -25,7 +25,7 @@ import { WORD_SPLIT, WordStudy, type StudyWord } from '@/components/WordStudy';
 import { shareText } from '@/lib/links';
 import { useContent } from '@/lib/liveContent';
 import { Button } from '@/components/ui';
-import { fonts, radius, space, useTheme } from '@/theme';
+import { fonts, radius, space, useTheme, withAlpha } from '@/theme';
 
 const isDarkColour = (hex: string) => {
   const n = parseInt(hex.slice(1, 7), 16);
@@ -48,6 +48,7 @@ export default function Reader() {
   const { data, error, loading, retry } = useBible(prefs.translation);
   const verses = data?.books[book]?.chapters[chapter - 1] ?? [];
   const dark = isDarkColour(t.background);
+  const selectedTint = /^#[0-9a-f]{6}$/i.test(t.accent) ? withAlpha(t.accent, dark ? 0.26 : 0.2) : t.surfaceAlt;
 
   const [selected, setSelected] = useState<number[]>([]);
   const [showSize, setShowSize] = useState(false);
@@ -229,11 +230,14 @@ export default function Reader() {
             if (!text) return null;
             const mark = marks[verseKey(book, chapter, v)];
             const isSelected = selected.includes(v);
-            const bg = mark?.colour ? HIGHLIGHTS[mark.colour][dark ? 'dark' : 'light'] : v === target ? t.surfaceAlt : 'transparent';
+            const highlightBg = mark?.colour ? HIGHLIGHTS[mark.colour][dark ? 'dark' : 'light'] : undefined;
+            // Selected verses get a tinted box with a border in the accent colour, so it's plain which verses are selected on every phone
+            // (Android doesn't draw the dotted underline); a highlighted verse keeps its colour and just gains the border.
+            const bg = isSelected && !highlightBg ? selectedTint : highlightBg ?? (v === target ? t.surfaceAlt : 'transparent');
             return (
               <Pressable key={v} onPress={studyMode ? undefined : () => toggle(v)} onLayout={(e) => onVerseLayout(v, e.nativeEvent.layout.y)}>
                 {/* The highlight colour sits on a View around the verse: a background colour on the Text itself doesn't always show on phones. */}
-                <View style={[styles.verseBox, { backgroundColor: bg }]}>
+                <View style={[styles.verseBox, { backgroundColor: bg }, isSelected && { borderColor: t.accent }]}>
                   <Text
                     style={[
                       styles.verse,
@@ -407,7 +411,7 @@ const styles = StyleSheet.create({
   page: { padding: space.md, paddingBottom: space.xl * 2 },
   maxWidth: { width: '100%', maxWidth: 720, alignSelf: 'center' },
   heading: { fontFamily: fonts.serif, fontSize: 26, fontWeight: '700', marginBottom: space.md },
-  verseBox: { paddingVertical: 3, paddingHorizontal: 4, borderRadius: 4 },
+  verseBox: { paddingVertical: 3, paddingHorizontal: 4, borderRadius: 6, borderWidth: 1.5, borderColor: 'transparent' },
   verse: { fontFamily: fonts.serif },
   num: { fontWeight: '700', fontFamily: undefined },
   bar: { borderTopWidth: StyleSheet.hairlineWidth, padding: space.md, gap: space.sm },
